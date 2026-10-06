@@ -4,7 +4,7 @@
   "scripts": {
     "ng": "ng",
     "prestart": "node aspnetcore-https",
-    "postinstall": "patch-package",
+    "postinstall": "patch-package || echo 'No patch-package patches to apply'",
     "start": "run-script-os",
     "start:windows": "ng serve --port 44410 --live-reload=true --ssl --ssl-cert %APPDATA%\\ASP.NET\\https\\%npm_package_name%.pem --ssl-key %APPDATA%\\ASP.NET\\https\\%npm_package_name%.key",
     "start:default": "ng serve --port 44410 --live-reload=false --ssl --ssl-cert $HOME/.aspnet/https/${npm_package_name}.pem --ssl-key $HOME/.aspnet/https/${npm_package_name}.key",
