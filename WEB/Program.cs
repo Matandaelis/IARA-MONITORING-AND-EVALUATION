@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using Azure.Identity;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
@@ -8,6 +9,17 @@ using Monic.Web.Code;
 using Monic.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure forwarded headers for reverse proxy / Coolify deployment
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor |
+                               ForwardedHeaders.XForwardedProto |
+                               ForwardedHeaders.XForwardedHost;
+});
+
+// Add health check endpoint for Docker/Coolify
+builder.Services.AddHealthChecks();
 
 /**********************************************
  * on azure, the app should typically have a key vault with:
@@ -190,6 +202,9 @@ using (var rm = scope.ServiceProvider.GetService<RoleManager<Role>>())
     await initializer.InitializeAsync();
 }
 
+// Use forwarded headers from reverse proxy (Coolify, nginx, etc)
+app.UseForwardedHeaders();
+
 // allows rewinding of request body for error logging
 app.Use(async (context, next) =>
 {
@@ -224,10 +239,12 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Health check endpoint for Docker/Coolify container health checks
+app.MapHealthChecks("/health");
+
 app.MapControllers();
 //app.UseEndpoints(endpoints => endpoints.MapControllers());
 
 app.MapFallbackToFile("index.html");
 
 app.Run();
-
