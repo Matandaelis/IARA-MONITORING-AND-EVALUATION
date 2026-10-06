@@ -1,102 +1,112 @@
 version: '3.8'
+
 services:
-SQL Server Database
-monic-db:
-image: mcr.microsoft.com/mssql/server:2022-latest
-container_name: monic-db
-environment:
-ACCEPT_EULA: "Y"
-SA_PASSWORD: "${DB_PASSWORD:-@Monic123Secure!}"
-MSSQL_PID: "Developer"
-volumes:
-  - monic-db-data:/var/opt/mssql
-
-healthcheck:
-  test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "${DB_PASSWORD:-@Monic123Secure!}" -Q "SELECT 1" || exit 1
-  interval: 10s
-  timeout: 5s
-  retries: 5
-  start_period: 30s
-
-networks:
-  - monic-network
-
-restart: unless-stopped
-
-MONIC Application
-monic-app:
-build:
-context: .
-dockerfile: Dockerfile
-container_name: monic-app
-
-depends_on:
+  # SQL Server Database
   monic-db:
-    condition: service_healthy
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: monic-db
 
-environment:
-  # Database Configuration
-  ConnectionStrings__DefaultConnection: "Server=monic-db,1433;Database=MONIC;User Id=sa;Password=${DB_PASSWORD:-@Monic123Secure!};TrustServerCertificate=true;Encrypt=false;"
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "${DB_PASSWORD:-@Monic123Secure!}"
+      MSSQL_PID: "Developer"
 
-  # ASP.NET Core Settings
-  ASPNETCORE_ENVIRONMENT: "Production"
-  ASPNETCORE_URLS: "http://+:80"
-  ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+    volumes:
+      - monic-db-data:/var/opt/mssql
 
-  # Application Settings
-  Settings__RootUrl: "https://${DOMAIN:-localhost}/"
-  Settings__SiteName: "${SITE_NAME:-MONIC}"
-  Settings__UseAzureInfrastructure: "${USE_AZURE_INFRASTRUCTURE:-false}"
-  Settings__AccessTokenExpiryMinutes: "10"
-  Settings__RefreshTokenExpiryMinutes: "10880"
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "${DB_PASSWORD:-@Monic123Secure!}" -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-  # Email Configuration
-  Settings__EmailSettings__SendEmails: "${SEND_EMAILS:-false}"
-  Settings__EmailSettings__SenderName: "${EMAIL_SENDER_NAME:-MONIC}"
-  Settings__EmailSettings__Sender: "${EMAIL_SENDER:-noreply@monic.local}"
-  Settings__EmailSettings__SMTP: "${SMTP_SERVER:-localhost}"
-  Settings__EmailSettings__SMTPPort: "${SMTP_PORT:-25}"
-  Settings__EmailSettings__UserName: "${SMTP_USERNAME:-}"
-  Settings__EmailSettings__Password: "${SMTP_PASSWORD:-}"
-  Settings__EmailSettings__SSL: "${SMTP_SSL:-false}"
-  Settings__EmailSettings__EmailToErrors: "${ERROR_EMAIL:-admin@monic.local}"
-  Settings__EmailSettings__SubstitutionEmailAddress: "${SUBSTITUTION_EMAIL:-admin@monic.local}"
+    networks:
+      - monic-network
 
-  # Application Insights
-  Settings__UseApplicationInsights: "${USE_APP_INSIGHTS:-false}"
+    restart: unless-stopped
 
-  # Logging
-  Logging__LogLevel__Default: "Information"
-  Logging__LogLevel__Microsoft: "Warning"
+  # MONIC Application
+  monic-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: monic-app
+
+    depends_on:
+      monic-db:
+        condition: service_healthy
+
+    environment:
+      # Database Configuration
+      ConnectionStrings__DefaultConnection: "Server=monic-db,1433;Database=MONIC;User Id=sa;Password=${DB_PASSWORD:-@Monic123Secure!};TrustServerCertificate=true;Encrypt=false;"
+
+      # ASP.NET Core Configuration
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ASPNETCORE_URLS: "http://+:80"
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+
+      # Application Settings
+      Settings__RootUrl: "https://${DOMAIN:-localhost}/"
+      Settings__SiteName: "${SITE_NAME:-MONIC}"
+      Settings__UseAzureInfrastructure: "${USE_AZURE_INFRASTRUCTURE:-false}"
+      Settings__AccessTokenExpiryMinutes: "10"
+      Settings__RefreshTokenExpiryMinutes: "10880"
+
+      # Certificate password
+      Settings__CertificatePassword: "${CERTIFICATE_PASSWORD:-}"
+
+      # Email Configuration
+      Settings__EmailSettings__SendEmails: "${SEND_EMAILS:-false}"
+      Settings__EmailSettings__SenderName: "${EMAIL_SENDER_NAME:-MONIC}"
+      Settings__EmailSettings__Sender: "${EMAIL_SENDER:-noreply@monic.local}"
+      Settings__EmailSettings__SMTP: "${SMTP_SERVER:-localhost}"
+      Settings__EmailSettings__SMTPPort: "${SMTP_PORT:-25}"
+      Settings__EmailSettings__UserName: "${SMTP_USERNAME:-}"
+      Settings__EmailSettings__Password: "${SMTP_PASSWORD:-}"
+      Settings__EmailSettings__SSL: "${SMTP_SSL:-false}"
+      Settings__EmailSettings__EmailToErrors: "${ERROR_EMAIL:-admin@monic.local}"
+      Settings__EmailSettings__SubstitutionEmailAddress: "${SUBSTITUTION_EMAIL:-admin@monic.local}"
+
+      # Application Insights
+      Settings__UseApplicationInsights: "${USE_APP_INSIGHTS:-false}"
+
+      # Logging
+      Logging__LogLevel__Default: "Information"
+      Logging__LogLevel__Microsoft: "Warning"
+
+    volumes:
+      # Persistent application data:
+      # - Data Protection keys
+      # - OpenIddict certificate
+      - monic-app-data:/app/data
+
+      # Application logs
+      - monic-app-logs:/app/logs
+
+    networks:
+      - monic-network
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 volumes:
-  # Persistent application data:
-  # - Data Protection keys
-  # - OpenIddict certificate
-  - monic-app-data:/app/data
+  monic-db-data:
+    driver: local
 
-  # Application logs
-  - monic-app-logs:/app/logs
+  monic-app-data:
+    driver: local
+
+  monic-app-logs:
+    driver: local
 
 networks:
-  - monic-network
-
-restart: unless-stopped
-
-healthcheck:
-  test: ["CMD", "curl", "-f", "http://localhost/health"]
-  interval: 30s
-  timeout: 10s
-  retries: 3
-  start_period: 40s
-
-volumes:
-monic-db-data:
-driver: local
-monic-app-data:
-driver: local
-monic-app-logs:
-driver: local
-networks:
-monic-network:
-driver: bridge
+  monic-network:
+    driver: bridge
