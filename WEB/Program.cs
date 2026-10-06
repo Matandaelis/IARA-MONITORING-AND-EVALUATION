@@ -10,7 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 Azure infrastructure is optional. For Coolify/self-hosted deployments, set: Settings__UseAzureInfrastructure=false When enabled, the application expects Azure Key Vault, Azure Blob Storage and Azure certificates to be configured. **********************************************/ 
 
-var useAzureInfrastructure = builder.Configuration.GetValue("Settings:UseAzureInfrastructure");
+var useAzureInfrastructure = builder.Configuration.GetValue( "Settings:UseAzureInfrastructure");
 
 if (useAzureInfrastructure) { var keyVaultUri = builder.Configuration["KeyVault:VaultUri"];
 
@@ -20,13 +20,19 @@ if (!string.IsNullOrWhiteSpace(keyVaultUri)) { builder.Configuration.AddAzureKey
 
 var appSettings = builder.Configuration .GetSection("Settings") .Get() ?? new AppSettings();
 
-appSettings.Email ??= new Monic.Web.Settings.EmailSettings(); appSettings.Azure ??= new AppSettings.AzureSettings(); appSettings.Azure.DataProtection ??= new AppSettings.AzureSettings.DataProtectionSettings(); appSettings.Azure.Documents ??= new Monic.Web.Settings.DocumentsSettings();
+appSettings.Email ??= new Monic.Web.Settings.EmailSettings();
+
+appSettings.Azure ??= new AppSettings.AzureSettings();
+
+appSettings.Azure.DataProtection ??= new AppSettings.AzureSettings.DataProtectionSettings();
+
+appSettings.Azure.Documents ??= new Monic.Web.Settings.DocumentsSettings();
 
 appSettings.UseAzureInfrastructure = useAzureInfrastructure;
 
 if (useAzureInfrastructure) { var credential = new DefaultAzureCredential();
 
-if (string.IsNullOrWhiteSpace(appSettings.Azure.DataProtection.BlobUri)) { throw new InvalidOperationException( "Azure infrastructure is enabled, but Settings:AzureSettings:DataProtection:BlobUri is not configured."); } if (string.IsNullOrWhiteSpace(appSettings.Azure.DataProtection.KeyIdentifier)) { throw new InvalidOperationException( "Azure infrastructure is enabled, but Settings:AzureSettings:DataProtection:KeyIdentifier is not configured."); } await General.EnsureDataProtectionBlobIsHotAsync( appSettings.Azure.DataProtection.BlobUri, credential); builder.Services.AddDataProtection() .SetApplicationName("MONIC") .PersistKeysToAzureBlobStorage( new Uri(appSettings.Azure.DataProtection.BlobUri), credential) .ProtectKeysWithAzureKeyVault( new Uri(appSettings.Azure.DataProtection.KeyIdentifier), credential); 
+if (string.IsNullOrWhiteSpace( appSettings.Azure.DataProtection.BlobUri)) { throw new InvalidOperationException( "Azure infrastructure is enabled, but Settings:AzureSettings:DataProtection:BlobUri is not configured."); } if (string.IsNullOrWhiteSpace( appSettings.Azure.DataProtection.KeyIdentifier)) { throw new InvalidOperationException( "Azure infrastructure is enabled, but Settings:AzureSettings:DataProtection:KeyIdentifier is not configured."); } await General.EnsureDataProtectionBlobIsHotAsync( appSettings.Azure.DataProtection.BlobUri, credential); builder.Services.AddDataProtection() .SetApplicationName("MONIC") .PersistKeysToAzureBlobStorage( new Uri( appSettings.Azure.DataProtection.BlobUri), credential) .ProtectKeysWithAzureKeyVault( new Uri( appSettings.Azure.DataProtection.KeyIdentifier), credential); 
 
 } else { // Coolify/self-hosted deployment: // persist Data Protection keys to a mounted persistent volume. var dataProtectionPath = Path.Combine( builder.Environment.ContentRootPath, "data", "dataprotection-keys");
 
@@ -40,35 +46,39 @@ if (builder.Environment.IsDevelopment()) { appSettings.WebRootPath = Path.Combin
 
 appSettings.Email.WebRootPath = appSettings.WebRootPath;
 
-//builder.Services.AddControllers(options => options.Filters.Add(typeof(ApiExceptionAttribute))) builder.Services.AddControllersWithViews(options => options.Filters.Add(typeof(ApiExceptionAttribute))) .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new DateTimeConverter()));
+builder.Services.AddControllersWithViews(options => options.Filters.Add( typeof(ApiExceptionAttribute))) .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add( new DateTimeConverter()));
 
 /*
 
-running the SPA separately from the backend: the start-angular.bat file will run npm start, which will use the package.json config to run ng serve on the specified port that port will have CORS issues if attempting to interact with the api on the port configured in Properties folder -> launchsettings.json so configure development CORS policy to allow CORS for this domain/port */ 
+Running the SPA separately from the backend: the start-angular.bat file will run npm start, which will use the package.json configuration to run ng serve on the specified port. Configure development CORS policy to allow the Angular development server to interact with the API. */ 
 
-// from: https://medium.com/@saravananganesan/how-to-breaking-asp-net-core-with-angular-project-into-frontend-and-backend-a3b3fd084b25 var policyName = "_allowSpecificOrigins";
+var policyName = "_allowSpecificOrigins";
 
-if (builder.Environment.IsDevelopment()) { builder.Services.AddCors(options => { options.AddPolicy(name: policyName, builder => { // must match with the port in package.json -> scripts:start // (also: appSettings.RootUrl - i.e. the front-end address) // and SpaProxyServerUrl in Web.csproj builder.WithOrigins("https://localhost:44410"); builder.AllowAnyMethod(); builder.AllowAnyHeader(); builder.AllowCredentials(); builder.WithExposedHeaders( "X-Pagination", "Content-Disposition"); }); }); }
+if (builder.Environment.IsDevelopment()) { builder.Services.AddCors(options => { options.AddPolicy(name: policyName, builder => { builder.WithOrigins( "https://localhost:44410");
+
+builder.AllowAnyMethod(); builder.AllowAnyHeader(); builder.AllowCredentials(); builder.WithExposedHeaders( "X-Pagination", "Content-Disposition"); }); }); 
+
+}
 
 builder.Services.AddHttpContextAccessor();
 
-builder.Services.AddDbContext( (serviceProvider, optionsBuilder) => { optionsBuilder.UseSqlServer( builder.Configuration.GetConnectionString("DefaultConnection"), sqlOptions => { sqlOptions.CommandTimeout(300); // causes errors in transactions //sqlOptions.EnableRetryOnFailure(); sqlOptions.UseQuerySplittingBehavior( QuerySplittingBehavior.SplitQuery); });
+builder.Services.AddDbContext( (serviceProvider, optionsBuilder) => { optionsBuilder.UseSqlServer( builder.Configuration.GetConnectionString( "DefaultConnection"), sqlOptions => { sqlOptions.CommandTimeout(300);
 
-optionsBuilder.UseQueryTrackingBehavior( QueryTrackingBehavior.NoTracking); optionsBuilder.UseOpenIddict(); 
+sqlOptions.UseQuerySplittingBehavior( QuerySplittingBehavior.SplitQuery); }); optionsBuilder.UseQueryTrackingBehavior( QueryTrackingBehavior.NoTracking); optionsBuilder.UseOpenIddict(); 
 
 });
 
-builder.Services.AddDbContextFactory( optionsBuilder => { optionsBuilder.UseSqlServer( builder.Configuration.GetConnectionString("DefaultConnection"), sqlOptions => { sqlOptions.CommandTimeout(300); // causes errors in transactions //sqlOptions.EnableRetryOnFailure(); sqlOptions.UseQuerySplittingBehavior( QuerySplittingBehavior.SplitQuery); });
+builder.Services.AddDbContextFactory( optionsBuilder => { optionsBuilder.UseSqlServer( builder.Configuration.GetConnectionString( "DefaultConnection"), sqlOptions => { sqlOptions.CommandTimeout(300); });
 
-//if (builder.Environment.IsDevelopment()) // optionsBuilder.EnableSensitiveDataLogging(); optionsBuilder.UseQueryTrackingBehavior( QueryTrackingBehavior.NoTracking); optionsBuilder.UseOpenIddict(); 
+optionsBuilder.UseQueryTrackingBehavior( QueryTrackingBehavior.NoTracking); optionsBuilder.UseOpenIddict(); 
 
 }, ServiceLifetime.Scoped);
 
 builder.Services.AddIdentity<User, Role>(options => { options.User.AllowedUserNameCharacters += "'"; }) .AddUserManager<UserManager>() .AddEntityFrameworkStores() .AddDefaultTokenProviders();
 
-// configure identity options (includes JWT claims) builder.Services.Configure(options => { options.User.RequireUniqueEmail = true;
+// Configure identity options builder.Services.Configure(options => { options.User.RequireUniqueEmail = true;
 
-options.ClaimsIdentity.UserNameClaimType = Claims.Name; options.ClaimsIdentity.UserIdClaimType = Claims.Subject; options.ClaimsIdentity.RoleClaimType = Claims.Role; if (builder.Environment.IsDevelopment()) { options.Password.RequireDigit = false; options.Password.RequireLowercase = false; options.Password.RequireUppercase = false; options.Password.RequireNonAlphanumeric = false; options.Password.RequiredLength = 3; } else { // todo: in settings options.Password.RequireDigit = true; options.Password.RequireLowercase = true; options.Password.RequireUppercase = true; options.Password.RequireNonAlphanumeric = true; options.Password.RequiredLength = 8; } 
+options.ClaimsIdentity.UserNameClaimType = Claims.Name; options.ClaimsIdentity.UserIdClaimType = Claims.Subject; options.ClaimsIdentity.RoleClaimType = Claims.Role; if (builder.Environment.IsDevelopment()) { options.Password.RequireDigit = false; options.Password.RequireLowercase = false; options.Password.RequireUppercase = false; options.Password.RequireNonAlphanumeric = false; options.Password.RequiredLength = 3; } else { options.Password.RequireDigit = true; options.Password.RequireLowercase = true; options.Password.RequireUppercase = true; options.Password.RequireNonAlphanumeric = true; options.Password.RequiredLength = 8; } 
 
 });
 
@@ -80,17 +90,17 @@ builder.Services.AddScoped<IIdentityService, IdentityService>(); builder.Service
 
 var app = builder.Build();
 
-using (var scope = app.Services .GetRequiredService() .CreateScope()) using (var db = scope.ServiceProvider.GetService()) using (var um = scope.ServiceProvider.GetService<UserManager>()) using (var rm = scope.ServiceProvider.GetService<RoleManager>()) { // initialise, seed, etc var initializer = new DbInitializer( appSettings, db, um, rm, builder.Environment);
+using (var scope = app.Services .GetRequiredService() .CreateScope()) using (var db = scope.ServiceProvider.GetService()) using (var um = scope.ServiceProvider.GetService<UserManager>()) using (var rm = scope.ServiceProvider.GetService<RoleManager>()) { var initializer = new DbInitializer( appSettings, db, um, rm, builder.Environment);
 
 await initializer.InitializeAsync(); 
 
 }
 
-// Use forwarded headers from reverse proxy (Coolify, nginx, etc) app.UseForwardedHeaders();
+// Use forwarded headers from reverse proxy app.UseForwardedHeaders();
 
-// allows rewinding of request body for error logging app.Use(async (context, next) => { context.Request.EnableBuffering(); await next(); });
+// Allows rewinding of request body for error logging app.Use(async (context, next) => { context.Request.EnableBuffering(); await next(); });
 
-if (!app.Environment.IsDevelopment()) { // Coolify terminates HTTPS at the reverse proxy. // HSTS is still appropriate for production. app.UseHsts(); } else { app.UseDeveloperExceptionPage(); }
+if (!app.Environment.IsDevelopment()) { // Coolify terminates HTTPS at the reverse proxy. app.UseHsts(); } else { app.UseDeveloperExceptionPage(); }
 
 if (builder.Environment.IsDevelopment()) { app.UseCors(policyName); }
 
@@ -102,9 +112,9 @@ app.UseRouting();
 
 app.UseAuthentication(); app.UseAuthorization();
 
-// Health check endpoint for Docker/Coolify container health checks app.MapHealthChecks("/health");
+// Health check endpoint for Docker/Coolify app.MapHealthChecks("/health");
 
-app.MapControllers(); //app.UseEndpoints(endpoints => endpoints.MapControllers());
+app.MapControllers();
 
 app.MapFallbackToFile("index.html");
 
