@@ -1,0 +1,66 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDEs
+.vs
+.vscode
+*.user
+*.sln.docstates
+.idea
+*.swp
+*.swo
+
+# Build outputs
+bin/
+obj/
+dist/
+.angular/
+
+# Node modules and npm
+node_modules/
+npm-debug.log
+package-lock.json
+yarn.lock
+
+# Dependencies
+packages/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Build artifacts
+*.log
+*.pdb
+*.cache
+
+# Frontend build
+WEB/ClientApp/dist/
+WEB/ClientApp/.angular/
+
+# Editor files
+*.sublime-project
+*.sublime-workspace
+
+# Documentation
+docs/
+*.md
+
+# Testing
+coverage/
+test-results/
+
+# CI/CD
+.github/workflows/
+
+# Misc
+.prettierignore
+.editorconfig

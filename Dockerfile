@@ -1,43 +1,30 @@
-# Multi-stage build for MONIC
-# Stage 1: Build Node dependencies and Angular frontend
-FROM node:20-alpine AS node-builder
-WORKDIR /app/WEB/ClientApp
-COPY WEB/ClientApp/package*.json ./
-RUN npm install --force
+# syntax=docker/dockerfile:1
 
-# Stage 2: Build .NET backend
-FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS dotnet-builder
-WORKDIR /app
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+# Copy solution and project files
 COPY . .
-COPY --from=node-builder /app/WEB/ClientApp/node_modules ./WEB/ClientApp/node_modules
+WORKDIR /src/WEB
 
-# Restore and build the backend
-RUN dotnet restore WEB/WEB.csproj
-RUN dotnet publish -c Release -o /app/publish WEB/WEB.csproj
+# Restore packages
+RUN dotnet restore WEB.csproj
 
-# Stage 3: Runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine
+# Build and publish
+RUN dotnet publish WEB.csproj -c Release -o /app/publish
 
-# Install required dependencies
-RUN apk add --no-cache \
-    curl \
-    ca-certificates
-
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
-# Copy published app from build stage
-COPY --from=dotnet-builder /app/publish .
+# Install curl if you want to health-check inside the container
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:80/health || exit 1
+COPY --from=build /app/publish .
 
-# Expose ports
-EXPOSE 80 443
-
-# Set environment variables
 ENV ASPNETCORE_URLS=http://+:80
 ENV ASPNETCORE_ENVIRONMENT=Production
+ENV ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
 
-# Run the application
+EXPOSE 80
+
 ENTRYPOINT ["dotnet", "Monic.Web.dll"]

@@ -39,6 +39,7 @@ services:
       # ASP.NET Core Settings
       ASPNETCORE_ENVIRONMENT: "Production"
       ASPNETCORE_URLS: "http://+:80"
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
       
       # Application Settings
       Settings__RootUrl: "https://${DOMAIN:-localhost}/"
