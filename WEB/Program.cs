@@ -10,7 +10,6 @@ using Monic.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure forwarded headers for reverse proxy / Coolify deployment
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders =
@@ -19,18 +18,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
         ForwardedHeaders.XForwardedHost;
 });
 
-// Add health check endpoint for Docker/Coolify
 builder.Services.AddHealthChecks();
-
-/**********************************************
- * Azure infrastructure is optional.
- *
- * For Coolify/self-hosted deployments, set:
- * Settings__UseAzureInfrastructure=false
- *
- * When enabled, the application expects Azure Key Vault,
- * Azure Blob Storage and Azure certificates to be configured.
- **********************************************/
 
 var useAzureInfrastructure =
     builder.Configuration.GetValue<bool>(
@@ -57,10 +45,10 @@ appSettings.Email ??=
     new Monic.Web.Settings.EmailSettings();
 
 appSettings.Azure ??=
-    new AppSettings.AzureSettings();
+    new AzureSettings();
 
 appSettings.Azure.DataProtection ??=
-    new AppSettings.AzureSettings.DataProtectionSettings();
+    new AzureSettings.DataProtectionSettings();
 
 appSettings.Azure.Documents ??=
     new Monic.Web.Settings.DocumentsSettings();
@@ -103,8 +91,6 @@ if (useAzureInfrastructure)
 }
 else
 {
-    // Coolify/self-hosted deployment:
-    // persist Data Protection keys to a mounted persistent volume.
     var dataProtectionPath = Path.Combine(
         builder.Environment.ContentRootPath,
         "data",
@@ -213,7 +199,6 @@ builder.Services.AddIdentity<User, Role>(options =>
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-// Configure identity options
 builder.Services.Configure<IdentityOptions>(options =>
 {
     options.User.RequireUniqueEmail = true;
@@ -278,10 +263,8 @@ using (var rm =
     await initializer.InitializeAsync();
 }
 
-// Use forwarded headers from reverse proxy
 app.UseForwardedHeaders();
 
-// Allows rewinding of request body for error logging
 app.Use(async (context, next) =>
 {
     context.Request.EnableBuffering();
@@ -290,7 +273,6 @@ app.Use(async (context, next) =>
 
 if (!app.Environment.IsDevelopment())
 {
-    // Coolify terminates HTTPS at the reverse proxy.
     app.UseHsts();
 }
 else
@@ -303,9 +285,6 @@ if (builder.Environment.IsDevelopment())
     app.UseCors(policyName);
 }
 
-// Do not redirect HTTP to HTTPS inside the container.
-// Coolify's reverse proxy handles HTTPS externally.
-
 app.UseStaticFiles();
 
 app.UseRouting();
@@ -313,7 +292,6 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Health check endpoint for Docker/Coolify
 app.MapHealthChecks("/health");
 
 app.MapControllers();
