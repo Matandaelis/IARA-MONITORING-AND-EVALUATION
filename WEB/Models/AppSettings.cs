@@ -1,4 +1,5 @@
-﻿using Monic.Web.Settings;
+using Microsoft.Extensions.Configuration;
+using Monic.Web.Settings;
 
 namespace Monic.Web.Models
 {
@@ -10,8 +11,14 @@ namespace Monic.Web.Models
         public string SiteName { get; set; }
         public string CertificatePassword { get; set; }
         public bool UseApplicationInsights { get; set; }
+        public bool UseAzureInfrastructure { get; set; }
+
+        [ConfigurationKeyName("EmailSettings")]
         public EmailSettings Email { get; set; }
+
+        [ConfigurationKeyName("AzureSettings")]
         public AzureSettings Azure { get; set; }
+
         public int AccessTokenExpiryMinutes { get; set; }
         public int RefreshTokenExpiryMinutes { get; set; }
     }
@@ -29,6 +36,5 @@ namespace Monic.Web.Models
             public string BlobUri { get; set; }
             public string KeyIdentifier { get; set; }
         }
-
     }
 }
