@@ -1,3 +1,19 @@
+using System.Net;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using Monic.Web.Models;
+
+namespace Monic.Web.Code
+{
+public static class CertificateHelper
+{
+public static X509Certificate2 GetKeyVaultCertificate(
+string subjectDistinguishedName)
+{
+using var store = new X509Store(
+StoreName.My,
+StoreLocation.CurrentUser);
+
         store.Open(OpenFlags.ReadOnly);
 
         var now = DateTime.UtcNow;
@@ -223,4 +239,6 @@
                 X509ContentType.Pfx,
                 appSettings.CertificatePassword ?? string.Empty));
     }
+}
+
 }
