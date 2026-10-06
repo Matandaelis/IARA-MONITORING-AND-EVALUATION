@@ -1,3 +1,16 @@
+using Monic.Web.Models;
+using static OpenIddict.Abstractions.OpenIddictConstants;
+using Task = System.Threading.Tasks.Task;
+namespace Monic.Web.Code
+{
+public static class OpenIddictExtensions
+{
+public static void ConfigureOpenIddict(
+this WebApplicationBuilder builder,
+AppSettings appSettings)
+{
+builder.Services
+.AddOpenIddict()
             // Register the OpenIddict core services.
             .AddCore(options =>
             {
@@ -141,4 +154,6 @@
             };
         });
     }
+}
+
 }
