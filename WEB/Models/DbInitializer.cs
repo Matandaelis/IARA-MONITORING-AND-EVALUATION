@@ -63,6 +63,7 @@ namespace Monic.Web.Models
         private async System.Threading.Tasks.Task CreateRolesAsync()
         {
             var roles = Enum.GetNames(typeof(Roles));
+
             foreach (var role in roles)
                 if (!await rm.RoleExistsAsync(role)) await rm.CreateAsync(new Role { Name = role });
         }
