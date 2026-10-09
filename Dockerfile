@@ -26,8 +26,8 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Copy project file and restore NuGet packages (layer cached)
-COPY WEB/Web.csproj ./WEB/
-RUN dotnet restore WEB/Web.csproj
+COPY WEB/WEB.csproj ./WEB/
+RUN dotnet restore WEB/WEB.csproj
 
 # Copy backend source code
 COPY WEB/ ./WEB/
@@ -38,7 +38,7 @@ COPY --from=client-build /app/dist/ ./WEB/wwwroot/
 WORKDIR /src/WEB
 
 # Publish application in Release mode (skipping redundant npm rebuild)
-RUN dotnet publish Web.csproj \
+RUN dotnet publish WEB.csproj \
     -c Release \
     -o /app/publish \
     /p:PublishRunWebpack=false \

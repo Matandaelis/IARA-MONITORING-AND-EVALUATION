@@ -10,6 +10,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UserSecretsId>8478bfcd-a2e0-4e8e-8c09-579e68f0988d</UserSecretsId>
 		<RootNamespace>Monic.Web</RootNamespace>
+		<AssemblyName>Monic.Web</AssemblyName>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -92,7 +93,7 @@
 		</Content>
 	</ItemGroup>
 
-	<Target Name="CustomCopyAppSettings" AfterTargets="Publish">
+	<Target Name="CustomCopyAppSettings" AfterTargets="Publish" Condition=" '$(ClientName)' != '' And Exists('appsettings.$(ClientName).json') ">
 		<Message Text="Copying appsettings file for $(ClientName) - CustomCopyAppSettings" Importance="high" />
 		<Copy SourceFiles="appsettings.$(ClientName).json" DestinationFiles="$(PublishDir)appsettings.json" OverwriteReadOnlyFiles="true" SkipUnchangedFiles="false" />
 	</Target>
