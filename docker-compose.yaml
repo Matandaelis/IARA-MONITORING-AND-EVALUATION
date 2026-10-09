@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  # =======================================================
+  # SQL Server Database (Linux / Docker)
+  # =======================================================
+  monic-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: monic-db
+    restart: unless-stopped
+
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "${DB_PASSWORD:-@Monic123Secure!}"
+      MSSQL_PID: "${MSSQL_PID:-Developer}"
+
+    volumes:
+      - monic-db-data:/var/opt/mssql
+
+    # Expose SQL Server port if external or host access is required (e.g. SSMS, local tools)
+    ports:
+      - "${DB_PORT:-1433}:1433"
+
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "${DB_PASSWORD:-@Monic123Secure!}" -C -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    networks:
+      - monic-network
+
+  # =======================================================
+  # MONIC Application (ASP.NET Core 10 + Angular)
+  # =======================================================
+  monic-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: monic-app
+    restart: unless-stopped
+
+    depends_on:
+      monic-db:
+        condition: service_healthy
+
+    # Expose app port to host machine (default: 8080 on local machine, 80 in production)
+    ports:
+      - "${APP_PORT:-8080}:80"
+
+    environment:
+      # Database Connection
+      ConnectionStrings__DefaultConnection: "Server=${DB_HOST:-monic-db},${DB_PORT_INTERNAL:-1433};Database=${DB_NAME:-MONIC};User Id=${DB_USER:-sa};Password=${DB_PASSWORD:-@Monic123Secure!};TrustServerCertificate=true;Encrypt=false;"
+
+      # ASP.NET Core Runtime Settings
+      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Production}"
+      ASPNETCORE_URLS: "http://+:80"
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+
+      # Application Identity & URLs
+      Settings__RootUrl: "${ROOT_URL:-http://localhost:8080/}"
+      Settings__SiteName: "${SITE_NAME:-MONIC}"
+      Settings__UseAzureInfrastructure: "${USE_AZURE_INFRASTRUCTURE:-false}"
+      Settings__AccessTokenExpiryMinutes: "${ACCESS_TOKEN_EXPIRY:-10}"
+      Settings__RefreshTokenExpiryMinutes: "${REFRESH_TOKEN_EXPIRY:-10880}"
+
+      # Local Certificate Password (if using custom certificate.pfx)
+      Settings__CertificatePassword: "${CERTIFICATE_PASSWORD:-}"
+
+      # Email Configuration (Optional)
+      Settings__EmailSettings__SendEmails: "${SEND_EMAILS:-false}"
+      Settings__EmailSettings__SenderName: "${EMAIL_SENDER_NAME:-MONIC}"
+      Settings__EmailSettings__Sender: "${EMAIL_SENDER:-noreply@monic.local}"
+      Settings__EmailSettings__SMTP: "${SMTP_SERVER:-localhost}"
+      Settings__EmailSettings__SMTPPort: "${SMTP_PORT:-25}"
+      Settings__EmailSettings__UserName: "${SMTP_USERNAME:-}"
+      Settings__EmailSettings__Password: "${SMTP_PASSWORD:-}"
+      Settings__EmailSettings__SSL: "${SMTP_SSL:-false}"
+      Settings__EmailSettings__EmailToErrors: "${ERROR_EMAIL:-admin@monic.local}"
+      Settings__EmailSettings__SubstitutionEmailAddress: "${SUBSTITUTION_EMAIL:-admin@monic.local}"
+
+      # Application Insights
+      Settings__UseApplicationInsights: "${USE_APP_INSIGHTS:-false}"
+
+      # Logging
+      Logging__LogLevel__Default: "${LOG_LEVEL:-Information}"
+      Logging__LogLevel__Microsoft: "Warning"
+
+    volumes:
+      # Persistent application state (OpenIddict certs, data protection keys)
+      - monic-app-data:/app/data
+      # Application logs
+      - monic-app-logs:/app/logs
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    networks:
+      - monic-network
+
+# =======================================================
+# Storage Volumes
+# =======================================================
+volumes:
+  monic-db-data:
+    driver: local
+  monic-app-data:
+    driver: local
+  monic-app-logs:
+    driver: local
+
+# =======================================================
+# Network Configuration
+# =======================================================
+networks:
+  monic-network:
+    driver: bridge

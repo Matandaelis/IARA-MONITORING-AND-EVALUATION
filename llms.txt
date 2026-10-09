@@ -1,0 +1,43 @@
+# MONIC
+
+> MONIC is an open-source Monitoring & Evaluation (M&E) platform for NGOs, governments, and impact-driven organizations. Built with ASP.NET Core 10, Entity Framework Core, SQL Server (64 tables), OpenIddict OAuth 2.0, and an Angular 19 SPA frontend.
+
+## Overview & Architecture
+- [Architecture & Tech Stack](README.md#%EF%B8%8F-whats-under-the-hood): Full architectural overview of the Angular SPA, ASP.NET Core 10 Web API, and SQL Server backend.
+- [Multi-Agent Architecture](AGENTS.md): Definitions for autonomous AI agents operating on MONIC across M&E domain modeling, data governance, and DevOps.
+- [Agent Skills Catalog](SKILLS.md): Operational skills including indicator calculation engines, Theories of Change, questionnaires, and migrations.
+- [Universal Docker Deployment](DOCKER_DEPLOYMENT.md): Production container deployment across Coolify, Render, Linux VPS, AWS, and local Docker.
+- [Full LLM Knowledge Base](llms-full.txt): Comprehensive technical documentation for LLMs including schema models, controllers, and formula calculation engine.
+
+## Core Domain Models (C# / Entity Framework Core)
+- [Indicator](WEB/Models/Indicator.cs): Key performance metrics (Collected, Calculated, Group) with temporal frequencies and aggregation rules.
+- [Calculation Engine](WEB/Code/Calculation.cs): Shunting-yard Reverse Polish Notation token evaluator for calculated indicators and entity roll-ups.
+- [TheoryOfChange](WEB/Models/TheoryOfChange.cs): Programmatic logic models (Inputs, Activities, Outputs, Outcomes, Impacts) with causal relationships.
+- [LogFrame](WEB/Models/LogFrame.cs): Logical Framework matrix linking goals, outcomes, outputs, and activities to indicators.
+- [Questionnaire](WEB/Models/Questionnaire.cs): Digital survey definition with questions, option lists, and public sharing codes.
+- [SkipLogicOption](WEB/Models/SkipLogicOption.cs): Conditional branching logic for questionnaire question visibility.
+- [DataReview](WEB/Models/DataReview.cs): 3-tier data governance pipeline (Submit -> Verify -> Approve / Reject).
+- [Domain Enums](WEB/Models/Enums.cs): Comprehensive enumeration catalog including ComponentType, DataType, DateType, and ReviewStatus.
+
+## Backend APIs & Controllers
+- [BaseApiController](WEB/Controllers/BaseApiController.cs): Foundation controller handling DbContextFactory, UserManager, and error translation.
+- [SetupController](WEB/Controllers/SetupController.cs): First-time system onboarding, initial admin account registration, and Likert scale seeding.
+- [SurveysController](WEB/Controllers/SurveysController.cs): Public and authenticated questionnaire response submission and validation.
+- [DataReviewsController](WEB/Controllers/DataReviewsController.cs): Data verification and approval workflow endpoints.
+- [OpenIddict Authentication](WEB/Code/OpenIddict.cs): OAuth 2.0 server setup with PKCE, password flow, and refresh token rotation.
+- [Program.cs](WEB/Program.cs): Web application entrypoint, CORS policies, cloud PORT binding, and health check mapping.
+
+## Frontend (Angular 19 SPA)
+- [Client Routing](WEB/ClientApp/src/app/app.routes.ts): Route definitions for Dashboard, Forms, Questionnaires, LogFrames, and Admin.
+- [Environment Configuration](WEB/ClientApp/src/environments/environment.ts): API base URLs and runtime application settings.
+- [Package Configuration](WEB/ClientApp/package.json): NPM dependencies including Angular 19, ECharts, D3, Google Maps, and Quill editor.
+
+## Database & Migrations
+- [ApplicationDBContext](WEB/Models/ApplicationDBContext.cs): EF Core DbContext with design-time factory and filtered unique index registration.
+- [Migrations Directory](WEB/Migrations/): 29 EF Core migrations defining the 64-table relational database schema.
+- [Stored Procedures](WEB/Code/SQL/StoredProcedures.sql): High-performance SQL scripts for data aggregation and calculation roll-ups.
+
+## DevOps & Configuration
+- [Dockerfile](Dockerfile): High-speed multi-stage Docker build utilizing node:20-alpine and dotnet:10.0 with layer caching.
+- [docker-compose.yml](docker-compose.yml): Multi-container stack (monic-app + monic-db SQL Server 2022) with automated health checks.
+- [.env.example](.env.example): Environment variable definitions for local, VPS, Coolify, and cloud deployments.

@@ -1,490 +1,306 @@
-# MONIC
-### Open-source monitoring & evaluation system for impact-driven organisations
+# 🌟 MONIC: Monitoring & Evaluation Made Easy!
 
 <div align="center">
-  <img src="https://github.com/capesean/MONIC/assets/642609/3d1f66ad-efb9-461b-b941-a1a21de7d04a" width="900" alt="MONIC dashboard preview" />
-  
-  **Monitoring • Evaluation • Impact Assessment • Project Management**
-  
-  <a href="https://www.youtube.com/watch?v=A5eus7Yhv1k">
-    <img src="https://img.shields.io/badge/Watch-Demo%20Video-red?style=for-the-badge&logo=youtube" alt="Watch demo video" />
-  </a>
-  <a href="https://www.monic.tech">
-    <img src="https://img.shields.io/badge/Visit-monic.tech-4CAF50?style=for-the-badge" alt="Visit monic.tech" />
-  </a>
-  <a href="https://github.com/Matandaelis/MONIC/blob/master/LICENSE.txt">
-    <img src="https://img.shields.io/badge/License-AGPL%20v3-blue?style=for-the-badge" alt="License: AGPL v3" />
-  </a>
+
+  <img src="https://github.com/capesean/MONIC/assets/642609/3d1f66ad-efb9-461b-b941-a1a21de7d04a" width="900" alt="MONIC Dashboard Preview" style="border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);" />
+
+  ### 🎯 The open-source impact tracker for changemakers, NGOs, and non-profits
+  **Collect Data • Track Indicators • Measure Real Impact • No Headaches**
+
+  [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg?style=for-the-badge)](LICENSE.txt)
+  [![Docker Ready](https://img.shields.io/badge/Docker-Ready%20to%20Ship-2496ED?style=for-the-badge&logo=docker&logoColor=white)](docker-compose.yml)
+  [![Watch Demo](https://img.shields.io/badge/YouTube-Watch%20Demo-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=A5eus7Yhv1k)
+  [![Website](https://img.shields.io/badge/Official%20Site-monic.tech-4CAF50?style=for-the-badge)](https://www.monic.tech)
+
 </div>
 
 ---
 
-## 🎯 What is MONIC?
+## 👋 Hey there! Welcome to MONIC!
 
-MONIC is a **comprehensive, open-source Monitoring & Evaluation (M&E) system** designed for organizations focused on impact assessment and evidence-based decision making. Whether you're an NGO, government agency, or development organization, MONIC provides a complete platform for tracking program performance, managing indicators, and evaluating organizational impact.
+Are you trying to collect survey data, monitor field projects, or prove your organization's social impact? **MONIC** is built for you!
 
-### Core Capabilities
-
-✅ **Monitoring & Data Collection** - Design questionnaires, collect real-time data from field teams  
-✅ **Indicator Management** - Define, track, and analyze key performance indicators  
-✅ **Theories of Change** - Link your logic models with frameworks and indicators  
-✅ **Dashboards & Analytics** - Visualize data with charts, maps, and custom widgets  
-✅ **Project Management** - Track activities, timelines, and deliverables  
-✅ **Document Management** - Store and organize project documents and knowledge  
-✅ **Advanced Analytics** - Generate reports, AI-powered summaries, and insights  
-✅ **Flexible Permissions** - Granular user access control for secure data entry  
+You don't need to be a software engineer or a database guru to get this up and running. Follow our visual guides below, copy and paste a couple of commands, and you'll have your very own MONIC portal live in minutes! 🚀
 
 ---
 
-## 🚀 Quick Start (Docker)
+## 🗺️ The 60-Second Roadmap
 
-### Prerequisites
-- Docker & Docker Compose installed
-- .NET 10 runtime support
-- 2GB+ RAM
-- 5GB+ disk space
+Here is literally all you need to do to get MONIC running on your computer or server:
 
-### Deploy in 5 Minutes
+```mermaid
+flowchart LR
+    A["📥 1. Grab Code<br/><b>git clone</b>"] --> B["✏️ 2. Setup Settings<br/><b>cp .env.example .env</b>"]
+    B --> C["🐳 3. Start Docker<br/><b>docker compose up -d</b>"]
+    C --> D["🎉 4. Open Browser<br/><b>http://localhost:8080</b>"]
 
+    style A fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
+    style B fill:#fff9c4,stroke:#fbc02d,stroke-width:2px;
+    style C fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
+    style D fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
+```
+
+---
+
+## 🧭 Choose Your Adventure: Where Are You Deploying?
+
+Pick the option that matches your setup:
+
+| Platform | Difficulty | Best For... | Quick Link |
+| :--- | :---: | :--- | :--- |
+| 💻 **Local PC / Laptop** | 🟢 *Super Easy* | Trying out MONIC, testing, or offline work | [👉 Jump to Local Guide](#-1-run-on-your-own-pc-or-laptop-easiest) |
+| 🚀 **Coolify** | 🟢 *Click & Go* | Self-hosted production with automatic SSL | [👉 Jump to Coolify Guide](#-2-deploy-to-coolify-1-click-cloud) |
+| ☁️ **Render** | 🟡 *Simple* | Free/cheap managed cloud web hosting | [👉 Jump to Render Guide](#-3-deploy-to-render) |
+| 🐧 **Linux Server (VPS)** | 🟡 *Standard* | DigitalOcean, Hetzner, Linode, Ubuntu | [👉 Jump to Linux VPS Guide](#-4-deploy-on-a-linux-server--vps) |
+| 🟧 **Amazon AWS** | 🔴 *Advanced* | High-scale enterprise deployments | [👉 Jump to AWS Guide](#-5-deploy-to-amazon-web-services-aws) |
+
+---
+
+## 💻 1. Run on Your Own PC or Laptop (Easiest!)
+
+> **💡 What is Docker?**  
+> Think of Docker as a "magic lunchbox". Inside the lunchbox is everything MONIC needs to run (the web app, the database, background workers). You don't have to install databases, compilers, or runtime tools on your PC — Docker runs it all inside an isolated container!
+
+### Prerequisites:
+* Download and install **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** (Windows, Mac, or Linux).
+* Make sure Docker Desktop is running (you should see the little whale icon in your system tray).
+
+### Step 1: Open your Terminal / PowerShell
+Open **PowerShell** (Windows) or **Terminal** (Mac/Linux), and download the repository:
 ```bash
-# Clone repository
 git clone https://github.com/Matandaelis/MONIC.git
 cd MONIC
+```
 
-# Configure environment
+### Step 2: Copy your settings file
+```bash
+# On Windows (PowerShell):
+Copy-Item .env.example .env
+
+# On Mac / Linux:
 cp .env.example .env
-nano .env  # Edit with your values
-
-# Build and start
-docker compose up --build -d
-
-# Verify
-docker compose ps
-curl http://localhost/health
-
-# Access the application
-# Browser: http://localhost
-# Follow the setup wizard to create your first admin account
 ```
+*(The default settings in `.env` are already pre-configured to work straight out of the box!)*
 
-### Verify Deployment
-
-```bash
-# Check container status
-docker compose ps
-
-# View logs
-docker compose logs -f monic-app
-
-# Health check
-curl -v http://localhost/health
-```
-
----
-
-## 🏗️ Architecture & Technology Stack
-
-```
-╔══════════════════════════════════════════════════════════════╗
-║              MONIC Application Architecture                 ║
-╠══════════════════════════════════════════════════════════════╣
-║  🖥️ FRONTEND (Angular 19)                                   ║
-║     ├─ Interactive dashboard with real-time updates         ║
-║     ├─ Charts & maps (D3, ECharts, Google Maps)             ║
-║     ├─ Responsive UI (desktop, tablet, mobile)              ║
-║     └─ Form builder for questionnaires                      ║
-╠══════════════════════════════════════════════════════════════╣
-║  ⚙️ BACKEND (ASP.NET Core 10)                              ║
-║     ├─ REST API endpoints                                   ║
-║     ├─ OpenIddict authentication & OAuth 2.0                ║
-║     ├─ Entity Framework Core ORM                            ║
-║     ├─ Business logic for M&E workflows                     ║
-║     └─ PDF/Excel/CSV export capabilities                    ║
-╠══════════════════════════════════════════════════════════════╣
-║  💾 DATABASE (SQL Server 2022)                             ║
-║     ├─ Normalized relational schema                         ║
-║     ├─ Full ACID compliance                                 ║
-║     ├─ Schema migrations with EF Core                       ║
-║     └─ Data persistence & backup support                    ║
-╚══════════════════════════════════════════════════════════════╝
-```
-
-### Technology Stack
-
-| Layer | Technology | Version |
-|-------|-----------|---------|
-| **Frontend** | Angular | 19 |
-| **Backend** | ASP.NET Core | 10.0 |
-| **Database** | SQL Server | 2022 |
-| **Authentication** | OpenIddict | 7.2.0 |
-| **ORM** | Entity Framework Core | 10.0 |
-| **Charting** | ECharts, D3 | Latest |
-| **Maps** | Google Maps API | v3 |
-
----
-
-## 📊 Key Features
-
-### 1. **Monitoring & Data Collection**
-- Design custom questionnaires with branching logic
-- Mobile-friendly data collection forms
-- Real-time data validation and constraints
-- Support for multiple data types (text, numeric, date, geolocation, media)
-- Offline data collection with sync capability
-
-### 2. **Indicator Management**
-- Define indicators with units and targets
-- Create calculated indicators (formulas for custom metrics)
-- Track indicator values over time
-- Compare actual vs. planned performance
-- Disaggregate data by dimensions (geography, demographics, time)
-
-### 3. **Theories of Change & Logical Frameworks**
-- Map program logic from inputs → activities → outputs → outcomes → impact
-- Link indicators to TOC/log-frame elements
-- Track assumption validation
-- Visualize causal pathways
-
-### 4. **Dashboards & Visualization**
-- Custom dashboard widgets (charts, maps, tables, gauges)
-- Real-time data updates
-- Export charts to PowerPoint or PDF
-- Geographic data visualization
-- Completion rate tracking
-
-### 5. **Project Management**
-- Gantt charts for activity timelines
-- Milestone tracking and reporting
-- Resource allocation and budgeting
-- Activity-level indicators
-- Progress monitoring
-
-### 6. **Document Management**
-- Store and organize project documents
-- Version control for reports and policies
-- Knowledge repository
-- Team collaboration spaces
-
-### 7. **Analytics & Reporting**
-- Pre-built and custom reports
-- AI-powered summaries (ChatGPT integration optional)
-- Data export (CSV, Excel, PDF)
-- Statistical analysis and trend detection
-- Performance summaries and scorecards
-
-### 8. **User Management & Security**
-- Role-based access control (RBAC)
-- Granular permissions per indicator/entity
-- Audit logging of data changes
-- Two-factor authentication support
-- Secure password policies
-
----
-
-## ☁️ Deployment Options
-
-### 1. **Local Development**
+### Step 3: Start MONIC! 🚀
+Run this single command:
 ```bash
 docker compose up -d
-# Direct access at http://localhost
+```
+*(Docker will download the components and start MONIC in the background. Grab a quick coffee ☕ — the first time takes about 2 to 3 minutes!)*
+
+### Step 4: Open your browser
+Open your browser and navigate to:
+👉 **[http://localhost:8080](http://localhost:8080)**
+
+```
+┌────────────────────────────────────────────────────────┐
+│  🎉 HOORAY! Welcome to the MONIC Initial Setup Wizard   │
+│                                                        │
+│  1. Enter your First Name & Last Name                  │
+│  2. Enter your Email (this will be your username)      │
+│  3. Pick a secure Password                             │
+│  4. Click "Submit"                                     │
+│                                                        │
+│  ...and BOOM! Your administrator account is ready! 🎯  │
+└────────────────────────────────────────────────────────┘
 ```
 
-### 2. **Docker on Server**
+---
+
+## 🚀 2. Deploy to Coolify (1-Click Cloud)
+
+[Coolify](https://coolify.io/) is an open-source, self-hosted platform (like Heroku or Netlify) that manages Docker apps and gives you free automatic SSL certificates (HTTPS).
+
+```mermaid
+graph TD
+    Coolify["🚀 Coolify Dashboard"] --> Git["🔗 Connect GitHub Repo"]
+    Git --> Compose["📄 Select docker-compose.yml"]
+    Compose --> Domain["🌐 Assign Domain (e.g. monic.ngo.org)"]
+    Domain --> Live["✅ Live with Automatic HTTPS!"]
+
+    style Coolify fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px;
+    style Live fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+```
+
+### Step-by-Step in Coolify:
+1. Log in to your Coolify dashboard.
+2. Click **"+ New Resource"** ➔ **"Docker Compose"**.
+3. Select your Git repository: `Matandaelis/MONIC`.
+4. Leave the Compose file set to `./docker-compose.yml`.
+5. Under **Environment Variables**, paste these values:
+   ```env
+   DB_PASSWORD=YourStrongDatabasePassword123!
+   APP_PORT=80
+   ROOT_URL=https://monic.yourdomain.com/
+   SITE_NAME=MONIC
+   ASPNETCORE_ENVIRONMENT=Production
+   ```
+6. In the Domain field, enter your public domain (e.g., `https://monic.yourdomain.com`).
+7. Click **Deploy**! Coolify will build the container, route traffic to port `80`, and configure your SSL certificate automatically.
+
+---
+
+## ☁️ 3. Deploy to Render
+
+Render is a popular managed cloud hosting provider. You can deploy MONIC directly using its built-in `Dockerfile`:
+
+1. Sign up or log in at **[render.com](https://render.com)**.
+2. Click **New +** ➔ **Web Service**.
+3. Connect your MONIC GitHub repository.
+4. Set the **Runtime** to **Docker** (Render will automatically detect the root `Dockerfile`).
+5. Add your environment variables:
+   * `ConnectionStrings__DefaultConnection`: Your connection string to your managed SQL Server database.
+   * `Settings__RootUrl`: `https://your-service-name.onrender.com/`
+   * `Settings__SiteName`: `MONIC`
+6. Under **Health Check Path**, enter: `/health`.
+7. Click **Create Web Service**. Render assigns the web port automatically and launches the site!
+
+---
+
+## 🐧 4. Deploy on a Linux Server / VPS
+
+If you rented a server on DigitalOcean, Hetzner, Linode, or AWS EC2 running Ubuntu or Debian:
+
 ```bash
-# Full Docker stack with persistent volumes
-docker compose -f docker-compose.yml up -d
+# 1. Install Docker (copy and paste this):
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+
+# 2. Clone the code
+git clone https://github.com/Matandaelis/MONIC.git /opt/monic
+cd /opt/monic
+
+# 3. Create your settings file
+cp .env.example .env
+
+# 4. Edit your settings (change your database password and port)
+nano .env
+
+# 5. Launch everything!
+docker compose up -d --build
 ```
+Your server is now live at `http://YOUR-SERVER-IP:8080` (or port 80 if you set `APP_PORT=80`).
 
-### 3. **Coolify (Recommended for Production)**
+---
 
-<div align="center">
-  <img src="https://github.com/capesean/MONIC/assets/642609/f389ee36-f5fd-4587-8d26-f9f9b3852c8b" width="900" alt="MONIC setup screen" />
-</div>
+## 🟧 5. Deploy to Amazon Web Services (AWS)
 
-Coolify is a self-hosted alternative to Heroku/Vercel. Deploy MONIC in minutes:
+For teams using AWS:
 
-#### Step 1: Create Application in Coolify
-```
-Applications → Create New → Docker Compose
-```
+* **AWS App Runner**:
+  Build the container with `docker build -t monic .`, push it to **Amazon ECR**, and connect App Runner. App Runner manages scaling and load balancing automatically.
+* **AWS ECS (Elastic Container Service)**:
+  Run MONIC as a Fargate task definition, connecting to **AWS RDS for SQL Server**, and place it behind an Application Load Balancer (ALB) pointing to `/health`.
 
-#### Step 2: Configure Repository
-```
-Source: GitHub
-Repository: Matandaelis/MONIC
-Branch: master
-```
+---
 
-#### Step 3: Build Settings
-```
-Dockerfile: ./Dockerfile
-Docker Compose: ./docker-compose.yml
-Base Directory: /
-```
+## 📖 Jargon Buster: Words Explained in Plain English
 
-#### Step 4: Environment Variables
-Copy from [COOLIFY_PRODUCTION_CONFIG.md](COOLIFY_PRODUCTION_CONFIG.md):
+| Term | What it actually means |
+| :--- | :--- |
+| **Container / Docker** | A self-contained virtual box that bundles software so it runs identically on any computer. |
+| **Port (`:8080` or `:80`)** | Like an apartment door number on your computer. Your computer is the building; port 8080 is the door where MONIC lives! |
+| **`.env` File** | A simple text file where you keep your private settings (passwords, domain name, email settings). |
+| **SQL Server** | The database engine where all your survey responses, projects, and indicators are safely stored. |
+| **Reverse Proxy** | A traffic guard (like Nginx, Caddy, or Traefik) that takes incoming website visitors and gives them a secure lock icon (HTTPS/SSL). |
 
-```env
-# Required: Database
-ConnectionStrings__DefaultConnection=Server=monic-db,1433;Database=MONIC;User Id=sa;Password=YourSecurePassword123!;TrustServerCertificate=true;Encrypt=false;
+---
 
-# Required: Application
-ASPNETCORE_ENVIRONMENT=Production
-ASPNETCORE_URLS=http://+:80
-ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+## 🛟 Oops! Common Troubles & Quick Fixes
 
-# Required: Site
-Settings__RootUrl=https://monic.example.com/
-Settings__SiteName=MONIC
+<details>
+<summary><b>❌ Browser says: "This site can’t be reached" or "Connection Refused"</b></summary>
 
-# Optional: Email
-Settings__EmailSettings__SendEmails=false
-Settings__EmailSettings__SenderName=MONIC Alerts
-Settings__EmailSettings__SMTP=smtp.gmail.com
-Settings__EmailSettings__SMTPPort=587
-```
+* **Fix 1:** Check if Docker is running! Open Docker Desktop and verify the `monic-app` and `monic-db` containers are green.
+* **Fix 2:** Wait 30-40 seconds on your first run. The database initializes tables and runs migrations on first boot.
+* **Fix 3:** Check the container logs by running:
+  ```bash
+  docker compose logs -f monic-app
+  ```
+</details>
 
-#### Step 5: Deploy
-```
-Click Deploy
-Wait 5-10 minutes for build and startup
-Monitor in Logs tab
-```
+<details>
+<summary><b>⚠️ Browser says: "Your connection is not private" (SSL Warning)</b></summary>
 
-#### Step 6: Verify
-```bash
-# Check health
-curl https://your-domain/health
+* When testing locally on `https://`, browsers warn you that the local development certificate is self-signed.
+* **Fix:** Click **Advanced** ➔ **Proceed to localhost (unsafe)**. This is completely normal and safe for local development.
+</details>
 
-# Access application
-# Browser: https://your-domain
+<details>
+<summary><b>🔒 "Database password does not meet complexity requirements"</b></summary>
+
+* SQL Server requires strong passwords by default.
+* Make sure `DB_PASSWORD` in your `.env` contains:
+  * At least 8 characters
+  * At least 1 uppercase letter (`A-Z`)
+  * At least 1 lowercase letter (`a-z`)
+  * At least 1 number (`0-9`)
+  * At least 1 special character (`!@#$%^&*`)
+  * *Example:* `@Monic2026Secure!`
+</details>
+
+<details>
+<summary><b>🚪 Port 8080 is already used by another app on my computer</b></summary>
+
+* Simply open your `.env` file and change:
+  ```env
+  APP_PORT=9000
+  ```
+* Re-run `docker compose up -d`, and access MONIC at `http://localhost:9000`!
+</details>
+
+---
+
+## 🏛️ What's Under the Hood?
+
+For the tech-curious, here is the architecture powering MONIC:
+
+```mermaid
+graph TD
+    Client["📱 Web & Mobile Browsers<br/>(Users / Field Teams)"]
+    
+    subgraph AppContainer ["🐳 monic-app Container"]
+        Frontend["🖥️ Angular 19 Client SPA<br/>(Charts, Maps, Dynamic Forms)"]
+        Backend["⚙️ ASP.NET Core 10 Web API<br/>(OpenIddict, Export Engines, RBAC)"]
+        Frontend <--> Backend
+    end
+    
+    subgraph DBContainer ["💾 monic-db Container"]
+        SQL["SQL Server 2022 / 2025<br/>(64 Relational Tables, ACID Compliance)"]
+    end
+
+    Client <--> Frontend
+    Backend <--> SQL
+
+    style AppContainer fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
+    style DBContainer fill:#fbe9e7,stroke:#d84315,stroke-width:2px;
 ```
 
 ---
 
-## 🔐 Production Configuration
+## ✨ Features at a Glance
 
-### Database Password Requirements
-
-SQL Server requires strong passwords:
-- ✅ Minimum 8 characters
-- ✅ 1 uppercase letter (A-Z)
-- ✅ 1 lowercase letter (a-z)
-- ✅ 1 number (0-9)
-- ✅ 1 special character (!@#$%^&*)
-
-**Valid Examples:**
-- `MyMonic@2024!`
-- `SecurePass123$`
-- `P@ssw0rd!MONIC`
-
-### Essential Environment Variables
-
-| Variable | Required | Example | Notes |
-|----------|----------|---------|-------|
-| `ConnectionStrings__DefaultConnection` | ✅ | `Server=monic-db,...` | Database connection |
-| `ASPNETCORE_ENVIRONMENT` | ✅ | `Production` | Enable optimizations |
-| `ASPNETCORE_FORWARDEDHEADERS_ENABLED` | ✅ | `true` | Reverse proxy support |
-| `Settings__RootUrl` | ✅ | `https://monic.example.com/` | Public domain |
-| `Settings__SiteName` | ✅ | `MONIC` | Display name |
-| `SEND_EMAILS` | ❌ | `false` | Email notifications |
-
-**See [COOLIFY_PRODUCTION_CONFIG.md](COOLIFY_PRODUCTION_CONFIG.md) for complete production configuration.**
+* 📋 **Dynamic Questionnaire Builder**: Create complex surveys with skip logic, geolocation, and media.
+* 📈 **Indicator & Metric Tracking**: Monitor quantitative & qualitative indicators over quarters and years.
+* 🌿 **Theories of Change (ToC)**: Graphically map outputs, outcomes, activities, and assumptions.
+* 📊 **Interactive Visual Dashboards**: Built with ECharts & D3 for presentation-ready charts and reports.
+* 📄 **Instant Document Exports**: Generate Excel, CSV, and PDF reports in a single click.
+* 👥 **Role-Based Access Control**: Assign granular permissions for administrators, field collectors, and viewers.
 
 ---
 
-## 🔍 Troubleshooting
+## 🤝 Need Help or Want to Contribute?
 
-### Health Check Failed
-```bash
-# Wait for startup (40+ seconds)
-docker compose logs -f monic-app
-
-# Verify endpoint
-curl -v http://localhost/health
-```
-
-### Database Connection Failed
-```bash
-# Check database status
-docker compose ps monic-db
-
-# Verify password meets requirements
-# Must have: 8+ chars, uppercase, lowercase, number, special char
-```
-
-### Application Won't Start
-```bash
-# View full logs
-docker compose logs --tail=100 monic-app
-
-# Common issues:
-# 1. Invalid connection string
-# 2. .NET 10 runtime not available
-# 3. Database not ready
-```
-
-### Email Not Sending
-```bash
-# Check email config
-SEND_EMAILS=true
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-app-specific-password
-SMTP_SSL=true
-```
-
----
-
-## 📚 Documentation
-
-| Document | Purpose |
-|----------|---------|
-| [DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md) | Complete Docker setup and management |
-| [COOLIFY_PRODUCTION_CONFIG.md](COOLIFY_PRODUCTION_CONFIG.md) | Production-ready Coolify configuration |
-| [YouTube Demo](https://www.youtube.com/watch?v=A5eus7Yhv1k) | 20-minute feature walkthrough |
-| [monic.tech](https://www.monic.tech) | Official website and documentation |
-
----
-
-## 💾 Backup & Maintenance
-
-### Backup Database
-```bash
-docker compose exec monic-db /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P "YourPassword123!" \
-  -Q "BACKUP DATABASE [MONIC] TO DISK = '/var/opt/mssql/backup/MONIC.bak'"
-```
-
-### Restore Database
-```bash
-docker compose exec monic-db /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P "YourPassword123!" \
-  -Q "RESTORE DATABASE [MONIC] FROM DISK = '/var/opt/mssql/backup/MONIC.bak'"
-```
-
-### Update MONIC
-```bash
-git pull origin master
-docker compose build --no-cache
-docker compose down
-docker compose up -d
-```
-
----
-
-## 🔐 Security Best Practices
-
-### Before Production Deployment
-
-- [ ] Use strong, unique database password
-- [ ] Enable HTTPS/SSL (Coolify reverse proxy)
-- [ ] Configure firewall rules
-- [ ] Set up regular backups
-- [ ] Enable email notifications for alerts
-- [ ] Use secrets management for sensitive values
-- [ ] Keep Docker images updated
-- [ ] Review and restrict user permissions
-- [ ] Enable audit logging
-- [ ] Test disaster recovery procedures
-
-### Ongoing Security
-
-- [ ] Regularly update dependencies
-- [ ] Monitor access logs
-- [ ] Rotate sensitive credentials
-- [ ] Test backup restoration
-- [ ] Review user access quarterly
-- [ ] Keep system patches current
-
----
-
-## 🤝 Contributing
-
-MONIC welcomes contributions from the community. To contribute:
-
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
-
----
-
-## 🆘 Support & Issues
-
-### Getting Help
-
-1. **Check Docs**: Review [DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md) and [COOLIFY_PRODUCTION_CONFIG.md](COOLIFY_PRODUCTION_CONFIG.md)
-2. **Watch Demo**: https://www.youtube.com/watch?v=A5eus7Yhv1k
-3. **Report Issues**: https://github.com/Matandaelis/MONIC/issues
-4. **Visit Website**: https://www.monic.tech
-
-### Reporting Bugs
-
-When reporting issues, please include:
-- **Logs**: `docker compose logs monic-app`
-- **Environment**: OS, Docker version, .NET version
-- **Steps to Reproduce**: Clear, numbered steps
-- **Expected vs Actual**: What should happen vs what happened
-- **Screenshots**: If relevant to UI issues
-
----
-
-## 📄 License
-
-MONIC is licensed under the **GNU Affero General Public License v3.0** (AGPL-3.0).
-
-```
-This means:
-✅ Free to use and modify
-✅ Source code must be made available
-✅ Network use triggers copyleft obligation
-⚠️  Modifications must be shared under same license
-```
-
-See [LICENSE.txt](LICENSE.txt) for full terms.
-
----
-
-## 🎯 Roadmap
-
-- [ ] Enhanced analytics and reporting
-- [ ] Mobile app version (iOS/Android)
-- [ ] Multi-language support (i18n)
-- [ ] Advanced data visualization
-- [ ] API documentation (Swagger/OpenAPI)
-- [ ] Performance optimizations for large datasets
-- [ ] Real-time collaboration features
-- [ ] Integration with external data sources
-
----
-
-## 👥 Acknowledgments
-
-MONIC is developed by a community of impact-driven developers and organizations committed to evidence-based development and evaluation.
-
-Special thanks to:
-- **Global Evaluation Initiative (GEI)** for platform exposure and feedback
-- All contributors and the open-source community
-
----
-
-## 📞 Get in Touch
-
-- **Website**: https://www.monic.tech
-- **GitHub**: https://github.com/Matandaelis/MONIC
-- **YouTube**: https://www.youtube.com/watch?v=A5eus7Yhv1k
-- **Issues**: https://github.com/Matandaelis/MONIC/issues
+* 📺 **[Watch the 20-Minute Video Tour](https://www.youtube.com/watch?v=A5eus7Yhv1k)**
+* 🐛 **[Report a Bug or Ask a Question on GitHub](https://github.com/Matandaelis/MONIC/issues)**
+* 🌐 **[Visit the Official Website (monic.tech)](https://www.monic.tech)**
 
 ---
 
 <div align="center">
-  <b>Made with ❤️ for impact-driven organizations</b>
-  
-  ⭐ If MONIC helps your organization, please consider giving us a star on GitHub!
-  
-  **Last Updated:** October 2026 | **Status:** Active Development | **Stability:** Beta
+
+  **Made with ❤️ for NGOs, researchers, and impact-driven teams around the world.**  
+  ⭐ If MONIC helps your mission, please consider giving us a star on GitHub! ⭐
+
 </div>

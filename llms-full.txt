@@ -1,0 +1,177 @@
+# MONIC: Comprehensive Technical Documentation (llms-full.txt)
+
+> This document contains full technical specifications, domain logic, data models, and API behaviors for Large Language Models (LLMs) and autonomous AI coding assistants operating on the MONIC platform.
+
+---
+
+## 1. System Identity & Mission
+
+MONIC is an open-source Monitoring & Evaluation (M&E) software suite designed for non-governmental organizations (NGOs), multilateral development institutions, government ministries, and social impact enterprises. 
+
+Its primary function is to transform raw qualitative and quantitative inputs into verifiable evidence of programmatic impact across multi-year development programs.
+
+* **Target Framework**: .NET 10 (`net10.0`), C# 13.
+* **Frontend**: Angular 19 SPA (`@angular/core` 19.2.17) built with Vite development tooling and production bundling.
+* **Database**: Microsoft SQL Server 2022 / 2025 (64 relational tables, 29 EF Core migrations).
+* **Identity & Auth**: ASP.NET Core Identity + OpenIddict 7.2 (OAuth 2.0 with PKCE, Password Flow, Refresh Token Flow).
+* **Containerization**: Multi-stage Docker build (`node:20-alpine` ➔ `dotnet/sdk:10.0` ➔ `dotnet/aspnet:10.0`).
+
+---
+
+## 2. Domain Data Architecture
+
+### 2.1 M&E Hierarchy
+
+```
+Theory of Change (ToC)
+ ├── Component (Level: Input | Activity | Output | Outcome | Impact)
+ │    └── Relationship (Directed links from lower to higher level components)
+ └── LogFrame (Logical Framework Matrix)
+      └── LogFrameRow (Type: Activities | Outputs | Outcomes | Goals)
+           ├── LogFrameRowComponent (Links to ToC Component)
+           └── LogFrameRowIndicator (Links to Indicator)
+```
+
+### 2.2 Indicators & Calculation Engine
+
+Indicators represent quantifiable or categorical metrics tracked over time and across organizational entities.
+
+#### Indicator Classification:
+* `Collected`: Primary data entered by field teams or imported via questionnaires.
+* `Calculated`: Mathematical formulas computed dynamically from other indicators using token stacks.
+* `Group`: Categorical container aggregating sub-indicators.
+
+#### Data Types:
+* `Currency` (decimal values with currency formatting)
+* `Number` (integers or continuous floating-point quantities)
+* `Percent` (percentage rates, 0-100%)
+* `OptionList` (discrete selections from a predefined `OptionList`)
+
+#### Temporal Frequencies:
+* `Year`: Annual reporting intervals.
+* `Quarter`: Q1, Q2, Q3, Q4 intervals.
+* `Month`: Jan through Dec monthly tracking.
+
+#### Aggregation Mechanics:
+* `Sum`: Values sum across children and historical intervals.
+* `MostRecent`: The most recent recorded observation is used as the current value.
+
+#### Formula Token Evaluation (`Calculation.cs`):
+Calculated indicators store an ordered list of `Token` records evaluated using a Reverse Polish Notation stack:
+* `Token.TokenType.Indicator`: Pushes the value of a source indicator for the current entity/date.
+* `Token.TokenType.Number`: Pushes a constant numeric scalar (e.g., `100`).
+* `Token.TokenType.Operator`: Pops operands and applies operations: `Add`, `Subtract`, `Multiply`, `Divide`.
+* `Token.TokenType.Parenthesis`: Used in human-readable infix representations (`Open`, `Close`).
+
+---
+
+## 3. Digital Data Collection (Questionnaires & Surveys)
+
+### 3.1 Questionnaire Structure
+A `Questionnaire` consists of ordered `Section` containers containing `Question` items:
+* **Question Types**:
+  * `Text`: Single-line text input.
+  * `OptionList`: Discrete option selector referencing a `QuestionOptionGroup`.
+  * `Multiline`: Long-form narrative input.
+  * `Note`: Non-input informational text block for field staff.
+  * `Document`: File attachment input.
+
+### 3.2 Question Option Groups & Formats
+Options can be rendered in four styles:
+1. `Rating` (star or number bar)
+2. `Dropdown` (standard HTML select)
+3. `RadioList` (single select list)
+4. `Checkboxes` (multiple select list)
+
+### 3.3 Conditional Skip Logic
+`SkipLogicOption` defines rules to dynamically show or hide questions based on prior answers:
+* `Trigger`: Selected option `QuestionOptionId` on question $A$.
+* `Action`: `Hide` or `Show`.
+* `Target`: Target `QuestionId` $B$.
+
+### 3.4 Public Surveys
+Questionnaires can specify a `PublicCode` string, allowing unauthenticated respondents to submit surveys over public web links without having an account in the MONIC system.
+
+---
+
+## 4. Data Governance & Approval Pipeline
+
+To ensure auditability for international donors, MONIC implements a formal 3-tier data verification lifecycle:
+
+```
+[Field Data Entry] ➔ Submit ➔ [M&E Officer] ➔ Verify ➔ [Project Director] ➔ Approve
+                                      │                                 │
+                                      ▼                                 ▼
+                                   Reject                            Reject
+```
+
+1. **Submit**: Data entered by staff with `PermissionType.Submit`. Status becomes `Submit`.
+2. **Verify**: Preliminary review of data and supporting documentation by staff with `PermissionType.Verify`. Status becomes `Verify`.
+3. **Approve / Reject**: Final sign-off by leadership with `PermissionType.Approve`. 
+   * If approved: Status becomes `Approve`, and values are locked into official reports.
+   * If rejected: Status is returned with audit notes to the submitter for correction.
+
+---
+
+## 5. Security & Authentication Architecture
+
+### 5.1 OpenIddict OAuth 2.0 Integration
+MONIC runs a self-hosted OpenIddict authorization server:
+* **Endpoints**:
+  * `/connect/token`: Token exchange (Password Flow, Refresh Token Flow).
+  * `/connect/logout`: Session termination.
+* **Security Controls**:
+  * PKCE (Proof Key for Code Exchange) required for all client requests.
+  * Short-lived access tokens (default: 10 minutes).
+  * Long-lived sliding refresh tokens (default: ~7.5 days).
+  * Token signing and encryption:
+    * Production/Self-hosted: Persistent RSA certificate (`certificate.pfx`) stored in `/app/data/`.
+    * Azure Cloud: Azure Key Vault certificate + Azure Blob Data Protection.
+    * Local Development: Ephemeral development certificates.
+
+### 5.2 System Roles & Authorizations
+* `Administrator`: Full system management, user management, and global settings.
+* `Manager`: Creation of indicators, projects, milestones, and questionnaires.
+* `Oversight`: Data review, verification, and final approval privileges.
+* `Questionnaires`: Form builder and survey management.
+* `Folders`: Document library administration.
+* `DataEntry`: Submission of questionnaire answers and indicator data.
+
+---
+
+## 6. Database Schema Summary (64 Tables)
+
+| Domain Area | Key Tables | Description |
+| :--- | :--- | :--- |
+| **Identity & Auth** | `AspNetUsers`, `AspNetRoles`, `AspNetUserRoles`, `AspNetUserClaims`, `OpenIddictTokens`, `OpenIddictAuthorizations`, `OpenIddictApplications`, `OpenIddictScopes` | User identity, OpenIddict tokens, and role memberships. |
+| **Indicators** | `Indicators`, `IndicatorDates`, `IndicatorPermissions`, `Tokens`, `OptionLists`, `Options` | Core metrics, formula token stacks, units, and custom option sets. |
+| **Data & Storage** | `Data`, `Dates`, `Entities`, `EntityLinks`, `EntityPermissions`, `DataReviews`, `DataReviewLinks` | Numerical and categorical observations, calendar roll-ups, and review audits. |
+| **Questionnaires** | `Questionnaires`, `Sections`, `Questions`, `QuestionOptionGroups`, `QuestionOptions`, `SkipLogicOptions`, `Responses`, `Answers`, `AnswerOptions` | Survey builder, response submissions, Likert scales, and branching logic. |
+| **Logic & ToC** | `TheoriesOfChange`, `TheoryOfChangeComponents`, `Relationships`, `LogFrames`, `LogFrameRows`, `LogFrameRowComponents`, `LogFrameRowIndicators` | Theories of Change graphs and Logical Framework matrices. |
+| **Documents & Media**| `Folders`, `FolderContents`, `Documents`, `Categories`, `Subcategories` | Document management, versioning, and categorizations. |
+| **System & Auditing**| `Settings`, `Errors`, `Exceptions`, `Downloads`, `Tasks`, `Charts` | System preferences, error logs, background exports, and dashboard widgets. |
+
+---
+
+## 7. Containerization & Deployment Reference
+
+### 7.1 Container Stages
+1. **`client-build` (`node:20-alpine`)**:
+   * Copies `package.json`, `package-lock.json`, and `patches/`.
+   * Runs `npm ci` (or `npm install --force`).
+   * Executes `npm run build -- --configuration production` targeting `/app/dist`.
+2. **`build` (`mcr.microsoft.com/dotnet/sdk:10.0`)**:
+   * Copies `Web.csproj` and executes `dotnet restore`.
+   * Copies backend code and receives `/app/dist` into `./WEB/wwwroot`.
+   * Executes `dotnet publish -c Release -o /app/publish /p:PublishRunWebpack=false`.
+3. **`final` (`mcr.microsoft.com/dotnet/aspnet:10.0`)**:
+   * Copies published outputs to `/app`.
+   * Maps ports (`EXPOSE 80`) and sets `/health` container healthcheck.
+   * Auto-detects cloud `$PORT` environment variable (Render, AWS App Runner).
+
+### 7.2 Key Environment Variables
+* `ConnectionStrings__DefaultConnection`: SQL Server connection string.
+* `Settings__RootUrl`: Public URL with trailing slash (e.g. `https://monic.example.com/`).
+* `Settings__SiteName`: Display branding title.
+* `ASPNETCORE_ENVIRONMENT`: `Production` (or `Development`).
+* `ASPNETCORE_FORWARDEDHEADERS_ENABLED`: `true` (enables reverse proxy SSL offloading).

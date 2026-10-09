@@ -10,6 +10,12 @@ using Monic.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var envPort = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrWhiteSpace(envPort) && string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ASPNETCORE_URLS")))
+{
+    builder.WebHost.UseUrls($"http://+:{envPort}");
+}
+
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders =
@@ -138,7 +144,8 @@ if (builder.Environment.IsDevelopment())
         options.AddPolicy(name: policyName, builder =>
         {
             builder.WithOrigins(
-                "https://localhost:44410");
+                "https://localhost:44410",
+                "https://127.0.0.1:44410");
 
             builder.AllowAnyMethod();
             builder.AllowAnyHeader();

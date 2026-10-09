@@ -361,3 +361,9 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Local persistent data and agent configuration
+.agents/
+WEB/data/
+build.log
+.env
