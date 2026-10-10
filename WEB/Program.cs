@@ -292,6 +292,7 @@ if (builder.Environment.IsDevelopment())
     app.UseCors(policyName);
 }
 
+app.UseDefaultFiles();
 app.UseStaticFiles();
 
 app.UseRouting();
@@ -300,6 +301,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHealthChecks("/health");
+app.MapGet("/healthz", () => Results.Ok(new { status = "Healthy" }));
 
 app.MapControllers();
 
