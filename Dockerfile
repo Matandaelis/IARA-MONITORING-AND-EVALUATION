@@ -1,39 +1,18 @@
 # syntax=docker/dockerfile:1
 
 # =======================================================
-# Stage 1: Build Angular frontend
-# =======================================================
-FROM node:20-alpine AS client-build
-WORKDIR /app
-
-# Copy dependency specifications first for Docker layer caching
-COPY WEB/ClientApp/package.json WEB/ClientApp/package-lock.json* ./
-COPY WEB/ClientApp/patches/ ./patches/
-
-# Install dependencies (respecting lockfile and applying patches)
-RUN npm ci --prefer-offline --no-audit || npm install --force
-
-# Copy Angular source code
-COPY WEB/ClientApp/ ./
-
-# Build Angular production bundle (outputs to /app/dist)
-RUN npm run build -- --configuration production
-
-# =======================================================
-# Stage 2: Build ASP.NET Core backend
+# Stage 1: Build & Publish ASP.NET Core Backend
+# (Serves pre-compiled Angular 19 SPA directly from wwwroot)
 # =======================================================
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# Copy project file and restore NuGet packages (layer cached)
+# Copy project file and restore NuGet packages
 COPY WEB/WEB.csproj ./WEB/
 RUN dotnet restore WEB/WEB.csproj
 
-# Copy backend source code
+# Copy backend source code including pre-built Angular SPA in WEB/wwwroot
 COPY WEB/ ./WEB/
-
-# Copy pre-built Angular dist directly into wwwroot
-COPY --from=client-build /app/dist/ ./WEB/wwwroot/
 
 WORKDIR /src/WEB
 
@@ -46,7 +25,7 @@ RUN dotnet publish WEB.csproj \
     /p:PublishRunWebpack=false
 
 # =======================================================
-# Stage 3: All-in-One Runtime (SQL Server 2022 + ASP.NET Core 10 + Angular)
+# Stage 2: All-in-One Runtime (SQL Server 2022 + ASP.NET Core 10 + Angular)
 # =======================================================
 FROM mcr.microsoft.com/mssql/server:2022-latest AS runtime
 USER root
@@ -62,10 +41,9 @@ RUN apt-get update && \
         libcap2-bin && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy published application and Angular static assets
+# Copy published application (includes backend binaries and wwwroot SPA)
 WORKDIR /app
 COPY --from=build /app/publish /app/
-COPY --from=client-build /app/dist/ /app/wwwroot/
 
 # Copy and prepare entrypoint startup script
 COPY entrypoint.sh /entrypoint.sh
