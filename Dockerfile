@@ -37,40 +37,52 @@ COPY --from=client-build /app/dist/ ./WEB/wwwroot/
 
 WORKDIR /src/WEB
 
-# Publish application in Release mode (skipping redundant npm rebuild)
+# Publish self-contained Linux x64 application
 RUN dotnet publish WEB.csproj \
     -c Release \
+    -r linux-x64 \
+    --self-contained true \
     -o /app/publish \
-    /p:PublishRunWebpack=false \
-    /p:UseAppHost=false
+    /p:PublishRunWebpack=false
 
 # =======================================================
-# Stage 3: Runtime image
+# Stage 3: All-in-One Runtime (SQL Server 2022 + ASP.NET Core 10 + Angular)
 # =======================================================
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
-WORKDIR /app
+FROM mcr.microsoft.com/mssql/server:2022-latest AS runtime
+USER root
 
-# Install curl for container health checks
+# Install dependencies for .NET Linux binaries, curl for health checks, and procps
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl && \
+    apt-get install -y --no-install-recommends \
+        curl \
+        ca-certificates \
+        libicu70 \
+        libssl3 \
+        procps && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy published application
-COPY --from=build /app/publish .
+# Copy published application and Angular static assets
+WORKDIR /app
+COPY --from=build /app/publish /app/
+COPY --from=client-build /app/dist/ /app/wwwroot/
 
-# Create persistent storage directories
-RUN mkdir -p /app/data /app/logs
+# Copy and prepare entrypoint startup script
+COPY entrypoint.sh /entrypoint.sh
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
-# Environment defaults
-ENV ASPNETCORE_ENVIRONMENT=Production \
-    ASPNETCORE_URLS=http://+:80 \
-    ASPNETCORE_FORWARDEDHEADERS_ENABLED=true \
-    DOTNET_RUNNING_IN_CONTAINER=true
+# Ensure persistent directories exist and have proper permissions
+RUN mkdir -p /app/data /app/logs /var/opt/mssql && \
+    chown -R mssql:root /var/opt/mssql && \
+    chmod -R 770 /var/opt/mssql
 
-# Health check compatible with Coolify, Docker, AWS, Render
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:80/health || exit 1
+# Expose HTTP ports (80, 3000) and SQL Server port (1433)
+EXPOSE 80 3000 1433
 
-EXPOSE 80
+# Define persistent volumes for SQL Server data and DataProtection keys
+VOLUME ["/var/opt/mssql", "/app/data"]
 
-ENTRYPOINT ["dotnet", "Monic.Web.dll"]
+# Health check verifies the web app is responding
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:80/health || curl -f http://localhost:3000/health || exit 1
+
+ENTRYPOINT ["/entrypoint.sh"]

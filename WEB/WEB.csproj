@@ -58,6 +58,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<None Update="Code\SQL\**\*.sql">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
 		<Folder Include="ClientApp\src\assets\geojson\" />
 		<Folder Include="Migrations\" />
 		<Folder Include="Properties\PublishProfiles\" />
