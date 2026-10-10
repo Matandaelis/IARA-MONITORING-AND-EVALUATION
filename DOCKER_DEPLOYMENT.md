@@ -1,332 +1,193 @@
-# MONIC Docker Deployment Guide
+# MONIC Universal Docker Deployment Guide
 
-## Overview
-This guide covers deploying MONIC to Coolify using Docker containers.
+This guide covers building, fine-tuning, and deploying **MONIC** across multiple environments:
+- 💻 **Local Docker (Windows / macOS / Linux)**
+- 🚀 **Coolify (Self-Hosted PaaS)**
+- ☁️ **Render (Cloud Web Service)**
+- 🐧 **Standalone Linux VPS (Ubuntu / Debian / CentOS)**
+- 🟧 **Amazon Web Services (AWS ECS / App Runner / EC2)**
 
-## Architecture
+---
+
+## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────┐
-│      MONIC Application Stack        │
-├─────────────────────────────────────┤
-│  monic-app (ASP.NET Core 10)        │
-│  - Port: 80/443                     │
-│  - Health checks enabled            │
-│  - Logs mounted                     │
-├─────────────────────────────────────┤
-│  monic-db (SQL Server 2022)         │
-│  - Port: 1433                       │
-│  - Data persistence enabled         │
-│  - Health checks enabled            │
-└─────────────────────────────────────┘
+┌────────────────────────────────────────────────────────┐
+│               Reverse Proxy / Cloud CDN                │
+│       (Coolify Traefik / Render / AWS ALB / Nginx)     │
+└───────────────────────────┬────────────────────────────┘
+                            │ HTTP :80 or :PORT
+┌───────────────────────────▼────────────────────────────┐
+│              monic-app (Docker Container)               │
+│   • ASP.NET Core 10 Backend + Angular Production SPA   │
+│   • Multi-stage build (node:20-alpine + dotnet:10.0)   │
+│   • Health check: GET /health                          │
+│   • Persistent volume: /app/data (Keys & Tokens)       │
+└───────────────────────────┬────────────────────────────┘
+                            │ TDS Protocol :1433
+┌───────────────────────────▼────────────────────────────┐
+│              monic-db (SQL Server 2022 / 2025)          │
+│   • Containerized (mcr.microsoft.com/mssql/server)     │
+│   • Or Cloud Managed (AWS RDS, Azure SQL)              │
+│   • Persistent volume: /var/opt/mssql                  │
+└────────────────────────────────────────────────────────┘
 ```
 
-## Prerequisites
+---
 
-- Docker & Docker Compose installed
-- Coolify instance running
-- Minimum 2GB RAM available
-- 5GB disk space for database and logs
-- .NET 10 runtime support
+## ⚡ 1. Local Machine Deployment (Docker Desktop / Docker Engine)
 
-## Quick Start
+Running both the application and database locally inside Docker:
 
-### 1. Clone and Configure
+### Step 1: Copy Environment File
 ```bash
-git clone https://github.com/Matandaelis/MONIC.git
-cd MONIC
 cp .env.example .env
 ```
+*(On Windows PowerShell: `Copy-Item .env.example .env`)*
 
-### 2. Edit .env with Your Settings
+### Step 2: Customize Settings (Optional)
+The defaults in `.env` are configured for local Docker:
+* `APP_PORT=8080` (accessible at `http://localhost:8080`)
+* `ROOT_URL=http://localhost:8080/`
+* `DB_PASSWORD=@Monic123Secure!`
+
+### Step 3: Build & Start Containers
 ```bash
-# Critical settings
-DB_PASSWORD=your_secure_password_here     # Min 8 chars, 1 uppercase, 1 number, 1 special
-DOMAIN=monic.yourdomain.com              # Your public domain
-SITE_NAME=Your MONIC Instance            # Display name
-
-# Optional email settings
-SEND_EMAILS=true
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-SMTP_SSL=true
+docker compose up -d --build
 ```
 
-### 3. Build and Start
+### Step 4: Verify
+* Open browser: **http://localhost:8080**
+* Health check: **http://localhost:8080/health**
+* View logs:
+  ```bash
+  docker compose logs -f monic-app
+  ```
+
+---
+
+## 🚀 2. Coolify Deployment
+
+Coolify is an open-source, self-hosted PaaS that deploys directly via Git repository or Docker Compose.
+
+### Method A: Deploy via Docker Compose (Recommended)
+1. In Coolify, create a new **Service** or **Application** from Git repository.
+2. Select **Docker Compose** as the build pack.
+3. Set the compose file path: `docker-compose.yml`.
+4. Under **Environment Variables**, provide:
+   ```env
+   DB_PASSWORD=YourStrongDatabasePassword123!
+   APP_PORT=80
+   ROOT_URL=https://monic.yourdomain.com/
+   SITE_NAME=MONIC
+   ASPNETCORE_ENVIRONMENT=Production
+   ```
+5. In Coolify UI, assign your domain: `https://monic.yourdomain.com` pointing to `monic-app:80`.
+6. Click **Deploy**. Coolify automatically builds, health-checks on `/health`, and provisions SSL with Traefik/Caddy.
+
+---
+
+## ☁️ 3. Render Deployment
+
+Render can deploy the application as a **Docker Web Service**:
+
+1. In Render Dashboard, click **New +** ➔ **Web Service**.
+2. Connect your Git repository.
+3. Select **Docker** as the runtime.
+4. Render will detect the root [`Dockerfile`](Dockerfile).
+5. Under **Environment Variables**, set:
+   * `ConnectionStrings__DefaultConnection`: Your connection string to SQL Server (e.g., Azure SQL, AWS RDS, or Render Private Service).
+     ```text
+     Server=your-db-host,1433;Database=MONIC;User Id=sa;Password=YourPassword;TrustServerCertificate=true;Encrypt=false;
+     ```
+   * `Settings__RootUrl`: `https://your-service-name.onrender.com/`
+   * `Settings__SiteName`: `MONIC`
+   * `ASPNETCORE_ENVIRONMENT`: `Production`
+6. Under **Health Check Path**, enter: `/health`.
+7. Click **Create Web Service**. Render provides the `PORT` environment variable automatically, which MONIC binds to automatically.
+
+---
+
+## 🐧 4. Standalone Linux VPS (Ubuntu / Debian / CentOS)
+
+For deploying on a cloud VPS (DigitalOcean, Linode, Hetzner, AWS EC2):
+
+### 1. Install Docker & Compose (if not already installed)
 ```bash
-# Build the Docker image
-docker-compose build
-
-# Start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f monic-app
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
 ```
 
-### 4. Verify Deployment
+### 2. Clone & Configure
 ```bash
-# Check container status
-docker-compose ps
-
-# Check health
-curl http://localhost/health
-
-# View detailed logs
-docker-compose logs monic-app
+git clone <your-repo-url> /opt/monic
+cd /opt/monic
+cp .env.example .env
+nano .env
+```
+Set:
+```env
+APP_PORT=80
+ROOT_URL=http://your-server-ip/   # or https://yourdomain.com/
+DB_PASSWORD=YourStrongPasswordHere!
 ```
 
-## Environment Variables
-
-### Required
-- `DB_PASSWORD`: SQL Server SA password (minimum complexity required)
-- `DOMAIN`: Your public domain (e.g., monic.example.com)
-- `SITE_NAME`: Application display name
-
-### Optional
-- `APP_PORT`: Application port (default: 80)
-- `SEND_EMAILS`: Enable email notifications (default: false)
-- `EMAIL_SENDER_NAME`: Email sender name
-- `SMTP_SERVER`: SMTP server address
-- `SMTP_PORT`: SMTP port (default: 25)
-- `SMTP_USERNAME`: SMTP username
-- `SMTP_PASSWORD`: SMTP password
-- `SMTP_SSL`: Use SSL (default: false)
-- `ERROR_EMAIL`: Error notification email
-- `USE_APP_INSIGHTS`: Application Insights (default: false)
-
-## Coolify Integration
-
-### Deploy via Coolify Dashboard
-
-1. **Create Application**
-   - Log in to Coolify
-   - Navigate to Applications → Create New
-
-2. **Configure Repository**
-   - Source: GitHub
-   - Repository: `Matandaelis/MONIC`
-   - Branch: `master`
-
-3. **Build Configuration**
-   - Dockerfile Path: `./Dockerfile`
-   - Docker Compose Path: `./docker-compose.yml`
-   - Base Directory: `/`
-
-4. **Environment Variables**
-   - Add all variables from `.env` file
-   - Mark sensitive values (passwords) as secrets
-
-5. **Port Configuration**
-   - Application Port: `80`
-   - Expose: Yes
-
-6. **Persistent Storage**
-   - `/var/opt/mssql` → monic-db-data (database)
-   - `/app/logs` → monic-app-logs (application logs)
-
-7. **Health Check**
-   - Path: `/health`
-   - Interval: `30s`
-   - Timeout: `10s`
-   - Retries: `3`
-
-## Database Management
-
-### Connect to Database
+### 3. Launch
 ```bash
-# Using sqlcmd
-sqlcmd -S localhost,1433 -U sa -P your_password
-
-# Or use Azure Data Studio
-# Server: localhost,1433
-# Username: sa
-# Password: (from .env)
+docker compose up -d --build
 ```
 
-### Backup Database
-```bash
-docker-compose exec monic-db /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P "${DB_PASSWORD}" \
-  -Q "BACKUP DATABASE [MONIC] TO DISK = '/var/opt/mssql/backup/MONIC.bak'"
+### 4. Optional: SSL with Nginx / Certbot / Caddy
+If placing behind Nginx reverse proxy:
+```nginx
+server {
+    server_name monic.yourdomain.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection keep-alive;
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
 ```
 
-### Restore Database
-```bash
-docker-compose exec monic-db /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P "${DB_PASSWORD}" \
-  -Q "RESTORE DATABASE [MONIC] FROM DISK = '/var/opt/mssql/backup/MONIC.bak'"
-```
+---
 
-## Troubleshooting
+## 🟧 5. Amazon Web Services (AWS)
 
-### Container Won't Start
-```bash
-# Check logs
-docker-compose logs monic-app
+### Option A: AWS App Runner
+1. Push your built image to **Amazon ECR** (Elastic Container Registry):
+   ```bash
+   aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <aws_account_id>.dkr.ecr.us-east-1.amazonaws.com
+   docker build -t monic-app .
+   docker tag monic-app:latest <aws_account_id>.dkr.ecr.us-east-1.amazonaws.com/monic:latest
+   docker push <aws_account_id>.dkr.ecr.us-east-1.amazonaws.com/monic:latest
+   ```
+2. Create an **App Runner Service** pointing to the ECR image.
+3. Set Port: `80`.
+4. Configure Environment Variables pointing to AWS RDS for SQL Server.
 
-# Common issues:
-# 1. Port already in use
-changed APP_PORT=8080  # in .env
+### Option B: AWS ECS Fargate
+1. Create an ECS Task Definition with container image from ECR.
+2. Mount EFS or Docker volume for `/app/data` to persist tokens.
+3. Configure Application Load Balancer (ALB) target group pointing to container port 80 with health check path `/health`.
 
-# 2. Invalid DB password
-# Must contain: 8+ chars, 1 uppercase, 1 number, 1 special character
+---
 
-# 3. Insufficient memory
-# Increase Docker memory allocation
+## 🛠️ Performance & Build Optimizations
 
-# Restart after fixing
-docker-compose down
-docker-compose up -d
-```
-
-### Database Connection Issues
-```bash
-# Verify DB container is healthy
-docker-compose ps monic-db
-
-# Check database logs
-docker-compose logs monic-db
-
-# Test connection from app
-docker-compose exec monic-app bash
-telnet monic-db 1433
-```
-
-### Health Check Failing
-```bash
-# Test health endpoint
-curl -v http://localhost/health
-
-# If 404 or timeout, app may not be ready
-# Check logs for startup errors
-docker-compose logs --tail=100 monic-app
-
-# Restart app
-docker-compose restart monic-app
-
-# Wait 40+ seconds for startup period
-```
-
-### High Memory Usage
-```bash
-# Check current usage
-docker stats monic-db monic-app
-
-# Reduce database memory in docker-compose.yml
-environment:
-  MSSQL_MEMORY_LIMIT_MB: 1024
-
-# Restart
-docker-compose restart monic-db
-```
-
-## Production Recommendations
-
-### Resource Limits
-```yaml
-resources:
-  limits:
-    cpus: '2'
-    memory: 2G
-  reservations:
-    cpus: '1'
-    memory: 1G
-```
-
-### Database Optimization
-- Increase `MSSQL_MEMORY_LIMIT_MB` to available RAM
-- Use SSD storage for database volume
-- Schedule regular backups
-
-### Security
-- Change default passwords immediately
-- Use strong, unique DB password
-- Use SSL for SMTP (if enabled)
-- Keep Docker images updated
-- Use Coolify's reverse proxy for HTTPS
-
-### Monitoring
-```bash
-# Real-time stats
-docker stats
-
-# View logs with timestamps
-docker-compose logs -t --tail=50
-
-# Follow specific service
-docker-compose logs -f monic-app
-```
-
-## Updating MONIC
-
-### Pull Latest Changes
-```bash
-# Stop containers
-docker-compose down
-
-# Update repository
-git pull origin master
-
-# Rebuild image
-docker-compose build --no-cache
-
-# Restart
-docker-compose up -d
-
-# Check logs
-docker-compose logs -f monic-app
-```
-
-## Cleanup
-
-### Remove Containers
-```bash
-# Stop and remove
-docker-compose down
-
-# Also remove volumes (WARNING: deletes data)
-docker-compose down -v
-```
-
-### Clean Unused Resources
-```bash
-# Remove unused images
-docker image prune -a
-
-# Remove unused volumes
-docker volume prune
-```
-
-## Support
-
-For issues:
-1. Check logs: `docker-compose logs`
-2. Verify environment: `docker-compose config`
-3. Test connectivity: `docker-compose exec monic-app curl http://monic-db:1433`
-4. Review MONIC repo: https://github.com/Matandaelis/MONIC/issues
-
-## Important Notes
-
-⚠️ **Critical Requirements:**
-- .NET 10 runtime support required
-- SQL Server 2022 compatible environment
-- Minimum 2GB RAM
-- Valid DB password (complexity requirements)
-
-⚠️ **Known Limitations:**
-- MONIC is under active development
-- May receive breaking changes
-- Azure features require additional configuration
-- Email functionality is optional
-
-## Next Steps
-
-- [ ] Configure custom domain
-- [ ] Set up SSL certificates (Coolify reverse proxy)
-- [ ] Configure email notifications
-- [ ] Set up automated backups
-- [ ] Configure monitoring and alerts
-- [ ] Plan disaster recovery
+The fine-tuned [`Dockerfile`](Dockerfile) includes:
+1. **Multi-Stage Caching**:
+   - Node dependencies (`package.json`, `patches/`) and .NET packages (`Web.csproj`) are restored in separate cached layers before copying source code.
+   - Code changes do **not** trigger re-downloading npm packages or NuGet packages.
+2. **Headless Angular Build**:
+   - Compiles inside `node:20-alpine`, keeping the final container under 300MB.
+3. **Cross-Architecture**:
+   - Compatible with x86_64 (`amd64`) and ARM64 (`arm64` - Apple Silicon / AWS Graviton).
+4. **Resilient Health Checking**:
+   - Built-in `/health` endpoint checked with `curl` for container lifecycle management.

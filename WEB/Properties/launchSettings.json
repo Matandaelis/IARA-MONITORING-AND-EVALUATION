@@ -1,4 +1,4 @@
-﻿{
+{
   "iisSettings": {
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
@@ -11,15 +11,9 @@
     "Monic": {
       "commandName": "Project",
       "launchBrowser": false,
-      // the url/port on which the api will run. matches with environment.ts
       "applicationUrl": "https://localhost:44510;http://localhost:5201",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        // comment out this line to prevent visual studio run/debug from launching the spa/angular app
-        // also comment out from the project file: <SpaProxyLaunchCommand>npm start</SpaProxyLaunchCommand>
-        // note that running the angular app with this method will also generate the .pem/.key files using the localhost certificate 
-        //  - assuming you've already run: dotnet dev-certs hpps --trust 
-        //"ASPNETCORE_HOSTINGSTARTUPASSEMBLIES": "Microsoft.AspNetCore.SpaProxy"
+        "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
     "IIS Express": {

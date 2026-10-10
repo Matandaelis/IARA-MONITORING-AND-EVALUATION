@@ -1,15 +1,16 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
 	<PropertyGroup>
 		<TargetFramework>net9.0</TargetFramework>
 		<Nullable>disable</Nullable>
 		<IsPackable>false</IsPackable>
 		<SpaRoot>ClientApp\</SpaRoot>
-		<SpaProxyServerUrl>https://localhost:44401</SpaProxyServerUrl>
+		<SpaProxyServerUrl>https://localhost:44410</SpaProxyServerUrl>
 		<SpaProxyLaunchCommand>npm start</SpaProxyLaunchCommand>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UserSecretsId>8478bfcd-a2e0-4e8e-8c09-579e68f0988d</UserSecretsId>
 		<RootNamespace>Monic.Web</RootNamespace>
+		<AssemblyName>Monic.Web</AssemblyName>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -20,12 +21,19 @@
 		<PackageReference Include="CsvHelper" Version="33.1.0" />
 		<PackageReference Include="EPPlus" Version="4.5.3.3" />
 		<PackageReference Include="iTextSharp.LGPLv2.Core" Version="3.4.20" />
+
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.10" />
 		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.10" />
 		<PackageReference Include="Microsoft.AspNetCore.SpaProxy" Version="9.0.10" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="9.0.10" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.10" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.10">
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.0" />
+		<PackageReference Include="Microsoft.AspNetCore.SpaProxy" Version="10.0.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="10.0.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
@@ -54,6 +62,13 @@
 
 	<ItemGroup>
 		<None Include="compilerconfig.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="Code\SQL\**\*.sql">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</None>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -92,12 +107,12 @@
 		</Content>
 	</ItemGroup>
 
-	<Target Name="CustomCopyAppSettings" AfterTargets="Publish">
+	<Target Name="CustomCopyAppSettings" AfterTargets="Publish" Condition=" '$(ClientName)' != '' And Exists('appsettings.$(ClientName).json') ">
 		<Message Text="Copying appsettings file for $(ClientName) - CustomCopyAppSettings" Importance="high" />
 		<Copy SourceFiles="appsettings.$(ClientName).json" DestinationFiles="$(PublishDir)appsettings.json" OverwriteReadOnlyFiles="true" SkipUnchangedFiles="false" />
 	</Target>
 
-	<Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish">
+	<Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish" Condition=" '$(PublishRunWebpack)' != 'false' ">
 		<!-- As part of publishing, ensure the JS resources are freshly built in production mode -->
 		<Exec WorkingDirectory="$(SpaRoot)" Command="npm install --force" />
 		<Exec WorkingDirectory="$(SpaRoot)" Command="npm run build -- --configuration production" />

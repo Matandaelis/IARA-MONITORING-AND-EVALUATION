@@ -1,63 +1,44 @@
 version: '3.8'
 
 services:
-  # SQL Server Database
-  monic-db:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: monic-db
-
-    environment:
-      ACCEPT_EULA: "Y"
-      SA_PASSWORD: "${DB_PASSWORD:-@Monic123Secure!}"
-      MSSQL_PID: "Developer"
-
-    volumes:
-      - monic-db-data:/var/opt/mssql
-
-    healthcheck:
-      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "${DB_PASSWORD:-@Monic123Secure!}" -Q "SELECT 1" || exit 1
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-    networks:
-      - monic-network
-
-    restart: unless-stopped
-
-  # MONIC Application
+  # =======================================================
+  # MONIC Application (ASP.NET Core 10 + Angular)
+  # =======================================================
   monic-app:
     build:
       context: .
       dockerfile: Dockerfile
-
     container_name: monic-app
+    restart: unless-stopped
 
     depends_on:
       monic-db:
         condition: service_healthy
 
-    environment:
-      # Database Configuration
-      ConnectionStrings__DefaultConnection: "Server=monic-db,1433;Database=MONIC;User Id=sa;Password=${DB_PASSWORD:-@Monic123Secure!};TrustServerCertificate=true;Encrypt=false;"
+    # Expose app port to host machine / Coolify reverse proxy
+    ports:
+      - "${APP_PORT:-80}:80"
 
-      # ASP.NET Core Configuration
-      ASPNETCORE_ENVIRONMENT: "Production"
+    environment:
+      # Database Connection
+      ConnectionStrings__DefaultConnection: "Server=${DB_HOST:-monic-db},${DB_PORT_INTERNAL:-1433};Database=${DB_NAME:-MONIC};User Id=${DB_USER:-sa};Password=${DB_PASSWORD:-@Monic123Secure!};TrustServerCertificate=true;Encrypt=false;"
+
+      # ASP.NET Core Runtime Settings
+      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Production}"
       ASPNETCORE_URLS: "http://+:80"
       ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
 
-      # Application Settings
-      Settings__RootUrl: "https://${DOMAIN:-localhost}/"
+      # Application Identity & URLs
+      Settings__RootUrl: "${ROOT_URL:-http://localhost:80/}"
       Settings__SiteName: "${SITE_NAME:-MONIC}"
       Settings__UseAzureInfrastructure: "${USE_AZURE_INFRASTRUCTURE:-false}"
-      Settings__AccessTokenExpiryMinutes: "10"
-      Settings__RefreshTokenExpiryMinutes: "10880"
+      Settings__AccessTokenExpiryMinutes: "${ACCESS_TOKEN_EXPIRY:-10}"
+      Settings__RefreshTokenExpiryMinutes: "${REFRESH_TOKEN_EXPIRY:-10880}"
 
-      # Certificate password
+      # Local Certificate Password (if using custom certificate.pfx)
       Settings__CertificatePassword: "${CERTIFICATE_PASSWORD:-}"
 
-      # Email Configuration
+      # Email Configuration (Optional)
       Settings__EmailSettings__SendEmails: "${SEND_EMAILS:-false}"
       Settings__EmailSettings__SenderName: "${EMAIL_SENDER_NAME:-MONIC}"
       Settings__EmailSettings__Sender: "${EMAIL_SENDER:-noreply@monic.local}"
@@ -73,40 +54,69 @@ services:
       Settings__UseApplicationInsights: "${USE_APP_INSIGHTS:-false}"
 
       # Logging
-      Logging__LogLevel__Default: "Information"
+      Logging__LogLevel__Default: "${LOG_LEVEL:-Information}"
       Logging__LogLevel__Microsoft: "Warning"
 
     volumes:
-      # Persistent application data:
-      # - Data Protection keys
-      # - OpenIddict certificate
+      # Persistent application state (OpenIddict certs, data protection keys)
       - monic-app-data:/app/data
-
       # Application logs
       - monic-app-logs:/app/logs
 
-    networks:
-      - monic-network
-
-    restart: unless-stopped
-
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
 
+    networks:
+      - monic-network
+
+  # =======================================================
+  # SQL Server Database (Linux / Docker)
+  # =======================================================
+  monic-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: monic-db
+    restart: unless-stopped
+
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "${DB_PASSWORD:-@Monic123Secure!}"
+      MSSQL_PID: "${MSSQL_PID:-Developer}"
+
+    volumes:
+      - monic-db-data:/var/opt/mssql
+
+    # Expose SQL Server port if external or host access is required (e.g. SSMS, local tools)
+    ports:
+      - "${DB_PORT:-1433}:1433"
+
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${SA_PASSWORD}\" -C -Q \"SELECT 1\" || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"$${SA_PASSWORD}\" -Q \"SELECT 1\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    networks:
+      - monic-network
+
+# =======================================================
+# Storage Volumes
+# =======================================================
 volumes:
   monic-db-data:
     driver: local
-
   monic-app-data:
     driver: local
-
   monic-app-logs:
     driver: local
 
+# =======================================================
+# Network Configuration
+# =======================================================
 networks:
   monic-network:
     driver: bridge
