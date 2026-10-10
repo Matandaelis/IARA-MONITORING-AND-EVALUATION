@@ -58,7 +58,8 @@ RUN apt-get update && \
         ca-certificates \
         libicu70 \
         libssl3 \
-        procps && \
+        procps \
+        libcap2-bin && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy published application and Angular static assets
@@ -70,19 +71,25 @@ COPY --from=client-build /app/dist/ /app/wwwroot/
 COPY entrypoint.sh /entrypoint.sh
 RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
-# Ensure persistent directories exist and have proper permissions
+# Ensure persistent directories exist and grant ownership to mssql user
 RUN mkdir -p /app/data /app/logs /var/opt/mssql && \
-    chown -R mssql:root /var/opt/mssql && \
-    chmod -R 770 /var/opt/mssql
+    chown -R mssql:0 /app /var/opt/mssql && \
+    chmod -R 775 /app /var/opt/mssql
 
-# Expose HTTP ports (80, 3000) and SQL Server port (1433)
-EXPOSE 80 3000 1433
+# Allow Monic.Web to bind to privileged ports (e.g. 80) if run as non-root
+RUN setcap 'cap_net_bind_service=+ep' /app/Monic.Web || true
+
+# Switch to mssql user (UID 10001) for native SQL Server execution
+USER mssql
+
+# Expose HTTP ports (3000, 80) and SQL Server port (1433)
+EXPOSE 3000 80 1433
 
 # Define persistent volumes for SQL Server data and DataProtection keys
 VOLUME ["/var/opt/mssql", "/app/data"]
 
-# Health check verifies the web app is responding
+# Health check verifies the web app is responding on 3000 or 80
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:80/health || curl -f http://localhost:3000/health || exit 1
+    CMD curl -f http://localhost:3000/health || curl -f http://localhost:80/health || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]

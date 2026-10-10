@@ -11,18 +11,9 @@ export ACCEPT_EULA="Y"
 export MSSQL_SA_PASSWORD="$SA_PASSWORD"
 export MSSQL_PID="Developer"
 
-# Ensure data directories exist and have proper ownership
-mkdir -p /var/opt/mssql /app/data /app/logs
-chown -R mssql:root /var/opt/mssql 2>/dev/null || true
-chmod 700 /app/data 2>/dev/null || true
-
-# Start SQL Server in background as mssql user
+# Start SQL Server in background directly as mssql user
 echo "[1/3] Starting Microsoft SQL Server 2022..."
-if id "mssql" &>/dev/null; then
-    su -s /bin/bash mssql -c "/opt/mssql/bin/sqlservr" &
-else
-    /opt/mssql/bin/sqlservr &
-fi
+/opt/mssql/bin/sqlservr &
 SQL_PID=$!
 
 # Wait for SQL Server to accept connections
@@ -44,12 +35,11 @@ if [ $READY -eq 0 ]; then
     echo "WARNING: SQL Server readiness probe did not confirm in 120s, proceeding anyway..."
 fi
 
-# Give the engine an extra moment to settle
 sleep 2
 
 # Configure database connection and runtime settings
 export ConnectionStrings__DefaultConnection="Server=127.0.0.1,1433;Database=MONIC;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=true;Encrypt=false;"
-export ASPNETCORE_URLS="http://0.0.0.0:80;http://0.0.0.0:3000"
+export ASPNETCORE_URLS="http://0.0.0.0:3000;http://0.0.0.0:80"
 export ASPNETCORE_ENVIRONMENT="Production"
 export ASPNETCORE_FORWARDEDHEADERS_ENABLED="true"
 export DOTNET_RUNNING_IN_CONTAINER="true"
@@ -69,7 +59,7 @@ fi
 
 echo "=========================================="
 echo " MONIC is running successfully!"
-echo " Web: http://localhost:80 / http://localhost:3000"
+echo " Web: http://localhost:3000 / http://localhost:80"
 echo " Database: localhost:1433"
 echo " Health: /health"
 echo "=========================================="
