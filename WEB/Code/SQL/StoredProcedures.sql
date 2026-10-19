@@ -93,7 +93,7 @@ DECLARE	@TokenType_Indicator tinyint = 0,
 		@error nvarchar(250),
 		@TokenNumber int = 0
 
-IF EXISTS(SELECT * FROM @Tokens WHERE TokenType = @TokenType_Indicator AND (SourceIndicatorId IS NULL OR SourceIndicatorId NOT IN (SELECT SourceIndicatorId FROM Indicators)))
+IF EXISTS(SELECT * FROM @Tokens WHERE TokenType = @TokenType_Indicator AND (SourceIndicatorId IS NULL OR SourceIndicatorId NOT IN (SELECT IndicatorId FROM Indicators)))
 BEGIN;
 	SET @error = 'Invalid Indicator';
 	THROW 51000, @error, 1;

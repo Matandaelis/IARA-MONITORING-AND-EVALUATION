@@ -43,6 +43,11 @@ export enum FieldTypes {
     YesNo
 }
 
+export enum IndicatorDirections {
+    HigherIsBetter,
+    LowerIsBetter
+}
+
 export enum IndicatorStatuses {
     Disabled,
     Enabled
@@ -319,6 +324,11 @@ export class Enums {
         { value: 3, name: 'Large', label: 'Large' },
         { value: 4, name: 'ExtraLarge', label: 'Extra Large' },
         { value: 5, name: 'Maximum', label: 'Maximum' }
+     ]
+
+     static IndicatorDirections: Enum[] = [
+        { value: 0, name: 'HigherIsBetter', label: 'Higher is Better (Standard)' },
+        { value: 1, name: 'LowerIsBetter', label: 'Lower is Better (Reduction)' }
      ]
 
      static WidgetTypes: Enum[] = [

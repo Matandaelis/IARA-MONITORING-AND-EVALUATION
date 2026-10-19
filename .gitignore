@@ -363,7 +363,8 @@ MigrationBackup/
 FodyWeavers.xsd
 
 # Local persistent data and agent configuration
-.agents/
+.agents/*
+!.agents/skills/
 WEB/data/
 build.log
 .env

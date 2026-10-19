@@ -37,6 +37,7 @@ import { QuestionSummary } from '../../common/models/questionsummary.model';
 import { EChartsCoreOption } from 'echarts/core';
 import { ItemOptionService } from '../../common/services/itemoption.service';
 import { ItemOptionSearchOptions, ItemOptionSearchResponse } from '../../common/models/itemoption.model';
+import { MeReviewService } from '../../common/services/mereview.service';
 
 class AnalysisResults {
     questionSummary: QuestionSummary;
@@ -85,6 +86,7 @@ export class QuestionnaireEditComponent implements OnInit, OnDestroy {
     public analysisResults = new AnalysisResults();
 
     public duplicate = { name: undefined as string };
+    public auditing = false;
 
     constructor(
         private router: Router,
@@ -100,7 +102,8 @@ export class QuestionnaireEditComponent implements OnInit, OnDestroy {
         private answerService: AnswerService,
         private questionOptionService: QuestionOptionService,
         private questionSummaryService: QuestionSummaryService,
-        private itemOptionService: ItemOptionService
+        private itemOptionService: ItemOptionService,
+        private meReviewService: MeReviewService
     ) {
     }
 
@@ -391,6 +394,25 @@ export class QuestionnaireEditComponent implements OnInit, OnDestroy {
     generateSummaries(): void {
         let modalRef = this.modalService.open(QuestionnaireGenerateSummariesComponent, { size: 'xl', centered: true, scrollable: false });
         (modalRef.componentInstance as QuestionnaireGenerateSummariesComponent).questionnaire = this.questionnaire;
+    }
+
+    auditSurvey(): void {
+        if (!this.questionnaire.questionnaireId) return;
+        this.auditing = true;
+        this.meReviewService.evaluate({
+            domain: 'survey',
+            targetEntityId: this.questionnaire.questionnaireId
+        }).subscribe({
+            next: (review) => {
+                this.auditing = false;
+                this.toastr.success(`Survey audited! Score: ${review.overallScore}% (${review.status})`, 'M&E Review');
+                this.router.navigate(['/mereviews', review.meReviewId]);
+            },
+            error: (err) => {
+                this.auditing = false;
+                this.errorService.handleError(err, 'M&E Review', 'Audit');
+            }
+        });
     }
 
     loadAnalysis(form: NgForm): void {

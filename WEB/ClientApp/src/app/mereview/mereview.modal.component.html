@@ -1,0 +1,147 @@
+<div class="modal-header bg-light">
+    <h5 class="modal-title fw-bold">
+        <i class="fas fa-clipboard-check text-primary me-2"></i>Initiate M&E Quality Evaluation
+    </h5>
+    <button type="button" class="btn-close" (click)="activeModal.dismiss()" aria-label="Close"></button>
+</div>
+
+<div class="modal-body p-4">
+
+    <!-- Step 1: Select Domain -->
+    <div class="mb-4">
+        <label class="form-label fw-bold">1. Select Review Domain (12 Standards)</label>
+        <select class="form-select border-primary" [(ngModel)]="selectedDomainKey" (change)="onDomainChange()">
+            <option *ngFor="let d of domains" [value]="d.key">{{ d.name }} ({{ d.category }})</option>
+        </select>
+        <div *ngIf="currentDomain" class="mt-2 p-2 bg-light rounded small text-muted border-start border-3 border-primary">
+            <div><strong>Standard:</strong> {{ currentDomain.standard }}</div>
+            <div>{{ currentDomain.description }}</div>
+        </div>
+    </div>
+
+    <!-- Step 2: Evaluation Mode Tabs -->
+    <div class="mb-3">
+        <label class="form-label fw-bold">2. Data Source / Input Mode</label>
+        <div class="btn-group w-100" role="group">
+            <button type="button" class="btn" [ngClass]="inputMode === 'entity' ? 'btn-primary' : 'btn-outline-secondary'"
+                    (click)="inputMode = 'entity'" [disabled]="!currentDomain?.supportsEntityEvaluation">
+                <i class="fas fa-database me-1"></i>System Entity
+            </button>
+            <button type="button" class="btn" [ngClass]="inputMode === 'pdf' ? 'btn-primary' : 'btn-outline-secondary'"
+                    (click)="inputMode = 'pdf'">
+                <i class="fas fa-file-pdf me-1"></i>Upload PDF
+            </button>
+            <button type="button" class="btn" [ngClass]="inputMode === 'text' ? 'btn-primary' : 'btn-outline-secondary'"
+                    (click)="inputMode = 'text'">
+                <i class="fas fa-file-lines me-1"></i>Paste Text
+            </button>
+            <button *ngIf="selectedDomainKey === 'sampling-plan'" type="button" class="btn"
+                    [ngClass]="inputMode === 'sampling' ? 'btn-primary' : 'btn-outline-secondary'"
+                    (click)="inputMode = 'sampling'">
+                <i class="fas fa-calculator me-1"></i>Sample Calculator
+            </button>
+        </div>
+    </div>
+
+    <!-- Review Title -->
+    <div class="mb-3">
+        <label class="form-label">Review Title (Optional)</label>
+        <input type="text" class="form-control" [(ngModel)]="reviewTitle" placeholder="e.g. Midterm Evaluation Report Audit">
+    </div>
+
+    <!-- Entity Mode: Target Select -->
+    <div *ngIf="inputMode === 'entity'" class="mb-3">
+        <!-- Theory of Change -->
+        <div *ngIf="selectedDomainKey === 'theory-of-change'">
+            <label class="form-label fw-semibold">Target Theory of Change</label>
+            <select class="form-select" [(ngModel)]="selectedEntityId">
+                <option value="">-- Select Theory of Change --</option>
+                <option *ngFor="let toc of theoriesOfChange" [value]="toc.theoryOfChangeId">{{ toc.name }}</option>
+            </select>
+            <small class="text-muted">The engine will build the DAG and run cycle detection and hierarchy checks.</small>
+        </div>
+
+        <!-- LogFrame -->
+        <div *ngIf="selectedDomainKey === 'logframe'">
+            <label class="form-label fw-semibold">Target Logical Framework</label>
+            <select class="form-select" [(ngModel)]="selectedEntityId">
+                <option value="">-- Select LogFrame --</option>
+                <option *ngFor="let lf of logFrames" [value]="lf.logFrameId">{{ lf.name }}</option>
+            </select>
+            <small class="text-muted">The engine will check 4 columns (Narrative, OVIs, MoVs, Assumptions) and 4-tier vertical logic.</small>
+        </div>
+
+        <!-- Survey -->
+        <div *ngIf="selectedDomainKey === 'survey'">
+            <label class="form-label fw-semibold">Target Survey Questionnaire</label>
+            <select class="form-select" [(ngModel)]="selectedEntityId">
+                <option value="">-- Select Questionnaire --</option>
+                <option *ngFor="let q of questionnaires" [value]="q.questionnaireId">{{ q.name }}</option>
+            </select>
+            <small class="text-muted">The engine will test skip logic loops, ethics consent notices, and option completeness.</small>
+        </div>
+
+        <!-- Data Quality -->
+        <div *ngIf="selectedDomainKey === 'data-quality'">
+            <div class="alert alert-info py-2 small mb-0">
+                <i class="fas fa-info-circle me-1"></i>
+                Data Quality Assessment will evaluate the submitted monitoring dataset against the 5 USAID DQA dimensions (Verification Ratios, Statistical Outliers, Completeness).
+            </div>
+        </div>
+    </div>
+
+    <!-- PDF Upload Mode -->
+    <div *ngIf="inputMode === 'pdf'" class="mb-3">
+        <label class="form-label fw-semibold">Select PDF Document</label>
+        <input type="file" class="form-control" accept="application/pdf" (change)="onFileSelected($event)">
+        <small class="text-muted">In-tree text extraction using iTextSharp will parse the PDF and evaluate against the domain rubric.</small>
+    </div>
+
+    <!-- Text Mode -->
+    <div *ngIf="inputMode === 'text'" class="mb-3">
+        <label class="form-label fw-semibold">Narrative Content / Report Excerpt</label>
+        <textarea class="form-control font-monospace small" rows="8" [(ngModel)]="narrativeText"
+                  placeholder="Paste report draft, terms of reference, project proposal, or baseline text here..."></textarea>
+    </div>
+
+    <!-- Sampling Plan Mode -->
+    <div *ngIf="inputMode === 'sampling'" class="mb-3">
+        <div class="row g-2">
+            <div class="col-6">
+                <label class="form-label small fw-semibold">Target Population (N)</label>
+                <input type="number" class="form-control form-control-sm" [(ngModel)]="samplingPlan.populationSize">
+            </div>
+            <div class="col-6">
+                <label class="form-label small fw-semibold">Confidence Level</label>
+                <select class="form-select form-select-sm" [(ngModel)]="samplingPlan.confidenceLevel">
+                    <option [ngValue]="0.90">90% (Z=1.645)</option>
+                    <option [ngValue]="0.95">95% (Z=1.96 - Standard)</option>
+                    <option [ngValue]="0.99">99% (Z=2.576)</option>
+                </select>
+            </div>
+            <div class="col-6">
+                <label class="form-label small fw-semibold">Margin of Error (e)</label>
+                <select class="form-select form-select-sm" [(ngModel)]="samplingPlan.marginOfError">
+                    <option [ngValue]="0.03">3% (High Precision)</option>
+                    <option [ngValue]="0.05">5% (Standard Precision)</option>
+                    <option [ngValue]="0.08">8% (Exploratory)</option>
+                </select>
+            </div>
+            <div class="col-6">
+                <label class="form-label small fw-semibold">Proposed Sample Size</label>
+                <input type="number" class="form-control form-control-sm" [(ngModel)]="samplingPlan.proposedSampleSize"
+                       placeholder="e.g. 384">
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="modal-footer bg-light">
+    <button type="button" class="btn btn-outline-secondary" (click)="activeModal.dismiss()" [disabled]="evaluating">Cancel</button>
+    <button type="button" class="btn btn-primary px-4" (click)="runEvaluation()" [disabled]="evaluating">
+        <span *ngIf="evaluating" class="spinner-border spinner-border-sm me-1" role="status"></span>
+        <i *ngIf="!evaluating" class="fas fa-play me-1"></i>
+        {{ evaluating ? 'Analyzing...' : 'Run Quality Audit' }}
+    </button>
+</div>

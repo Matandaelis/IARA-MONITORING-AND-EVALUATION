@@ -14,6 +14,7 @@ import { LogFrameService } from '../common/services/logframe.service';
 import { LogFrameRowService } from '../common/services/logframerow.service';
 import { LogFrameRowViewComponent } from './logframe.row.component';
 import { tap } from 'rxjs';
+import { MeReviewService } from '../common/services/mereview.service';
 
 @Component({
     selector: 'logframe',
@@ -27,6 +28,7 @@ export class LogFrameComponent implements OnInit {
     public logFrameId: string; // required for ngModelChange
     public isNew = false;
     public loaded = false;
+    public auditing = false;
 
     public logFrameRowTypesActivities = LogFrameRowTypes.Activities;
     public logFrameRowTypesOutputs = LogFrameRowTypes.Outputs;
@@ -43,7 +45,8 @@ export class LogFrameComponent implements OnInit {
         private logFrameRowService: LogFrameRowService,
         private logFrameService: LogFrameService,
         private breadcrumbService: BreadcrumbService,
-        private toastr: ToastrService
+        private toastr: ToastrService,
+        private meReviewService: MeReviewService
     ) {
     }
 
@@ -106,6 +109,25 @@ export class LogFrameComponent implements OnInit {
                     });
 
             }, () => { });
+    }
+
+    public auditLogFrame(): void {
+        if (!this.logFrameId) return;
+        this.auditing = true;
+        this.meReviewService.evaluate({
+            domain: 'logframe',
+            targetEntityId: this.logFrameId
+        }).subscribe({
+            next: (review) => {
+                this.auditing = false;
+                this.toastr.success(`LogFrame audited! Score: ${review.overallScore}% (${review.status})`, 'M&E Review');
+                this.router.navigate(['/mereviews', review.meReviewId]);
+            },
+            error: (err) => {
+                this.auditing = false;
+                this.errorService.handleError(err, 'M&E Review', 'Audit');
+            }
+        });
     }
 
     private loadLogFrame(): void {

@@ -42,7 +42,13 @@ namespace Monic.Web.Models
     {
         public Guid DisaggregationDatumId { get; set; }
 
-        public Guid DatumId { get; set; }
+        public Guid? DatumId { get; set; }
+
+        public Guid IndicatorId { get; set; }
+
+        public Guid EntityId { get; set; }
+
+        public Guid DateId { get; set; }
 
         [Required]
         public Guid DisaggregationOptionId { get; set; }
@@ -103,6 +109,9 @@ namespace Monic.Web.Models
             {
                 DisaggregationDatumId = datum.DisaggregationDatumId,
                 DatumId = datum.DatumId,
+                IndicatorId = datum.IndicatorId,
+                EntityId = datum.EntityId,
+                DateId = datum.DateId,
                 DisaggregationOptionId = datum.DisaggregationOptionId,
                 OptionName = datum.DisaggregationOption?.Name,
                 OptionCode = datum.DisaggregationOption?.Code,

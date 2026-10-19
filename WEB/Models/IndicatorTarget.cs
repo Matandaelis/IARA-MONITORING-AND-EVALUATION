@@ -18,8 +18,10 @@ namespace Monic.Web.Models
         public Guid? EntityId { get; set; }
 
         [Required]
+        [Column(TypeName = "decimal(20, 8)")]
         public decimal TargetValue { get; set; }
 
+        [Column(TypeName = "decimal(20, 8)")]
         public decimal? BaselineValue { get; set; }
 
         [MaxLength(1000)]

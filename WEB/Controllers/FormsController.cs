@@ -24,6 +24,8 @@ namespace Monic.Web.Controllers
 
             var indicators = (await CurrentUser.GetPermittedIndicatorsQuery(permissionType)
                 .Include(o => o.Subcategory.Category)
+                .Include(o => o.DisaggregationGroup)
+                .ThenInclude(g => g.Options)
                 .Where(o =>
                     o.Frequency == dateType
                     && o.EntityTypeId == entityTypeId
@@ -49,9 +51,11 @@ namespace Monic.Web.Controllers
                 .ToDictionary(o => o.Key, o => o.Select(x => ModelFactory.Create(x)));
 
             var data = (await db.Data
+                .Include(o => o.DisaggregationData)
+                .ThenInclude(dd => dd.DisaggregationOption)
                 .Where(o => indicatorIds.Contains(o.IndicatorId) && o.EntityId == entityId && o.DateId == dateId)
                 .ToListAsync())
-                .Select(o => ModelFactory.Create(o));
+                .Select(o => ModelFactory.Create(o, false, true));
 
             return Ok(new
             {
@@ -85,6 +89,7 @@ namespace Monic.Web.Controllers
                 .Where(o => o.IndicatorType == IndicatorType.Collected && o.Frequency == dateType && o.EntityTypeId == entity.EntityTypeId)
                 .ToDictionaryAsync(o => o.IndicatorId);
             var dbData = await db.Data
+                .Include(d => d.DisaggregationData)
                 .Where(o => o.EntityId == entityId && o.DateId == dateId)
                 .ToDictionaryAsync(o => o.IndicatorId, o => o);
 
@@ -105,6 +110,22 @@ namespace Monic.Web.Controllers
 
                 if (indicator.UseIndicatorDates && !await db.IndicatorDates.Where(o => o.IndicatorId == indicator.IndicatorId && o.DateId == dateId).AnyAsync())
                     return BadRequest($"Indicator {indicator.Code} is not collected on this date");
+
+                if (datumDTO.DisaggregationData != null && datumDTO.DisaggregationData.Count > 0)
+                {
+                    if (!datumDTO.Value.HasValue)
+                    {
+                        datumDTO.Value = datumDTO.DisaggregationData.Sum(d => d.Value);
+                    }
+                    else
+                    {
+                        var parity = Code.VarianceEngine.ValidateDisaggregationParity(datumDTO.Value.Value, datumDTO.DisaggregationData.Select(d => d.Value));
+                        if (!parity.IsValid)
+                        {
+                            return StatusCode(422, $"Disaggregation parity validation failed for indicator {indicator.Code}. Breakdown sum ({parity.CalculatedSum}) must equal total ({datumDTO.Value.Value}). Discrepancy: {parity.Discrepancy}");
+                        }
+                    }
+                }
 
                 if (indicator.Minimum.HasValue && datumDTO.Value.HasValue && datumDTO.Value < indicator.Minimum)
                     return BadRequest($"Value is below the minimum allowed for indicator {indicator.Code}");
@@ -134,6 +155,31 @@ namespace Monic.Web.Controllers
 
                 ModelFactory.Hydrate(datum, datumDTO);
                 if (string.IsNullOrWhiteSpace(datumDTO.Note)) datum.Note = null;
+
+                if (datumDTO.DisaggregationData != null && datumDTO.DisaggregationData.Count > 0)
+                {
+                    foreach (var ddDto in datumDTO.DisaggregationData)
+                    {
+                        var existingDd = datum.DisaggregationData.FirstOrDefault(dd => dd.DisaggregationOptionId == ddDto.DisaggregationOptionId);
+                        if (existingDd != null)
+                        {
+                            existingDd.Value = ddDto.Value;
+                        }
+                        else
+                        {
+                            datum.DisaggregationData.Add(new DisaggregationDatum
+                            {
+                                DisaggregationDatumId = Guid.NewGuid(),
+                                IndicatorId = datum.IndicatorId,
+                                EntityId = datum.EntityId,
+                                DateId = datum.DateId,
+                                DisaggregationOptionId = ddDto.DisaggregationOptionId,
+                                Value = ddDto.Value
+                            });
+                        }
+                    }
+                }
+
                 data.Add(datum);
 
             }
@@ -141,6 +187,7 @@ namespace Monic.Web.Controllers
             var calculation = new Calculation(db, AppSettings, CurrentUser.Id);
 
             await calculation.SaveAsync(data);
+            await db.SaveChangesAsync();
 
             return await LoadDataEntry(dateId, entityId, PermissionType.Edit);
         }

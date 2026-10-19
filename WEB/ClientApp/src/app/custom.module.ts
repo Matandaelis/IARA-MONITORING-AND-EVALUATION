@@ -53,6 +53,9 @@ import { NgxEchartsModule } from 'ngx-echarts';
 import { ChartComponent } from './charts/chart.component';
 import { ChartsComponent } from './charts/charts.component';
 import { SerieComponent } from './charts/serie.component';
+import { MeReviewsComponent } from './mereview/mereviews.component';
+import { MeReviewDetailComponent } from './mereview/mereview-detail.component';
+import { MeReviewModalComponent } from './mereview/mereview.modal.component';
 
 @NgModule({
     imports: [
@@ -110,7 +113,10 @@ import { SerieComponent } from './charts/serie.component';
         FolderShortcutSettingsComponent,
         ChartsComponent,
         ChartComponent,
-        SerieComponent
+        SerieComponent,
+        MeReviewsComponent,
+        MeReviewDetailComponent,
+        MeReviewModalComponent
     ],
     exports: [
         GanttComponent,

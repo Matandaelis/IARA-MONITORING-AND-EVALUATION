@@ -161,70 +161,96 @@
                                         </div>
 
                                         <!--indicator row-->
-                                        <div class="indicatorRow d-md-flex align-items-center flex-column flex-md-row indicator mb-2 p-2 mb-md-0 p-md-0" *ngFor="let indicatorRow of subcategoryRow.indicatorRows" [ngClass]="{ 'changed': indicatorRow.changed }">
-                                            <div class="col">
-                                                <!--todo: if not using submit/verify/approve, this column isn't needed (see above)-->
-                                                <div class="d-md-flex align-items-center flex-column flex-md-row px-0 py-0 px-md-2 py-md-1">
-                                                    <div class="col-md-6 col-xl-8">
-                                                        {{indicatorRow.indicator.name}} <small class="text-muted">({{indicatorRow.indicator.code}})</small>
-                                                    </div>
+                                        <ng-container *ngFor="let indicatorRow of subcategoryRow.indicatorRows">
+                                            <div class="indicatorRow d-md-flex align-items-center flex-column flex-md-row indicator mb-2 p-2 mb-md-0 p-md-0" [ngClass]="{ 'changed': indicatorRow.changed }">
+                                                <div class="col">
+                                                    <!--todo: if not using submit/verify/approve, this column isn't needed (see above)-->
+                                                    <div class="d-md-flex align-items-center flex-column flex-md-row px-0 py-0 px-md-2 py-md-1">
+                                                        <div class="col-md-6 col-xl-8">
+                                                            {{indicatorRow.indicator.name}} <small class="text-muted">({{indicatorRow.indicator.code}})</small>
+                                                            <span *ngIf="indicatorRow.indicator.disaggregationGroup" class="badge bg-info-subtle text-info ms-2 cursor-pointer" (click)="toggleDisaggregation(indicatorRow)">
+                                                                <i class="fas fa-layer-group me-1"></i>{{indicatorRow.indicator.disaggregationGroup.name}}
+                                                                <i class="fas ms-1" [ngClass]="isDisaggregationExpanded(indicatorRow) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                                                            </span>
+                                                        </div>
 
-                                                    <!--value-->
-                                                    <div class="col-md-3 col-xl-2 px-0 px-md-1 py-1">
-                                                        <small class="text-muted d-md-none text-tiny">Value:</small>
-                                                        <input type="number" class="form-control" [(ngModel)]="indicatorRow.datum.value"
-                                                               placeholder="{{indicatorRow.units}}" name="indicator-{{indicatorRow.indicator.indicatorId}}-value"
-                                                               id="indicator-{{indicatorRow.indicator.indicatorId}}-value"
-                                                               [disabled]="!indicatorRow.canEdit" step="any"
-                                                               (ngModelChange)="setChanged(indicatorRow)"
-                                                               *ngIf="indicatorRow.indicator.dataType !== 3" />
-                                                        <select class="form-select" [(ngModel)]="indicatorRow.datum.value"
-                                                                name="indicator-{{indicatorRow.indicator.indicatorId}}-value"
-                                                                id="indicator-{{indicatorRow.indicator.indicatorId}}-value"
-                                                                [disabled]="!indicatorRow.canEdit" step="any"
-                                                                (ngModelChange)="setChanged(indicatorRow)"
-                                                                *ngIf="indicatorRow.indicator.dataType === 3">
-                                                            <option *ngFor="let option of optionsMap[indicatorRow.indicator.optionListId]" [ngValue]="option.value">{{option.name}}</option>
-                                                        </select>
-                                                    </div>
+                                                        <!--value-->
+                                                        <div class="col-md-3 col-xl-2 px-0 px-md-1 py-1">
+                                                            <small class="text-muted d-md-none text-tiny">Value:</small>
+                                                            <input type="number" class="form-control" [(ngModel)]="indicatorRow.datum.value"
+                                                                   placeholder="{{indicatorRow.units}}" name="indicator-{{indicatorRow.indicator.indicatorId}}-value"
+                                                                   id="indicator-{{indicatorRow.indicator.indicatorId}}-value"
+                                                                   [disabled]="!indicatorRow.canEdit" step="any"
+                                                                   (ngModelChange)="setChanged(indicatorRow)"
+                                                                   *ngIf="indicatorRow.indicator.dataType !== 3" />
+                                                            <select class="form-select" [(ngModel)]="indicatorRow.datum.value"
+                                                                    name="indicator-{{indicatorRow.indicator.indicatorId}}-value"
+                                                                    id="indicator-{{indicatorRow.indicator.indicatorId}}-value"
+                                                                    [disabled]="!indicatorRow.canEdit" step="any"
+                                                                    (ngModelChange)="setChanged(indicatorRow)"
+                                                                    *ngIf="indicatorRow.indicator.dataType === 3">
+                                                                <option *ngFor="let option of optionsMap[indicatorRow.indicator.optionListId]" [ngValue]="option.value">{{option.name}}</option>
+                                                            </select>
+                                                        </div>
 
-                                                    <!--note-->
-                                                    <div class="col-md-3 col-xl-2 px-0 px-md-1 py-1">
-                                                        <small class="text-muted d-md-none text-tiny">Note:</small>
-                                                        <input type="text" class="form-control" [(ngModel)]="indicatorRow.datum.note" placeholder="Note"
-                                                               name="indicator-{{indicatorRow.indicator.indicatorId}}-note"
-                                                               id="indicator-{{indicatorRow.indicator.indicatorId}}-note"
-                                                               [disabled]="!indicatorRow.canEdit || indicatorRow.indicator.disableNote" maxlength="250"
-                                                               (ngModelChange)="setChanged(indicatorRow)" />
-                                                    </div>
+                                                        <!--note-->
+                                                        <div class="col-md-3 col-xl-2 px-0 px-md-1 py-1">
+                                                            <small class="text-muted d-md-none text-tiny">Note:</small>
+                                                            <input type="text" class="form-control" [(ngModel)]="indicatorRow.datum.note" placeholder="Note"
+                                                                   name="indicator-{{indicatorRow.indicator.indicatorId}}-note"
+                                                                   id="indicator-{{indicatorRow.indicator.indicatorId}}-note"
+                                                                   [disabled]="!indicatorRow.canEdit || indicatorRow.indicator.disableNote" maxlength="250"
+                                                                   (ngModelChange)="setChanged(indicatorRow)" />
+                                                        </div>
 
+                                                    </div>
+                                                </div>
+
+                                                <!--status icon-->
+                                                <div class="col col-icon text-center py-1">
+                                                    <i class="fa fa-fw fa-circle-info cursor-pointer" (click)="showRowStatus(indicatorRow)" [ngbTooltip]="getStatusTooltip(indicatorRow)" [ngClass]="{ 'text-danger': indicatorRow.datum.rejected }"></i>
+                                                </div>
+
+                                                <!--submit checkbox-->
+                                                <div class="col col-icon text-center py-1" *ngIf="showSubmitCol">
+                                                    <i class="fa fa-fw" [ngClass]="getSubmitClass(indicatorRow)"
+                                                       (click)="checkClick(indicatorRow)"></i>
+                                                </div>
+
+                                                <!--verify checkbox-->
+                                                <div class="col col-icon text-center py-1" *ngIf="showVerifyCol">
+                                                    <i class="fa fa-fw" [ngClass]="getVerifyClass(indicatorRow)"
+                                                       (click)="checkClick(indicatorRow)"></i>
+                                                </div>
+
+                                                <!--approve checkbox-->
+                                                <div class="col col-icon text-center py-1" *ngIf="showApproveCol">
+                                                    <i class="fa fa-fw" [ngClass]="getApproveClass(indicatorRow)"
+                                                       (click)="checkClick(indicatorRow)"></i>
+                                                </div>
+
+                                            </div>
+
+                                            <!--disaggregation breakdown sub-rows-->
+                                            <div *ngIf="indicatorRow.indicator.disaggregationGroup && isDisaggregationExpanded(indicatorRow)" class="ps-4 pe-2 py-2 bg-light border-start border-3 border-info mb-2">
+                                                <div class="small fw-bold text-muted mb-2">
+                                                    <i class="fas fa-sitemap me-1"></i>{{indicatorRow.indicator.disaggregationGroup.name}} Breakdown (Auto-sums to Total):
+                                                </div>
+                                                <div class="row g-2 align-items-center mb-1" *ngFor="let option of indicatorRow.indicator.disaggregationGroup.options">
+                                                    <div class="col-md-6 col-xl-8 small text-secondary ps-3">
+                                                        <i class="fas fa-angle-right me-1 text-muted"></i>{{option.name}} <small class="text-muted" *ngIf="option.code">({{option.code}})</small>
+                                                    </div>
+                                                    <div class="col-md-3 col-xl-2">
+                                                        <input type="number" class="form-control form-control-sm"
+                                                               [placeholder]="option.name"
+                                                               [value]="getDisaggregationValue(indicatorRow, option.disaggregationOptionId)"
+                                                               (input)="onDisaggregationInput(indicatorRow, option.disaggregationOptionId, $any($event.target).value)"
+                                                               [disabled]="!indicatorRow.canEdit"
+                                                               step="any" />
+                                                    </div>
                                                 </div>
                                             </div>
-
-                                            <!--status icon-->
-                                            <div class="col col-icon text-center py-1">
-                                                <i class="fa fa-fw fa-circle-info cursor-pointer" (click)="showRowStatus(indicatorRow)" [ngbTooltip]="getStatusTooltip(indicatorRow)" [ngClass]="{ 'text-danger': indicatorRow.datum.rejected }"></i>
-                                            </div>
-
-                                            <!--submit checkbox-->
-                                            <div class="col col-icon text-center py-1" *ngIf="showSubmitCol">
-                                                <i class="fa fa-fw" [ngClass]="getSubmitClass(indicatorRow)"
-                                                   (click)="checkClick(indicatorRow)"></i>
-                                            </div>
-
-                                            <!--verify checkbox-->
-                                            <div class="col col-icon text-center py-1" *ngIf="showVerifyCol">
-                                                <i class="fa fa-fw" [ngClass]="getVerifyClass(indicatorRow)"
-                                                   (click)="checkClick(indicatorRow)"></i>
-                                            </div>
-
-                                            <!--approve checkbox-->
-                                            <div class="col col-icon text-center py-1" *ngIf="showApproveCol">
-                                                <i class="fa fa-fw" [ngClass]="getApproveClass(indicatorRow)"
-                                                   (click)="checkClick(indicatorRow)"></i>
-                                            </div>
-
-                                        </div>
+                                        </ng-container>
 
                                     </div>
 

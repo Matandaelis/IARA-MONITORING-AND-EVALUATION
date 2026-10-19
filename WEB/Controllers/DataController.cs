@@ -173,6 +173,9 @@ namespace Monic.Web.Controllers
                         datum.DisaggregationData.Add(new DisaggregationDatum
                         {
                             DisaggregationDatumId = Guid.NewGuid(),
+                            IndicatorId = datum.IndicatorId,
+                            EntityId = datum.EntityId,
+                            DateId = datum.DateId,
                             DisaggregationOptionId = ddDto.DisaggregationOptionId,
                             Value = ddDto.Value
                         });
@@ -182,6 +185,11 @@ namespace Monic.Web.Controllers
 
             var calculation = new Calculation(db, AppSettings, CurrentUser.Id);
             await calculation.SaveAsync(datum);
+
+            if (datumDTO.DisaggregationData != null && datumDTO.DisaggregationData.Count > 0)
+            {
+                await db.SaveChangesAsync();
+            }
 
             return await Get(datum.IndicatorId, datum.EntityId, datum.DateId);
         }

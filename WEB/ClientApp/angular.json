@@ -45,11 +45,10 @@
                             "clone-deep",
                             "dagre",
                             "webcola",
-                            "moment",
-                            "zxcvbn"
+                            "zxcvbn",
+                            "quill",
+                            "quill-delta"
                         ],
-                        "allowedCommonJsDependencies": [ "moment" ],
-                        "scripts": [],
                         "browser": "src/main.ts"
                     },
                     "configurations": {
@@ -61,13 +60,13 @@
                             "budgets": [
                                 {
                                     "type": "initial",
-                                    "maximumWarning": "2mb",
-                                    "maximumError": "3mb"
+                                    "maximumWarning": "2.5mb",
+                                    "maximumError": "4mb"
                                 },
                                 {
                                     "type": "anyComponentStyle",
-                                    "maximumWarning": "2kb",
-                                    "maximumError": "4kb"
+                                    "maximumWarning": "4kb",
+                                    "maximumError": "8kb"
                                 }
                             ],
                             "fileReplacements": [
@@ -85,7 +84,7 @@
                             "namedChunks": true
                         }
                     },
-                    "defaultConfiguration": "development"
+                    "defaultConfiguration": "production"
                 },
                 "serve": {
                     "builder": "@angular/build:dev-server",

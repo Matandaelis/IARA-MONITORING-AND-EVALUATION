@@ -17,6 +17,8 @@ import { QuestionnaireComponent } from './questionnaire/questionnaire.component'
 import { FolderComponent } from './folder/folder.component';
 import { ChartsComponent } from './charts/charts.component';
 import { ChartComponent } from './charts/chart.component';
+import { MeReviewsComponent } from './mereview/mereviews.component';
+import { MeReviewDetailComponent } from './mereview/mereview-detail.component';
 
 export const CustomRoutes: Route[] = [
     {
@@ -165,6 +167,26 @@ export const CustomRoutes: Route[] = [
                 }
             }
         ]
+    },
+    {
+        path: 'mereviews',
+        canActivate: [AccessGuard],
+        canActivateChild: [AccessGuard],
+        component: MeReviewsComponent,
+        data: {
+            breadcrumb: 'M&E Reviews',
+            menu: 'home'
+        }
+    },
+    {
+        path: 'mereviews/:meReviewId',
+        canActivate: [AccessGuard],
+        canActivateChild: [AccessGuard],
+        component: MeReviewDetailComponent,
+        data: {
+            breadcrumb: 'M&E Review Scorecard',
+            menu: 'home'
+        }
     },
     {
         path: 'folder',

@@ -43,14 +43,24 @@ namespace Monic.Web.Models
             {
                 entity.HasKey(e => e.DisaggregationDatumId);
 
-                entity.HasIndex(e => new { e.DatumId, e.DisaggregationOptionId })
-                    .HasDatabaseName("IX_DisaggregationData_DatumId_OptionId")
+                entity.Property(e => e.Value).HasColumnType("decimal(20, 8)");
+
+                entity.HasIndex(e => new { e.IndicatorId, e.EntityId, e.DateId, e.DisaggregationOptionId })
+                    .HasDatabaseName("IX_DisaggregationData_Datum_OptionId")
                     .IsUnique();
+
+                entity.HasOne(d => d.Datum)
+                    .WithMany(p => p.DisaggregationData)
+                    .HasForeignKey(d => new { d.IndicatorId, d.EntityId, d.DateId })
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<IndicatorTarget>(entity =>
             {
                 entity.HasKey(e => e.IndicatorTargetId);
+
+                entity.Property(e => e.TargetValue).HasColumnType("decimal(20, 8)");
+                entity.Property(e => e.BaselineValue).HasColumnType("decimal(20, 8)");
 
                 entity.HasIndex(e => new { e.IndicatorId, e.DateId, e.EntityId })
                     .HasDatabaseName("IX_IndicatorTargets_Indicator_Date_Entity");

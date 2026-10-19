@@ -17,7 +17,7 @@ namespace Monic.Web.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.3")
+                .HasAnnotation("ProductVersion", "10.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -461,6 +461,99 @@ namespace Monic.Web.Migrations
                     b.ToTable("Data");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.DisaggregationDatum", b =>
+                {
+                    b.Property<Guid>("DisaggregationDatumId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("DateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("DatumId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("DisaggregationOptionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("IndicatorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Value")
+                        .HasColumnType("decimal(20, 8)");
+
+                    b.HasKey("DisaggregationDatumId");
+
+                    b.HasIndex("DisaggregationOptionId");
+
+                    b.HasIndex("IndicatorId", "EntityId", "DateId", "DisaggregationOptionId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_DisaggregationData_Datum_OptionId");
+
+                    b.ToTable("DisaggregationData");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.DisaggregationGroup", b =>
+                {
+                    b.Property<Guid>("DisaggregationGroupId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("DisaggregationGroupId");
+
+                    b.HasIndex("Name")
+                        .HasDatabaseName("IX_DisaggregationGroups_Name");
+
+                    b.ToTable("DisaggregationGroups");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.DisaggregationOption", b =>
+                {
+                    b.Property<Guid>("DisaggregationOptionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("DisaggregationGroupId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("DisaggregationOptionId");
+
+                    b.HasIndex("DisaggregationGroupId", "Code")
+                        .HasDatabaseName("IX_DisaggregationOptions_GroupId_Code");
+
+                    b.ToTable("DisaggregationOptions");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.Document", b =>
                 {
                     b.Property<Guid>("DocumentId")
@@ -894,8 +987,14 @@ namespace Monic.Web.Migrations
                     b.Property<byte>("DecimalPlaces")
                         .HasColumnType("tinyint");
 
+                    b.Property<int>("Direction")
+                        .HasColumnType("int");
+
                     b.Property<bool>("DisableNote")
                         .HasColumnType("bit");
+
+                    b.Property<Guid?>("DisaggregationGroupId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("EntityTypeId")
                         .HasColumnType("uniqueidentifier");
@@ -984,6 +1083,8 @@ namespace Monic.Web.Migrations
 
                     b.HasIndex("CreatedById");
 
+                    b.HasIndex("DisaggregationGroupId");
+
                     b.HasIndex("EntityTypeId");
 
                     b.HasIndex("GroupingIndicatorId");
@@ -1046,6 +1147,46 @@ namespace Monic.Web.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("IndicatorPermissions");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.IndicatorTarget", b =>
+                {
+                    b.Property<Guid>("IndicatorTargetId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("BaselineValue")
+                        .HasColumnType("decimal(20, 8)");
+
+                    b.Property<Guid>("DateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("EntityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("IndicatorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<decimal>("TargetValue")
+                        .HasColumnType("decimal(20, 8)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("IndicatorTargetId");
+
+                    b.HasIndex("DateId");
+
+                    b.HasIndex("EntityId");
+
+                    b.HasIndex("IndicatorId", "DateId", "EntityId")
+                        .HasDatabaseName("IX_IndicatorTargets_Indicator_Date_Entity");
+
+                    b.ToTable("IndicatorTargets");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.Item", b =>
@@ -1191,6 +1332,196 @@ namespace Monic.Web.Migrations
                     b.HasIndex("IndicatorId");
 
                     b.ToTable("LogFrameRowIndicators");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.MeReview", b =>
+                {
+                    b.Property<Guid>("MeReviewId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedDateUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DocumentSource")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Domain")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("OverallScore")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Summary")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("TargetEntityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("TargetType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.HasKey("MeReviewId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("CreatedDateUtc")
+                        .HasDatabaseName("IX_MeReviews_CreatedDateUtc");
+
+                    b.HasIndex("Domain")
+                        .HasDatabaseName("IX_MeReviews_Domain");
+
+                    b.HasIndex("TargetEntityId")
+                        .HasDatabaseName("IX_MeReviews_TargetEntityId");
+
+                    b.ToTable("MeReviews");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.MeReviewFinding", b =>
+                {
+                    b.Property<Guid>("MeReviewFindingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Criterion")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LocationRef")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<Guid>("MeReviewId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("MeReviewSectionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("MeReviewFindingId");
+
+                    b.HasIndex("MeReviewId")
+                        .HasDatabaseName("IX_MeReviewFindings_MeReviewId");
+
+                    b.HasIndex("MeReviewSectionId")
+                        .HasDatabaseName("IX_MeReviewFindings_MeReviewSectionId");
+
+                    b.ToTable("MeReviewFindings");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.MeReviewRecommendation", b =>
+                {
+                    b.Property<Guid>("MeReviewRecommendationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ActionSteps")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Category")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsImplemented")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("MeReviewFindingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("MeReviewId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Priority")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("RecommendationText")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("MeReviewRecommendationId");
+
+                    b.HasIndex("MeReviewFindingId")
+                        .HasDatabaseName("IX_MeReviewRecommendations_MeReviewFindingId");
+
+                    b.HasIndex("MeReviewId")
+                        .HasDatabaseName("IX_MeReviewRecommendations_MeReviewId");
+
+                    b.ToTable("MeReviewRecommendations");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.MeReviewSection", b =>
+                {
+                    b.Property<Guid>("MeReviewSectionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Comments")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("MeReviewId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SectionKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Status")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<int>("Weight")
+                        .HasColumnType("int");
+
+                    b.HasKey("MeReviewSectionId");
+
+                    b.HasIndex("MeReviewId")
+                        .HasDatabaseName("IX_MeReviewSections_MeReviewId");
+
+                    b.ToTable("MeReviewSections");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.Milestone", b =>
@@ -2420,6 +2751,36 @@ namespace Monic.Web.Migrations
                     b.Navigation("VerifyReview");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.DisaggregationDatum", b =>
+                {
+                    b.HasOne("Monic.Web.Models.DisaggregationOption", "DisaggregationOption")
+                        .WithMany("DisaggregationData")
+                        .HasForeignKey("DisaggregationOptionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Monic.Web.Models.Datum", "Datum")
+                        .WithMany("DisaggregationData")
+                        .HasForeignKey("IndicatorId", "EntityId", "DateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Datum");
+
+                    b.Navigation("DisaggregationOption");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.DisaggregationOption", b =>
+                {
+                    b.HasOne("Monic.Web.Models.DisaggregationGroup", "DisaggregationGroup")
+                        .WithMany("Options")
+                        .HasForeignKey("DisaggregationGroupId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("DisaggregationGroup");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.Document", b =>
                 {
                     b.HasOne("Monic.Web.Models.Item", "Item")
@@ -2580,6 +2941,11 @@ namespace Monic.Web.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Monic.Web.Models.DisaggregationGroup", "DisaggregationGroup")
+                        .WithMany("Indicators")
+                        .HasForeignKey("DisaggregationGroupId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Monic.Web.Models.EntityType", "EntityType")
                         .WithMany("Indicators")
                         .HasForeignKey("EntityTypeId")
@@ -2603,6 +2969,8 @@ namespace Monic.Web.Migrations
                         .IsRequired();
 
                     b.Navigation("CreatedBy");
+
+                    b.Navigation("DisaggregationGroup");
 
                     b.Navigation("EntityType");
 
@@ -2648,6 +3016,32 @@ namespace Monic.Web.Migrations
                     b.Navigation("Indicator");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.IndicatorTarget", b =>
+                {
+                    b.HasOne("Monic.Web.Models.Date", "Date")
+                        .WithMany()
+                        .HasForeignKey("DateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Monic.Web.Models.Entity", "Entity")
+                        .WithMany()
+                        .HasForeignKey("EntityId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.Indicator", "Indicator")
+                        .WithMany("IndicatorTargets")
+                        .HasForeignKey("IndicatorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Date");
+
+                    b.Navigation("Entity");
+
+                    b.Navigation("Indicator");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.ItemField", b =>
@@ -2743,6 +3137,63 @@ namespace Monic.Web.Migrations
                     b.Navigation("Indicator");
 
                     b.Navigation("LogFrameRow");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.MeReview", b =>
+                {
+                    b.HasOne("Monic.Web.Models.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedBy");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.MeReviewFinding", b =>
+                {
+                    b.HasOne("Monic.Web.Models.MeReview", "MeReview")
+                        .WithMany("Findings")
+                        .HasForeignKey("MeReviewId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Monic.Web.Models.MeReviewSection", "Section")
+                        .WithMany("Findings")
+                        .HasForeignKey("MeReviewSectionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("MeReview");
+
+                    b.Navigation("Section");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.MeReviewRecommendation", b =>
+                {
+                    b.HasOne("Monic.Web.Models.MeReviewFinding", "Finding")
+                        .WithMany("Recommendations")
+                        .HasForeignKey("MeReviewFindingId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.MeReview", "MeReview")
+                        .WithMany("Recommendations")
+                        .HasForeignKey("MeReviewId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Finding");
+
+                    b.Navigation("MeReview");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.MeReviewSection", b =>
+                {
+                    b.HasOne("Monic.Web.Models.MeReview", "MeReview")
+                        .WithMany("Sections")
+                        .HasForeignKey("MeReviewId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("MeReview");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.Milestone", b =>
@@ -3090,6 +3541,20 @@ namespace Monic.Web.Migrations
             modelBuilder.Entity("Monic.Web.Models.Datum", b =>
                 {
                     b.Navigation("DataReviewLinks");
+
+                    b.Navigation("DisaggregationData");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.DisaggregationGroup", b =>
+                {
+                    b.Navigation("Indicators");
+
+                    b.Navigation("Options");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.DisaggregationOption", b =>
+                {
+                    b.Navigation("DisaggregationData");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.Document", b =>
@@ -3153,6 +3618,8 @@ namespace Monic.Web.Migrations
 
                     b.Navigation("IndicatorPermissions");
 
+                    b.Navigation("IndicatorTargets");
+
                     b.Navigation("LogFrameRowIndicators");
 
                     b.Navigation("SourceTokens");
@@ -3179,6 +3646,25 @@ namespace Monic.Web.Migrations
                     b.Navigation("LogFrameRowComponents");
 
                     b.Navigation("LogFrameRowIndicators");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.MeReview", b =>
+                {
+                    b.Navigation("Findings");
+
+                    b.Navigation("Recommendations");
+
+                    b.Navigation("Sections");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.MeReviewFinding", b =>
+                {
+                    b.Navigation("Recommendations");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.MeReviewSection", b =>
+                {
+                    b.Navigation("Findings");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.Milestone", b =>

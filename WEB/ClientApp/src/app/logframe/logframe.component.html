@@ -49,6 +49,9 @@
     <div class="my-4">
         <button type="submit" class="btn btn-outline-success me-2 mb-1">Save<i class="fas fa-check ms-2"></i></button>
         <button type="button" *ngIf="!isNew" class="btn btn-outline-danger me-2 mb-1" (click)="delete()">Delete<i class="fas fa-times ms-2"></i></button>
+        <button type="button" *ngIf="!isNew" class="btn btn-outline-primary me-2 mb-1" (click)="auditLogFrame()" [disabled]="auditing">
+            <i class="fas me-1" [ngClass]="auditing ? 'fa-spinner fa-spin' : 'fa-clipboard-check'"></i> Audit LogFrame
+        </button>
     </div>
 
 </form>
@@ -61,6 +64,9 @@
 
             <div class="card-header-title">
                 <h4>{{logFrame.name || "Logical Framework"}}</h4>
+                <div>
+                    <i class="fa fa-fw ms-1 fa-clipboard-check cursor-pointer text-primary" ngbTooltip="Audit Logical Framework" (click)="auditLogFrame()"></i>
+                </div>
             </div>
 
         </div>

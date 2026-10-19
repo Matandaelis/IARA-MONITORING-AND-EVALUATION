@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.ResponseCompression;
 using Azure.Identity;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
@@ -239,6 +240,28 @@ builder.Services.Configure<IdentityOptions>(options =>
 
 builder.ConfigureOpenIddict(appSettings);
 
+builder.Services.AddMemoryCache();
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
+    {
+        "application/json",
+        "application/geo+json",
+        "image/svg+xml"
+    });
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
+{
+    options.Level = System.IO.Compression.CompressionLevel.Fastest;
+});
+builder.Services.Configure<GzipCompressionProviderOptions>(options =>
+{
+    options.Level = System.IO.Compression.CompressionLevel.Fastest;
+});
+
 builder.Services.AddSingleton(appSettings);
 builder.Services.AddSingleton(appSettings.Email);
 builder.Services.AddSingleton(appSettings.Azure.Documents);
@@ -247,6 +270,7 @@ builder.Services.AddSingleton<IEmailService, EmailService>();
 builder.Services.AddScoped<IIdentityService, IdentityService>();
 builder.Services.AddScoped<ApiExceptionAttribute>();
 builder.Services.AddScoped<DocumentsStorageService>();
+builder.Services.AddScoped<IMeReviewService, MeReviewService>();
 
 var app = builder.Build();
 
@@ -292,8 +316,30 @@ if (builder.Environment.IsDevelopment())
     app.UseCors(policyName);
 }
 
+app.UseResponseCompression();
 app.UseDefaultFiles();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        var path = ctx.Context.Request.Path.Value ?? "";
+        if (path.EndsWith(".html", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(path))
+        {
+            ctx.Context.Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
+        }
+        else if (System.Text.RegularExpressions.Regex.IsMatch(path, @"-[A-Z0-9]{8}\.(js|css)$", System.Text.RegularExpressions.RegexOptions.IgnoreCase) ||
+                 path.StartsWith("/media/", StringComparison.OrdinalIgnoreCase))
+        {
+            // Immutable caching for hashed static bundles (scripts, styles, hashed media chunks)
+            ctx.Context.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
+        }
+        else
+        {
+            // Standard caching for non-hashed assets (GeoJSON boundaries, logos, icons, licenses)
+            ctx.Context.Response.Headers.CacheControl = "public, max-age=86400";
+        }
+    }
+});
 
 app.UseRouting();
 

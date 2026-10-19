@@ -230,7 +230,8 @@ export class DataEntryComponent implements OnInit, AfterViewInit {
                                 entityId: indicatorRow.datum.entityId,
                                 indicatorId: indicatorRow.datum.indicatorId,
                                 value: indicatorRow.datum.value,
-                                note: indicatorRow.datum.note
+                                note: indicatorRow.datum.note,
+                                disaggregationData: indicatorRow.datum.disaggregationData
                             }
                         );
                     }
@@ -507,6 +508,61 @@ export class DataEntryComponent implements OnInit, AfterViewInit {
             if (indicatorRow.datum.approved) return "fa-square-check text-muted";
             else return "fa-square text-muted";
         }
+    }
+
+    public expandedDisaggregations: { [indicatorId: string]: boolean } = {};
+
+    toggleDisaggregation(indicatorRow: IndicatorRow): void {
+        const id = indicatorRow.indicator.indicatorId;
+        this.expandedDisaggregations[id] = !this.expandedDisaggregations[id];
+    }
+
+    isDisaggregationExpanded(indicatorRow: IndicatorRow): boolean {
+        return !!this.expandedDisaggregations[indicatorRow.indicator.indicatorId];
+    }
+
+    getDisaggregationValue(indicatorRow: IndicatorRow, optionId: string): number | null {
+        if (!indicatorRow.datum.disaggregationData) return null;
+        const item = indicatorRow.datum.disaggregationData.find(d => d.disaggregationOptionId === optionId);
+        return item ? item.value : null;
+    }
+
+    onDisaggregationInput(indicatorRow: IndicatorRow, optionId: string, rawVal: string): void {
+        if (!indicatorRow.datum.disaggregationData) {
+            indicatorRow.datum.disaggregationData = [];
+        }
+
+        const val = rawVal === '' || rawVal === null ? null : parseFloat(rawVal);
+        let existing = indicatorRow.datum.disaggregationData.find(d => d.disaggregationOptionId === optionId);
+
+        if (existing) {
+            if (val === null) {
+                indicatorRow.datum.disaggregationData = indicatorRow.datum.disaggregationData.filter(d => d.disaggregationOptionId !== optionId);
+            } else {
+                existing.value = val;
+            }
+        } else if (val !== null) {
+            indicatorRow.datum.disaggregationData.push({
+                indicatorId: indicatorRow.datum.indicatorId,
+                entityId: indicatorRow.datum.entityId,
+                dateId: indicatorRow.datum.dateId,
+                disaggregationOptionId: optionId,
+                value: val
+            });
+        }
+
+        // Auto-sum breakdown values into primary indicatorRow.datum.value
+        let sum = 0;
+        let hasAny = false;
+        indicatorRow.datum.disaggregationData.forEach(d => {
+            if (d.value !== null && !isNaN(d.value)) {
+                sum += d.value;
+                hasAny = true;
+            }
+        });
+
+        indicatorRow.datum.value = hasAny ? sum : null;
+        this.setChanged(indicatorRow);
     }
 }
 

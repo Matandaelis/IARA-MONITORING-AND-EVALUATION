@@ -1,4 +1,4 @@
-﻿using Monic.Web.Models;
+using Monic.Web.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
 using Microsoft.Data.SqlClient;
@@ -9,16 +9,13 @@ namespace Monic.Web.Code
     {
         private ApplicationDbContext db;
         private Guid userId;
-        private List<Indicator> allIndicators = new List<Indicator>();
+        private Microsoft.Extensions.Caching.Memory.IMemoryCache cache;
 
-        public Calculation(ApplicationDbContext db, AppSettings appSettings, Guid userId)
+        public Calculation(ApplicationDbContext db, AppSettings appSettings, Guid userId, Microsoft.Extensions.Caching.Memory.IMemoryCache cache = null)
         {
             this.db = db;
             this.userId = userId;
-            allIndicators = db.Indicators
-                .Include(o => o.Tokens)
-                .ThenInclude(o => o.SourceIndicator)
-                .ToList();
+            this.cache = cache;
         }
 
         public async System.Threading.Tasks.Task SaveAsync(Datum datum)
@@ -37,18 +34,21 @@ namespace Monic.Web.Code
             var entityIds = data.Select(o => o.EntityId).Distinct().ToList();
             var dateIds = data.Select(o => o.DateId).Distinct().ToList();
 
-            var indicators = allIndicators.Where(o => indicatorIds.Contains(o.IndicatorId)).ToList();
-            if (indicators.Any(o => o.IndicatorType != IndicatorType.Collected)) throw new Exception("Attempting to save a non-collected indicator");
+            var nonCollected = await db.Indicators
+                .AsNoTracking()
+                .Where(o => indicatorIds.Contains(o.IndicatorId) && o.IndicatorType != IndicatorType.Collected)
+                .AnyAsync();
+            if (nonCollected) throw new Exception("Attempting to save a non-collected indicator");
 
-            var tokenStacks = GetTokenStacksToCalculate(indicatorIds);
+            var tokenStackLevels = await GetTokenStacksToCalculateAsync(indicatorIds);
 
             // entityIds for agg+calc: current entity + parents
             entityIds.AddRange(await db.EntityLinks.Where(o => entityIds.Contains(o.ChildEntityId)).Select(o => o.ParentEntityId).Distinct().ToListAsync());
             entityIds = entityIds.Distinct().ToList();
 
-            // dateIds for agg+calc: current date + parents
-            dateIds.AddRange(db.Dates.Where(o => dateIds.Contains(o.DateId) && o.QuarterId.HasValue).Select(o => o.QuarterId.Value).Distinct().ToList());
-            dateIds.AddRange(db.Dates.Where(o => dateIds.Contains(o.DateId) && o.YearId.HasValue).Select(o => o.YearId.Value).Distinct().ToList());
+            // dateIds for agg+calc: current date + parents (asynchronous EF Core queries)
+            dateIds.AddRange(await db.Dates.Where(o => dateIds.Contains(o.DateId) && o.QuarterId.HasValue).Select(o => o.QuarterId.Value).Distinct().ToListAsync());
+            dateIds.AddRange(await db.Dates.Where(o => dateIds.Contains(o.DateId) && o.YearId.HasValue).Select(o => o.YearId.Value).Distinct().ToListAsync());
             dateIds = dateIds.Distinct().ToList();
 
             using var transactionScope = Code.Db.CreateTransactionScope();
@@ -104,8 +104,11 @@ namespace Monic.Web.Code
 
             await AggregateAsync(indicatorIds, entityIds, dateIds);
 
-            if (tokenStacks.Count != 0)
-                await CalculateAsync(tokenStacks, entityIds, dateIds);
+            foreach (var levelStacks in tokenStackLevels)
+            {
+                if (levelStacks.Count != 0)
+                    await CalculateAsync(levelStacks, entityIds, dateIds);
+            }
 
             transactionScope.Complete();
         }
@@ -133,7 +136,11 @@ namespace Monic.Web.Code
             //             PLUS the entities aggregating FROM (i.e. child entity ids)
             // @dateIds: must include all the dateIds aggregating TO, PLUS the dateIds aggregating FROM
 
-            if (allIndicators.Any(o => indicatorIds.Contains(o.IndicatorId) && o.IndicatorType != IndicatorType.Collected)) throw new Exception("A non-collected indicator was passed to the AggregateAsync function");
+            var indicatorIdList = indicatorIds.ToList();
+            var hasNonCollected = await db.Indicators
+                .AsNoTracking()
+                .AnyAsync(o => indicatorIdList.Contains(o.IndicatorId) && o.IndicatorType != IndicatorType.Collected);
+            if (hasNonCollected) throw new Exception("A non-collected indicator was passed to the AggregateAsync function");
 
             using var cmd = db.Database.GetDbConnection().CreateCommand();
             cmd.CommandText = "Aggregate";
@@ -239,6 +246,14 @@ namespace Monic.Web.Code
             }
 
             await CalculateAsync(tokenStacks, entityIds, dateIds);
+
+            // Transitively calculate any downstream indicators that depend on this indicator
+            var downstreamLevels = await GetTokenStacksToCalculateAsync(new[] { indicator.IndicatorId });
+            foreach (var levelStacks in downstreamLevels)
+            {
+                if (levelStacks.Count != 0)
+                    await CalculateAsync(levelStacks, entityIds, dateIds);
+            }
         }
 
         private async System.Threading.Tasks.Task CalculateAsync(Dictionary<Guid, Stack<TokenStruct>> tokenStacks, IEnumerable<Guid> entityIds, IEnumerable<Guid> dateIds)
@@ -327,30 +342,159 @@ namespace Monic.Web.Code
             }
         }
 
-        // note: indicatorIds is the list of indicators that have modified collected/aggregated data. This function will return the token stacks
-        // for the indicators that are affected by those changes
-        private Dictionary<Guid, Stack<TokenStruct>> GetTokenStacksToCalculate(IEnumerable<Guid> indicatorIds)
+        // note: indicatorIds is the list of indicators that have modified collected/aggregated data.
+        // This function will transitively discover all downstream calculated indicators affected by those changes
+        // and partition them into topological execution levels to prevent stale intermediate data and circular dependencies.
+        internal async System.Threading.Tasks.Task<List<Dictionary<Guid, Stack<TokenStruct>>>> GetTokenStacksToCalculateAsync(IEnumerable<Guid> indicatorIds)
         {
-            var stacks = new Dictionary<Guid, Stack<TokenStruct>>();
+            var result = new List<Dictionary<Guid, Stack<TokenStruct>>>();
+            var indicatorIdList = indicatorIds?.Distinct().ToList() ?? new List<Guid>();
+            if (indicatorIdList.Count == 0) return result;
 
-            // determine all the indicators that need to be calculated
-            var indicatorsToCalculate = allIndicators
-                .Where(o => o.IndicatorType == IndicatorType.Calculated)
-                .Where(o => o.Tokens.Any(t => t.TokenType == TokenType.Indicator && t.SourceIndicatorId.HasValue && indicatorIds.Contains(t.SourceIndicatorId.Value)))
-                .ToList();
-
-            foreach (var indicator in indicatorsToCalculate)
+            List<Indicator> allCalculatedCatalog = null;
+            if (cache != null)
             {
-                if (!indicator.Tokens.Any()) throw new Exception($"Indicator {indicator.Code} does not have a formula");
-
-                if (!stacks.ContainsKey(indicator.IndicatorId))
+                allCalculatedCatalog = await Microsoft.Extensions.Caching.Memory.CacheExtensions.GetOrCreateAsync(cache, "Calculation_CalculatedIndicators", async entry =>
                 {
-                    var kvp = GetTokenStack(indicator);
-                    stacks.Add(kvp.Key, kvp.Value);
+                    entry.SlidingExpiration = TimeSpan.FromMinutes(5);
+                    return await db.Indicators
+                        .AsNoTracking()
+                        .Include(o => o.Tokens)
+                        .ThenInclude(o => o.SourceIndicator)
+                        .Where(o => o.IndicatorType == IndicatorType.Calculated)
+                        .ToListAsync();
+                });
+            }
+
+            var affectedCalculated = new Dictionary<Guid, Indicator>();
+            var frontier = new HashSet<Guid>(indicatorIdList);
+
+            while (frontier.Count > 0)
+            {
+                var currentFrontier = frontier.ToList();
+                frontier.Clear();
+
+                List<Indicator> nextBatch;
+                if (allCalculatedCatalog != null)
+                {
+                    nextBatch = allCalculatedCatalog
+                        .Where(o => o.Tokens != null && o.Tokens.Any(t => t.TokenType == TokenType.Indicator && t.SourceIndicatorId.HasValue && currentFrontier.Contains(t.SourceIndicatorId.Value)))
+                        .ToList();
+                }
+                else
+                {
+                    nextBatch = await db.Indicators
+                        .AsNoTracking()
+                        .Include(o => o.Tokens)
+                        .ThenInclude(o => o.SourceIndicator)
+                        .Where(o => o.IndicatorType == IndicatorType.Calculated)
+                        .Where(o => o.Tokens.Any(t => t.TokenType == TokenType.Indicator && t.SourceIndicatorId.HasValue && currentFrontier.Contains(t.SourceIndicatorId.Value)))
+                        .ToListAsync();
+                }
+
+                foreach (var ind in nextBatch)
+                {
+                    if (!affectedCalculated.ContainsKey(ind.IndicatorId))
+                    {
+                        affectedCalculated[ind.IndicatorId] = ind;
+                        frontier.Add(ind.IndicatorId);
+                    }
                 }
             }
 
-            return stacks;
+            if (affectedCalculated.Count == 0) return result;
+
+            var levels = OrderTopologicalLevels(affectedCalculated.Values);
+            foreach (var level in levels)
+            {
+                var levelDict = new Dictionary<Guid, Stack<TokenStruct>>();
+                foreach (var ind in level)
+                {
+                    if (ind.Tokens == null || !ind.Tokens.Any())
+                        throw new Exception($"Indicator {ind.Code} does not have a formula");
+
+                    levelDict.Add(ind.IndicatorId, ToPostFixStack(ind));
+                }
+                result.Add(levelDict);
+            }
+
+            return result;
+        }
+
+        internal static List<List<Indicator>> OrderTopologicalLevels(IEnumerable<Indicator> indicators)
+        {
+            var indicatorList = indicators.ToList();
+            var levels = new List<List<Indicator>>();
+            if (indicatorList.Count == 0) return levels;
+
+            var indicatorDict = indicatorList.ToDictionary(i => i.IndicatorId);
+            var dependencies = new Dictionary<Guid, HashSet<Guid>>();
+            var dependents = new Dictionary<Guid, HashSet<Guid>>();
+
+            foreach (var ind in indicatorList)
+            {
+                dependents[ind.IndicatorId] = new HashSet<Guid>();
+
+                bool selfRef = ind.Tokens?.Any(t => t.TokenType == TokenType.Indicator && t.SourceIndicatorId.HasValue && t.SourceIndicatorId.Value == ind.IndicatorId) ?? false;
+                if (selfRef)
+                {
+                    throw new InvalidOperationException($"Circular dependency detected: Indicator {ind.Code} references itself");
+                }
+
+                var deps = ind.Tokens?
+                    .Where(t => t.TokenType == TokenType.Indicator && t.SourceIndicatorId.HasValue && indicatorDict.ContainsKey(t.SourceIndicatorId.Value))
+                    .Select(t => t.SourceIndicatorId.Value)
+                    .Distinct()
+                    .ToList() ?? new List<Guid>();
+
+                dependencies[ind.IndicatorId] = new HashSet<Guid>(deps);
+            }
+
+            foreach (var kvp in dependencies)
+            {
+                foreach (var parentId in kvp.Value)
+                {
+                    dependents[parentId].Add(kvp.Key);
+                }
+            }
+
+            var currentLevelIds = dependencies.Where(kvp => kvp.Value.Count == 0).Select(kvp => kvp.Key).ToList();
+            int processedCount = 0;
+
+            while (currentLevelIds.Count > 0)
+            {
+                var currentLevel = new List<Indicator>();
+                var nextLevelIds = new List<Guid>();
+
+                foreach (var id in currentLevelIds)
+                {
+                    currentLevel.Add(indicatorDict[id]);
+                    processedCount++;
+                }
+                levels.Add(currentLevel);
+
+                foreach (var id in currentLevelIds)
+                {
+                    foreach (var depId in dependents[id])
+                    {
+                        dependencies[depId].Remove(id);
+                        if (dependencies[depId].Count == 0)
+                        {
+                            nextLevelIds.Add(depId);
+                        }
+                    }
+                }
+
+                currentLevelIds = nextLevelIds;
+            }
+
+            if (processedCount < indicatorList.Count)
+            {
+                var unvisited = indicatorList.Where(i => dependencies[i.IndicatorId].Count > 0).Select(i => i.Code);
+                throw new InvalidOperationException($"Circular dependency detected among calculated indicators: {string.Join(", ", unvisited)}");
+            }
+
+            return levels;
         }
 
         private KeyValuePair<Guid, Stack<TokenStruct>> GetTokenStack(Indicator indicator)
@@ -426,7 +570,7 @@ namespace Monic.Web.Code
                         .ToListAsync();
                 }
 
-                var tokenStacks = GetTokenStacksToCalculate(indicatorIdsToAggregate);
+                var tokenStackLevels = await GetTokenStacksToCalculateAsync(indicatorIdsToAggregate);
 
                 // get the dates selected plus the 'parents' of those
                 var dateIds = dates.Select(o => o.DateId).ToList();
@@ -440,14 +584,17 @@ namespace Monic.Web.Code
 
                 await AggregateAsync(indicatorIdsToAggregate, new List<Guid> { entityLink.ParentEntityId }, dateIds);
 
-                if (tokenStacks.Any())
-                    await CalculateAsync(tokenStacks, new List<Guid> { entityLink.ParentEntityId }, dateIds);
+                foreach (var levelStacks in tokenStackLevels)
+                {
+                    if (levelStacks.Count != 0)
+                        await CalculateAsync(levelStacks, new List<Guid> { entityLink.ParentEntityId }, dateIds);
+                }
 
                 transactionScope.Complete();
             }
         }
 
-        private static Stack<TokenStruct> ToPostFixStack(Indicator indicator)
+        internal static Stack<TokenStruct> ToPostFixStack(Indicator indicator)
         {
             var tokens = indicator.Tokens.OrderBy(o => o.TokenNumber);
 
@@ -536,7 +683,7 @@ namespace Monic.Web.Code
                         Number = currentToken.Number,
                         ConvertNullToZero = currentToken.ConvertNullToZero,
                         IndicatorId = currentToken.SourceIndicatorId,
-                        RequiresSubmit = currentToken.Indicator == null ? false : currentToken.Indicator.RequiresSubmit
+                        RequiresSubmit = currentToken.SourceIndicator?.RequiresSubmit ?? currentToken.Indicator?.RequiresSubmit ?? false
                     });
                 }
                 else

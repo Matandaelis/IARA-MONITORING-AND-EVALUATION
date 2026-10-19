@@ -19,6 +19,7 @@ import { TheoryOfChangeRelationshipModal } from './theoryofchangerelationship.mo
 import { ConfirmModalComponent, ConfirmModalOptions } from '../common/components/confirm.component';
 import { NgForm } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
+import { MeReviewService } from '../common/services/mereview.service';
 
 @NgComponent({
     selector: 'app-theoryofchange',
@@ -34,6 +35,7 @@ export class TheoryOfChangeComponent implements OnInit {
     public theoryOfChangeId: string; // required for ngModelChange
     public isNew = false;
     public loaded = false;
+    public auditing = false;
 
     public nodes: Node[] = [];
     public links: Edge[] = [];
@@ -60,7 +62,8 @@ export class TheoryOfChangeComponent implements OnInit {
         private modalService: NgbModal,
         private theoryOfChangeService: TheoryOfChangeService,
         private breadcrumbService: BreadcrumbService,
-        private toastr: ToastrService
+        private toastr: ToastrService,
+        private meReviewService: MeReviewService
     ) {
     }
 
@@ -124,6 +127,25 @@ export class TheoryOfChangeComponent implements OnInit {
                     });
 
             }, () => { });
+    }
+
+    public auditToC(): void {
+        if (!this.theoryOfChangeId) return;
+        this.auditing = true;
+        this.meReviewService.evaluate({
+            domain: 'theory-of-change',
+            targetEntityId: this.theoryOfChangeId
+        }).subscribe({
+            next: (review) => {
+                this.auditing = false;
+                this.toastr.success(`Theory of Change audited! Score: ${review.overallScore}% (${review.status})`, 'M&E Review');
+                this.router.navigate(['/mereviews', review.meReviewId]);
+            },
+            error: (err) => {
+                this.auditing = false;
+                this.errorService.handleError(err, 'M&E Review', 'Audit');
+            }
+        });
     }
 
     private loadTheoryOfChange(): void {

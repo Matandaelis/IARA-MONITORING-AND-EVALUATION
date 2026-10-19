@@ -1,0 +1,178 @@
+<div class="container-fluid py-4" *ngIf="loading">
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <div class="mt-2 text-muted">Loading M&E Scorecard...</div>
+    </div>
+</div>
+
+<div class="container-fluid py-4" *ngIf="!loading && review">
+
+    <!-- Back Bar & Actions -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a routerLink="/mereviews" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i>Back to M&E Review Hub
+        </a>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary btn-sm" (click)="printScorecard()">
+                <i class="fas fa-print me-1"></i>Print Scorecard
+            </button>
+            <button class="btn btn-outline-danger btn-sm" (click)="deleteReview()">
+                <i class="fas fa-trash-can me-1"></i>Delete
+            </button>
+        </div>
+    </div>
+
+    <!-- Review Header Card -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4 overflow-hidden">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-12 col-md-8">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge bg-primary fs-7 text-uppercase">{{ review.domain }}</span>
+                        <span class="badge bg-light text-dark border">{{ review.status }}</span>
+                        <span *ngIf="review.documentSource" class="badge bg-info bg-opacity-10 text-info">
+                            <i class="fas fa-file-pdf me-1"></i>{{ review.documentSource }}
+                        </span>
+                    </div>
+                    <h2 class="h3 fw-bold mb-2">{{ review.title }}</h2>
+                    <p class="text-muted mb-2">{{ review.summary }}</p>
+                    <div class="small text-muted">
+                        <span class="me-3"><i class="fas fa-calendar-alt me-1"></i>Audited: {{ review.createdDateUtc | date:'mediumDate' }}</span>
+                        <span *ngIf="review.createdByName"><i class="fas fa-user me-1"></i>Auditor: {{ review.createdByName }}</span>
+                    </div>
+                </div>
+
+                <!-- Score Callout -->
+                <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+                    <div class="d-inline-flex flex-column align-items-center justify-content-center p-3 rounded-4 shadow-sm"
+                         [ngClass]="getScoreBadgeClass(review.overallScore)" style="min-width: 140px;">
+                        <span class="small text-uppercase fw-semibold opacity-75">Score</span>
+                        <span class="display-5 fw-bold">{{ review.overallScore }}%</span>
+                        <span class="small fw-semibold">{{ review.status }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Evaluation Criteria Breakdown -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-header bg-white py-3 border-0">
+            <h5 class="fw-bold mb-0"><i class="fas fa-chart-simple text-primary me-2"></i>Evaluation Criteria & Rubric Performance</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12 col-md-6 col-lg-3" *ngFor="let s of review.sections">
+                    <div class="p-3 border rounded-3 h-100 bg-light">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="fw-bold text-dark">{{ s.title }}</span>
+                            <span class="badge fs-7" [ngClass]="getScoreBadgeClass(s.score)">{{ s.score }}%</span>
+                        </div>
+                        <div class="progress mb-2" style="height: 6px;">
+                            <div class="progress-bar" [ngClass]="s.score >= 80 ? 'bg-success' : (s.score >= 50 ? 'bg-warning' : 'bg-danger')"
+                                 [style.width.%]="s.score"></div>
+                        </div>
+                        <small class="text-muted d-block">Status: <strong>{{ s.status }}</strong> (Weight: {{ s.weight }}%)</small>
+                        <small *ngIf="s.comments" class="text-muted mt-1 d-block">{{ s.comments }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Findings Section -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-header bg-white py-3 border-0 d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
+            <div>
+                <h5 class="fw-bold mb-0">
+                    <i class="fas fa-magnifying-glass text-primary me-2"></i>Audit Findings & Detected Deficiencies
+                </h5>
+                <small class="text-muted">{{ review.findings?.length || 0 }} total findings identified across criteria</small>
+            </div>
+
+            <!-- Severity Filter Chips -->
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn" [ngClass]="severityFilter === 'All' ? 'btn-primary' : 'btn-outline-secondary'"
+                        (click)="setSeverityFilter('All')">All ({{ review.findings?.length || 0 }})</button>
+                <button type="button" class="btn" [ngClass]="severityFilter === 'Critical' ? 'btn-danger' : 'btn-outline-danger'"
+                        (click)="setSeverityFilter('Critical')">Critical</button>
+                <button type="button" class="btn" [ngClass]="severityFilter === 'High' ? 'btn-warning text-dark' : 'btn-outline-warning'"
+                        (click)="setSeverityFilter('High')">High</button>
+                <button type="button" class="btn" [ngClass]="severityFilter === 'Medium' ? 'btn-info text-dark' : 'btn-outline-info'"
+                        (click)="setSeverityFilter('Medium')">Medium</button>
+                <button type="button" class="btn" [ngClass]="severityFilter === 'Info' ? 'btn-secondary' : 'btn-outline-secondary'"
+                        (click)="setSeverityFilter('Info')">Info</button>
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+            <div *ngIf="filteredFindings.length === 0" class="text-center py-4 text-muted">
+                <i class="fas fa-check-circle text-success fa-2x mb-2"></i>
+                <p class="mb-0">No findings matching the selected filter.</p>
+            </div>
+
+            <div class="list-group list-group-flush" *ngIf="filteredFindings.length > 0">
+                <div class="list-group-item p-3" *ngFor="let f of filteredFindings">
+                    <div class="d-flex align-items-start gap-3">
+                        <span [ngClass]="getSeverityBadgeClass(f.severity)">{{ f.severity }}</span>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-baseline mb-1">
+                                <h6 class="fw-bold mb-0 text-dark">{{ f.message }}</h6>
+                                <span *ngIf="f.code" class="badge bg-light text-secondary border font-monospace ms-2">{{ f.code }}</span>
+                            </div>
+                            <p *ngIf="f.details" class="text-muted small mb-1">{{ f.details }}</p>
+                            <div class="small text-secondary">
+                                <span *ngIf="f.criterion" class="me-3"><strong>Criterion:</strong> {{ f.criterion }}</span>
+                                <span *ngIf="f.locationRef"><i class="fas fa-location-dot me-1 text-primary"></i><strong>Location:</strong> {{ f.locationRef }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendations Action Plan Section -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-header bg-white py-3 border-0">
+            <h5 class="fw-bold mb-0">
+                <i class="fas fa-clipboard-check text-primary me-2"></i>Prioritized Remediation Action Plan
+            </h5>
+            <small class="text-muted">Actionable steps to resolve findings and align with donor standards</small>
+        </div>
+
+        <div class="card-body p-0">
+            <div *ngIf="!review.recommendations || review.recommendations.length === 0" class="text-center py-4 text-muted">
+                <i class="fas fa-thumbs-up text-success fa-2x mb-2"></i>
+                <p class="mb-0">No remedial recommendations required for this evaluation.</p>
+            </div>
+
+            <div class="list-group list-group-flush" *ngIf="review.recommendations && review.recommendations.length > 0">
+                <div class="list-group-item p-3" *ngFor="let rec of review.recommendations">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="form-check mt-1">
+                            <input class="form-check-input" type="checkbox" [checked]="rec.isImplemented"
+                                   (change)="toggleRecommendation(rec)" [id]="'rec-' + rec.meReviewRecommendationId"
+                                   title="Toggle implemented status">
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span [ngClass]="getPriorityBadgeClass(rec.priority)">{{ rec.priority }}</span>
+                                <span *ngIf="rec.category" class="badge bg-light text-dark border">{{ rec.category }}</span>
+                                <span *ngIf="rec.isImplemented" class="badge bg-success"><i class="fas fa-check me-1"></i>Implemented</span>
+                            </div>
+                            <h6 class="fw-bold mb-1" [class.text-decoration-line-through]="rec.isImplemented">
+                                {{ rec.recommendationText }}
+                            </h6>
+                            <div *ngIf="rec.actionSteps" class="p-2 bg-light rounded small mt-2 border-start border-3 border-primary">
+                                <div class="fw-semibold text-secondary mb-1">Recommended Action Steps:</div>
+                                <div style="white-space: pre-line;">{{ rec.actionSteps }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>

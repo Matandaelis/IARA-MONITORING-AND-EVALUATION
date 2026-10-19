@@ -4,6 +4,7 @@ import { AppDate } from './date.model';
 import { Entity } from './entity.model';
 import { Indicator } from './indicator.model';
 import { DateTypes } from './enums.model';import { DataReviewLink } from './datareviewlink.model';
+import { DisaggregationDatum } from './disaggregation.model';
 
 export class Datum {
     indicatorId: string;
@@ -28,9 +29,11 @@ export class Datum {
     indicator: Indicator;
 
     dataReviewLinks: DataReviewLink[];
+    disaggregationData: DisaggregationDatum[];
 
     constructor() {
         this.dataReviewLinks = [];
+        this.disaggregationData = [];
     }
 }
 
@@ -88,4 +91,5 @@ export class DataEntryDatum {
     dateId: string;
     value: number;
     note: string;
+    disaggregationData?: DisaggregationDatum[];
 }

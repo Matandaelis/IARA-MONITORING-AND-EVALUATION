@@ -28,6 +28,10 @@ import { AppDate } from '../../common/models/date.model';
 import { DateModalComponent } from '../dates/date.modal.component';
 import { FieldValueMapperService } from '../../common/services/field-value-mapper.service';
 import { AppSettingsService } from '../../common/services/appsettings.service';
+import { DisaggregationGroup } from '../../common/models/disaggregation.model';
+import { DisaggregationService } from '../../common/services/disaggregation.service';
+import { IndicatorTarget, IndicatorVariance } from '../../common/models/indicatortarget.model';
+import { IndicatorTargetService } from '../../common/services/indicatortarget.service';
 
 @Component({
     selector: 'indicator-edit',
@@ -41,6 +45,12 @@ export class IndicatorEditComponent extends ItemComponent implements OnInit {
     public indicator: Indicator = new Indicator();
     public isNew = true;
     public indicatorStatuses: Enum[] = Enums.IndicatorStatuses;
+    public indicatorDirections: Enum[] = Enums.IndicatorDirections;
+    public disaggregationGroups: DisaggregationGroup[] = [];
+    public targets: IndicatorTarget[] = [];
+    public variance: IndicatorVariance;
+    public newTarget: IndicatorTarget = new IndicatorTarget();
+    public showAddTarget: boolean = false;
     public dateTypes: Enum[] = Enums.DateTypes;
     public indicatorTypes: Enum[] = Enums.IndicatorTypes;
     public dataTypes: Enum[] = Enums.DataTypes;
@@ -95,12 +105,19 @@ export class IndicatorEditComponent extends ItemComponent implements OnInit {
         protected fieldValueMapper: FieldValueMapperService,
         private subcategoryService: SubcategoryService,
         private indicatorDateService: IndicatorDateService,
-        private appSettingsService: AppSettingsService  
+        private appSettingsService: AppSettingsService,
+        private disaggregationService: DisaggregationService,
+        private indicatorTargetService: IndicatorTargetService
     ) {
         super(appService, errorService, cdref, documentService, modalService, fieldValueMapper);
     }
 
     ngOnInit(): void {
+
+        this.disaggregationService.getGroups().subscribe({
+            next: groups => this.disaggregationGroups = groups,
+            error: err => this.errorService.handleError(err, "Disaggregation Groups", "Load")
+        });
 
         this.route.params.subscribe(params => {
 
@@ -119,6 +136,7 @@ export class IndicatorEditComponent extends ItemComponent implements OnInit {
                 this.indicatorDatesSearchOptions.indicatorId = indicatorId;
                 this.indicatorDatesSearchOptions.includeParents = true;
                 this.searchIndicatorDates();
+                this.loadTargets();
 
             }
             else {
@@ -145,9 +163,13 @@ export class IndicatorEditComponent extends ItemComponent implements OnInit {
             .subscribe({
                 next: indicator => {
                     this.indicator = indicator;
+                    if (this.indicator.direction === undefined || this.indicator.direction === null) {
+                        this.indicator.direction = this.indicator.lowerIsBetter ? 1 : 0;
+                    }
                     this.changeBreadcrumb();
                     this.setItem(this.indicator, { itemType: ItemTypes.Indicator, itemId: this.indicator.indicatorId } as Item);
                     this.searchDocuments();
+                    this.loadTargets();
                 },
                 error: err => {
                     this.errorService.handleError(err, "Indicator", "Load");
@@ -622,6 +644,99 @@ export class IndicatorEditComponent extends ItemComponent implements OnInit {
                     this.errorService.handleError(err, "Indicator Dates", "Save");
                 }
             });
+    }
+
+    onDirectionChange(dir: number): void {
+        this.indicator.lowerIsBetter = (dir === 1);
+    }
+
+    onLowerIsBetterChange(): void {
+        this.indicator.direction = this.indicator.lowerIsBetter ? 1 : 0;
+    }
+
+    loadTargets(): void {
+        if (!this.indicator.indicatorId || this.isNew) return;
+        this.indicatorTargetService.getTargets(this.indicator.indicatorId).subscribe({
+            next: targets => this.targets = targets,
+            error: err => this.errorService.handleError(err, "Indicator Targets", "Load")
+        });
+        this.indicatorTargetService.getVariance(this.indicator.indicatorId).subscribe({
+            next: variance => this.variance = variance,
+            error: () => {}
+        });
+    }
+
+    saveTarget(): void {
+        if (!this.newTarget.dateId || this.newTarget.targetValue === undefined || this.newTarget.targetValue === null) {
+            this.toastr.warning("Please select a date and enter a target value.", "Target Required");
+            return;
+        }
+        this.newTarget.indicatorId = this.indicator.indicatorId;
+        this.indicatorTargetService.saveTarget(this.indicator.indicatorId, this.newTarget).subscribe({
+            next: () => {
+                this.toastr.success("Milestone target saved successfully.", "Target Saved");
+                this.newTarget = new IndicatorTarget();
+                this.showAddTarget = false;
+                this.loadTargets();
+            },
+            error: err => this.errorService.handleError(err, "Indicator Target", "Save")
+        });
+    }
+
+    deleteTarget(target: IndicatorTarget): void {
+        let modalRef = this.modalService.open(ConfirmModalComponent, { centered: true });
+        (modalRef.componentInstance as ConfirmModalComponent).options = {
+            title: "Delete Milestone Target",
+            text: `Are you sure you want to delete the target for <strong>${target.date?.name || 'this period'}</strong>?`,
+            deleteStyle: true,
+            ok: "Delete"
+        } as ConfirmModalOptions;
+        modalRef.result.then(() => {
+            if (!target.indicatorTargetId) return;
+            this.indicatorTargetService.deleteTarget(this.indicator.indicatorId, target.indicatorTargetId).subscribe({
+                next: () => {
+                    this.toastr.success("Target deleted successfully.", "Target Deleted");
+                    this.loadTargets();
+                },
+                error: err => this.errorService.handleError(err, "Indicator Target", "Delete")
+            });
+        }, () => { });
+    }
+
+    getPeriodActual(dateId: string): string {
+        if (!this.variance || !this.variance.periods) return '-';
+        const p = this.variance.periods.find(x => x.dateId === dateId);
+        if (!p || p.actualValue === null || p.actualValue === undefined) return '-';
+        return p.actualValue.toString();
+    }
+
+    getPeriodAchievement(dateId: string): number | null {
+        if (!this.variance || !this.variance.periods) return null;
+        const p = this.variance.periods.find(x => x.dateId === dateId);
+        if (!p || p.percentageAchievement === null || p.percentageAchievement === undefined) return null;
+        return p.percentageAchievement;
+    }
+
+    getPeriodStatusBadge(dateId: string): string {
+        if (!this.variance || !this.variance.periods) return 'bg-secondary';
+        const p = this.variance.periods.find(x => x.dateId === dateId);
+        if (!p || !p.statusBadge) return 'bg-secondary';
+        switch (p.statusBadge) {
+            case 'success': return 'bg-success';
+            case 'warning': return 'bg-warning text-dark';
+            case 'danger': return 'bg-danger';
+            default: return 'bg-secondary';
+        }
+    }
+
+    getPeriodStatusLabel(dateId: string): string {
+        if (!this.variance || !this.variance.periods) return 'No Data';
+        const p = this.variance.periods.find(x => x.dateId === dateId);
+        if (!p || p.actualValue === null || p.actualValue === undefined) return 'Pending';
+        if (p.percentageAchievement !== null && p.percentageAchievement !== undefined) {
+            return p.percentageAchievement >= 100 ? 'Achieved' : (p.percentageAchievement >= 80 ? 'On Track' : 'Off Track');
+        }
+        return 'Reported';
     }
 
 }

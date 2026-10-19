@@ -14,6 +14,8 @@ import { IHasFields } from './ihasfields.model';
 import { ItemField } from './itemfield.model';
 import { ItemOption } from './itemoption.model';
 
+import { DisaggregationGroup } from './disaggregation.model';
+
 export class Indicator implements IHasFields {
     indicatorId: string;
     subcategoryId: string;
@@ -26,6 +28,9 @@ export class Indicator implements IHasFields {
     requiresVerify: boolean;
     requiresApprove: boolean;
     lowerIsBetter: boolean;
+    direction: number = 0;
+    disaggregationGroupId: string;
+    disaggregationGroup: DisaggregationGroup;
     useIndicatorDates: boolean;
     disableNote: boolean;
     entityTypeId: string;
