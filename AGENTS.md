@@ -165,3 +165,28 @@ graph TD
 2. Verify multi-stage build: `node:20-alpine` builds client SPA, `dotnet publish` compiles C# backend.
 3. Test container startup with health check verification: `curl -f http://localhost:80/health`.
 4. Verify `/app/data` volume mount maintains `dataprotection-keys` and OpenIddict signing certificates across restarts.
+
+### SOP 4: Specification-Driven Development (GitHub Spec Kit)
+1. Ensure alignment with project principles in [`.specify/memory/constitution.md`](file:///C:/Users/Administrator/Downloads/MONICv2/MONICv.001/.specify/memory/constitution.md).
+2. Generate feature specifications using `/speckit-specify <Feature Name>`.
+3. Clarify ambiguous requirements (optional) via `/speckit-clarify`.
+4. Formulate technical implementation plans using `/speckit-plan`.
+5. Break down into actionable tasks using `/speckit-tasks` (validate with `/speckit-checklist` and `/speckit-analyze`).
+6. Execute implementation systematically using `/speckit-implement`.
+7. Assess and reconcile remaining work with `/speckit-converge`.
+
+---
+
+## 🛠️ Installed Agent Skills (`.agents/skills/`)
+
+The workspace provides standardized AI agent skills under `.agents/skills/` to accelerate backend, frontend, and test development:
+
+| Skill | Category | Primary Agents | Description |
+|---|---|---|---|
+| [`csharp-expert`](file:///C:/Users/Administrator/Downloads/MONICv2/MONICv.001/.agents/skills/csharp-expert/SKILL.md) | Backend | `backend-security-agent`, `db-migration-agent` | C# & .NET specialist routing, semantics, and `dotnet/skills` marketplace integration |
+| [`rest-api-design`](file:///C:/Users/Administrator/Downloads/MONICv2/MONICv.001/.agents/skills/rest-api-design/SKILL.md) | Backend / API | `backend-security-agent`, `monic-lead-coordinator` | RESTful API design standards, OpenAPI 3.0, and spec validation (`scripts/validate-api.ps1`, `validate-api.sh`) |
+| [`angular-developer`](file:///C:/Users/Administrator/Downloads/MONICv2/MONICv.001/.agents/skills/angular-developer/SKILL.md) | Frontend | Lead & UI Agents | Angular 19+ architecture, Signals, signal forms, SSR, accessibility, and CLI workflows |
+| [`frontend-design`](file:///C:/Users/Administrator/Downloads/MONICv2/MONICv.001/.agents/skills/frontend-design/SKILL.md) | Frontend | Lead & UI Agents | Distinctive, intentional UI design, typography scale, palette curation, and copywriting |
+| [`typescript-unit-testing`](file:///C:/Users/Administrator/Downloads/MONICv2/MONICv.001/.agents/skills/typescript-unit-testing/SKILL.md) | Testing / QA | All Agents | AAA unit testing patterns, Angular TestBed / Signals testing, strict typing, and boundary testing |
+| `speckit-*` (15 skills) | Specification | `monic-lead-coordinator` | GitHub Spec Kit specification-driven development workflow |
+

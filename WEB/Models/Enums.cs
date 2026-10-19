@@ -58,6 +58,12 @@ namespace Monic.Web.Models
         Group
     }
 
+    public enum IndicatorDirection
+    {
+        HigherIsBetter = 0,
+        LowerIsBetter = 1
+    }
+
     public enum ItemType
     {
         Entity,
@@ -296,6 +302,19 @@ namespace Monic.Web.Models
                     return "Calculated";
                 case IndicatorType.Group:
                     return "Group";
+                default:
+                    return null;
+            }
+        }
+
+        public static string Label(this IndicatorDirection direction)
+        {
+            switch (direction)
+            {
+                case IndicatorDirection.HigherIsBetter:
+                    return "Higher is Better";
+                case IndicatorDirection.LowerIsBetter:
+                    return "Lower is Better";
                 default:
                     return null;
             }

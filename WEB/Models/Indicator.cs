@@ -117,6 +117,18 @@ namespace Monic.Web.Models
 
         public virtual ICollection<IndicatorDate> IndicatorDates { get; set; } = new List<IndicatorDate>();
 
+        public Guid? DisaggregationGroupId { get; set; }
+
+        public IndicatorDirection Direction
+        {
+            get => LowerIsBetter ? IndicatorDirection.LowerIsBetter : IndicatorDirection.HigherIsBetter;
+            set => LowerIsBetter = (value == IndicatorDirection.LowerIsBetter);
+        }
+
+        public virtual DisaggregationGroup DisaggregationGroup { get; set; }
+
+        public virtual ICollection<IndicatorTarget> IndicatorTargets { get; set; } = new List<IndicatorTarget>();
+
         [ForeignKey("EntityTypeId")]
         public virtual EntityType EntityType { get; set; }
 

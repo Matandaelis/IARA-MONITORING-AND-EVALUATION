@@ -93,6 +93,12 @@ namespace Monic.Web.Models
 
         public SubcategoryDTO Subcategory { get; set; }
 
+        public Guid? DisaggregationGroupId { get; set; }
+
+        public IndicatorDirection Direction { get; set; } = IndicatorDirection.HigherIsBetter;
+
+        public DisaggregationGroupDTO DisaggregationGroup { get; set; }
+
         public virtual List<ComponentIndicatorDTO> ComponentIndicators { get; set; } = new List<ComponentIndicatorDTO>();
 
         public virtual List<DatumDTO> Data { get; set; } = new List<DatumDTO>();
@@ -147,6 +153,8 @@ namespace Monic.Web.Models
             indicatorDTO.Suffix = indicator.Suffix;
             indicatorDTO.GroupingIndicatorId = indicator.GroupingIndicatorId;
             indicatorDTO.SortOrder = indicator.SortOrder;
+            indicatorDTO.DisaggregationGroupId = indicator.DisaggregationGroupId;
+            indicatorDTO.Direction = indicator.Direction;
 
             if (includeParents)
             {
@@ -154,6 +162,10 @@ namespace Monic.Web.Models
                 indicatorDTO.GroupingIndicator = Create(indicator.GroupingIndicator);
                 indicatorDTO.OptionList = Create(indicator.OptionList);
                 indicatorDTO.Subcategory = Create(indicator.Subcategory);
+                if (indicator.DisaggregationGroup != null)
+                {
+                    indicatorDTO.DisaggregationGroup = Create(indicator.DisaggregationGroup, true);
+                }
             }
 
             if (includeChildren)
@@ -210,6 +222,19 @@ namespace Monic.Web.Models
             indicator.Suffix = indicatorDTO.Suffix ?? string.Empty;
             indicator.GroupingIndicatorId = indicatorDTO.GroupingIndicatorId;
             indicator.SortOrder = indicatorDTO.SortOrder;
+            indicator.DisaggregationGroupId = indicatorDTO.DisaggregationGroupId;
+            if (indicatorDTO.Direction == IndicatorDirection.LowerIsBetter)
+            {
+                indicator.LowerIsBetter = true;
+            }
+            else if (indicatorDTO.LowerIsBetter)
+            {
+                indicator.LowerIsBetter = true;
+            }
+            else
+            {
+                indicator.LowerIsBetter = false;
+            }
         }
     }
 }

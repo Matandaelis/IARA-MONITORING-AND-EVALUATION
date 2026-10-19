@@ -51,6 +51,8 @@ namespace Monic.Web.Models
 
         public virtual List<DataReviewLinkDTO> DataReviewLinks { get; set; } = new List<DataReviewLinkDTO>();
 
+        public virtual List<DisaggregationDatumDTO> DisaggregationData { get; set; } = new List<DisaggregationDatumDTO>();
+
     }
 
     public static partial class ModelFactory
@@ -90,6 +92,12 @@ namespace Monic.Web.Models
             {
                 foreach (var dataReviewLink in datum.DataReviewLinks)
                     datumDTO.DataReviewLinks.Add(Create(dataReviewLink));
+
+                if (datum.DisaggregationData != null)
+                {
+                    foreach (var dd in datum.DisaggregationData)
+                        datumDTO.DisaggregationData.Add(Create(dd));
+                }
             }
 
             return datumDTO;

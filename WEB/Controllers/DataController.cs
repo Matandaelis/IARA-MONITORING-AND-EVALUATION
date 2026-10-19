@@ -74,12 +74,14 @@ namespace Monic.Web.Controllers
                 .Include(o => o.RejectReview)
                 .Include(o => o.LastSavedBy)
                 .Include(o => o.Indicator)
+                .Include(o => o.DisaggregationData)
+                .ThenInclude(dd => dd.DisaggregationOption)
                 .FirstOrDefaultAsync(o => o.IndicatorId == indicatorId && o.EntityId == entityId && o.DateId == dateId);
 
             if (datum == null)
                 return NotFound();
 
-            return Ok(ModelFactory.Create(datum));
+            return Ok(ModelFactory.Create(datum, true, true));
         }
 
         [HttpPost("{indicatorId:Guid}/{entityId:Guid}/{dateId:Guid}")]
@@ -105,7 +107,28 @@ namespace Monic.Web.Controllers
 
             if (datumDTO.IndicatorId != indicatorId || datumDTO.EntityId != entityId || datumDTO.DateId != dateId) return BadRequest("Id mismatch");
 
+            if (datumDTO.DisaggregationData != null && datumDTO.DisaggregationData.Count > 0)
+            {
+                if (!datumDTO.Value.HasValue)
+                {
+                    datumDTO.Value = datumDTO.DisaggregationData.Sum(d => d.Value);
+                }
+                else
+                {
+                    var parity = VarianceEngine.ValidateDisaggregationParity(datumDTO.Value.Value, datumDTO.DisaggregationData.Select(d => d.Value));
+                    if (!parity.IsValid)
+                    {
+                        return UnprocessableEntity(new
+                        {
+                            error = "DisaggregationParityError",
+                            message = $"The sum of disaggregated values ({parity.CalculatedSum}) does not match the aggregate total ({datumDTO.Value.Value}). Discrepancy: {parity.Discrepancy}."
+                        });
+                    }
+                }
+            }
+
             var datum = await db.Data
+                .Include(d => d.DisaggregationData)
                 .FirstOrDefaultAsync(o => o.IndicatorId == datumDTO.IndicatorId && o.EntityId == datumDTO.EntityId && o.DateId == datumDTO.DateId);
 
             var isNew = datum == null;
@@ -135,6 +158,27 @@ namespace Monic.Web.Controllers
             }
 
             ModelFactory.Hydrate(datum, datumDTO);
+
+            if (datumDTO.DisaggregationData != null && datumDTO.DisaggregationData.Count > 0)
+            {
+                foreach (var ddDto in datumDTO.DisaggregationData)
+                {
+                    var existingDd = datum.DisaggregationData.FirstOrDefault(dd => dd.DisaggregationOptionId == ddDto.DisaggregationOptionId);
+                    if (existingDd != null)
+                    {
+                        existingDd.Value = ddDto.Value;
+                    }
+                    else
+                    {
+                        datum.DisaggregationData.Add(new DisaggregationDatum
+                        {
+                            DisaggregationDatumId = Guid.NewGuid(),
+                            DisaggregationOptionId = ddDto.DisaggregationOptionId,
+                            Value = ddDto.Value
+                        });
+                    }
+                }
+            }
 
             var calculation = new Calculation(db, AppSettings, CurrentUser.Id);
             await calculation.SaveAsync(datum);

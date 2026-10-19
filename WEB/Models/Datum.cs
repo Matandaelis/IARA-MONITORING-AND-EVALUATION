@@ -53,6 +53,8 @@ namespace Monic.Web.Models
 
         public virtual ICollection<DataReviewLink> DataReviewLinks { get; set; } = new List<DataReviewLink>();
 
+        public virtual ICollection<DisaggregationDatum> DisaggregationData { get; set; } = new List<DisaggregationDatum>();
+
         [ForeignKey("ApproveDataReviewId")]
         public virtual DataReview ApproveReview { get; set; }
 

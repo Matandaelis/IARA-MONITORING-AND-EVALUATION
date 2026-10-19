@@ -14,6 +14,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<InternalsVisibleTo Include="WEB.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="Azure.AI.OpenAI" Version="2.2.0-beta.1" />
 		<PackageReference Include="Azure.Extensions.AspNetCore.Configuration.Secrets" Version="1.5.0" />
 		<PackageReference Include="Azure.Extensions.AspNetCore.DataProtection.Blobs" Version="1.5.1" />

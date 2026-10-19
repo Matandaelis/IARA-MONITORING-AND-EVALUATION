@@ -29,6 +29,7 @@ namespace Monic.Web.Controllers
                 results = results.Include(o => o.EntityType);
                 results = results.Include(o => o.OptionList);
                 results = results.Include(o => o.GroupingIndicator);
+                results = results.Include(o => o.DisaggregationGroup).ThenInclude(g => g.Options);
             }
 
             if (searchOptions.IncludeChildren)
@@ -72,6 +73,8 @@ namespace Monic.Web.Controllers
                 .Include(o => o.OptionList)
                 .Include(o => o.CreatedBy)
                 .Include(o => o.GroupingIndicator)
+                .Include(o => o.DisaggregationGroup)
+                .ThenInclude(g => g.Options)
                 .FirstOrDefaultAsync(o => o.IndicatorId == indicatorId);
 
             if (indicator == null)
