@@ -49,6 +49,9 @@
     <div class="my-4">
         <button type="submit" class="btn btn-outline-success me-2 mb-1">Save<i class="fas fa-check ms-2"></i></button>
         <button type="button" *ngIf="!isNew" class="btn btn-outline-danger me-2 mb-1" (click)="delete()">Delete<i class="fas fa-times ms-2"></i></button>
+        <button type="button" *ngIf="!isNew" class="btn btn-outline-info me-2 mb-1" (click)="downloadDonorCsv()" [disabled]="exportingCsv">
+            <i class="fas me-1" [ngClass]="exportingCsv ? 'fa-spinner fa-spin' : 'fa-file-csv'"></i> Export Donor Matrix
+        </button>
         <button type="button" *ngIf="!isNew" class="btn btn-outline-primary me-2 mb-1" (click)="auditLogFrame()" [disabled]="auditing">
             <i class="fas me-1" [ngClass]="auditing ? 'fa-spinner fa-spin' : 'fa-clipboard-check'"></i> Audit LogFrame
         </button>
@@ -58,7 +61,66 @@
 
 <ng-container *ngIf="!isNew">
 
-    <div class="card card-primary mt-6">
+    <!-- Performance Roll-Up Executive KPI Summary Card -->
+    <div class="card card-primary mt-4 mb-4" *ngIf="rollup">
+        <div class="card-header bg-light">
+            <div class="card-header-title d-flex justify-content-between align-items-center w-100">
+                <div>
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2 text-primary"></i>Logical Framework Performance Roll-Up</h5>
+                    <small class="text-muted">Target vs Actual milestone variance aggregated across project objectives</small>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" (click)="loadRollup()">
+                        <i class="fas fa-sync me-1"></i> Refresh
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-success ms-2" (click)="downloadDonorCsv()" [disabled]="exportingCsv">
+                        <i class="fas me-1" [ngClass]="exportingCsv ? 'fa-spinner fa-spin' : 'fa-download'"></i> Donor CSV Export
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-3 text-center">
+                <div class="col-6 col-md-3">
+                    <div class="p-3 border rounded bg-white shadow-sm h-100">
+                        <div class="text-muted small text-uppercase fw-semibold">Total Indicators</div>
+                        <div class="h3 mb-0 text-dark fw-bold">{{rollup.totalIndicators}}</div>
+                        <small class="text-muted">{{rollup.totalRows}} Objectives</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-3 border rounded bg-white shadow-sm h-100">
+                        <div class="text-muted small text-uppercase fw-semibold">Overall Achievement</div>
+                        <div class="h3 mb-0 fw-bold" [ngClass]="rollup.overallAchievement != null ? (rollup.overallAchievement >= 75 ? 'text-success' : 'text-danger') : 'text-muted'">
+                            {{rollup.overallAchievement != null ? (rollup.overallAchievement | number:'1.0-1') + '%' : 'Pending'}}
+                        </div>
+                        <span class="badge" [ngClass]="getRollupStatusBadgeClass(rollup.overallStatus)">
+                            {{getRollupStatusLabel(rollup.overallStatus)}}
+                        </span>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-3 border rounded bg-white shadow-sm h-100">
+                        <div class="text-muted small text-uppercase fw-semibold">On Track / Exceeding</div>
+                        <div class="h3 mb-0 text-success fw-bold">{{(rollup.totalOnTrack || 0) + (rollup.totalExceeding || 0)}}</div>
+                        <small class="text-success" *ngIf="(rollup.totalOnTrack || 0) + (rollup.totalExceeding || 0) > 0"><i class="fas fa-check-circle me-1"></i>Healthy progress</small>
+                        <small class="text-muted" *ngIf="(rollup.totalOnTrack || 0) + (rollup.totalExceeding || 0) === 0">No data</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-3 border rounded bg-white shadow-sm h-100">
+                        <div class="text-muted small text-uppercase fw-semibold">Underperforming</div>
+                        <div class="h3 mb-0 fw-bold" [ngClass]="rollup.totalUnderperforming > 0 ? 'text-danger' : 'text-dark'">{{rollup.totalUnderperforming}}</div>
+                        <small class="text-danger" *ngIf="rollup.totalUnderperforming > 0">Action required</small>
+                        <small class="text-muted" *ngIf="rollup.totalUnderperforming === 0 && rollup.totalNoData > 0">({{rollup.totalNoData}} pending data)</small>
+                        <small class="text-success" *ngIf="rollup.totalUnderperforming === 0 && rollup.totalNoData === 0"><i class="fas fa-check-circle me-1"></i>No underperforming targets</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-primary mt-4">
 
         <div class="card-header">
 
@@ -78,7 +140,7 @@
                 <div id="headerRow">
                     <div id="corner"></div>
                     <div id="description">Description</div>
-                    <div id="indicators">Indicators</div>
+                    <div id="indicators">Indicators &amp; Progress</div>
                     <div id="mov">Means of Verification</div>
                     <div id="raa">Risks &amp; Assumptions</div>
                 </div>
@@ -87,28 +149,28 @@
                     <div class="rowLabel">
                         Goals<i class="fa fa-plus-circle ms-1 text-primary cursor-pointer" (click)="addRow(logFrameRowTypesGoals)" ngbTooltip="Add a Goal row"></i>
                     </div>
-                    <app-logframerows [rows]="logFrameRows | logFrameRowPipe : logFrameRowTypesGoals" (rowClick)="rowClick($event, logFrameRowTypesGoals)"></app-logframerows>
+                    <app-logframerows [rows]="logFrameRows | logFrameRowPipe : logFrameRowTypesGoals" [rowRollupMap]="rowRollupMap" (rowClick)="rowClick($event, logFrameRowTypesGoals)"></app-logframerows>
                 </div>
 
                 <div class="rowType" id="outcomes">
                     <div class="rowLabel">
                         Outcomes<i class="fa fa-plus-circle ms-1 text-primary cursor-pointer" (click)="addRow(logFrameRowTypesOutcomes)" ngbTooltip="Add an Outcomes row"></i>
                     </div>
-                    <app-logframerows [rows]="logFrameRows | logFrameRowPipe : logFrameRowTypesOutcomes" (rowClick)="rowClick($event, logFrameRowTypesOutcomes)"></app-logframerows>
+                    <app-logframerows [rows]="logFrameRows | logFrameRowPipe : logFrameRowTypesOutcomes" [rowRollupMap]="rowRollupMap" (rowClick)="rowClick($event, logFrameRowTypesOutcomes)"></app-logframerows>
                 </div>
 
                 <div class="rowType" id="outputs">
                     <div class="rowLabel">
                         Outputs<i class="fa fa-plus-circle ms-1 text-primary cursor-pointer" (click)="addRow(logFrameRowTypesOutputs)" ngbTooltip="Add an Outputs row"></i>
                     </div>
-                    <app-logframerows [rows]="logFrameRows | logFrameRowPipe : logFrameRowTypesOutputs" (rowClick)="rowClick($event, logFrameRowTypesOutputs)"></app-logframerows>
+                    <app-logframerows [rows]="logFrameRows | logFrameRowPipe : logFrameRowTypesOutputs" [rowRollupMap]="rowRollupMap" (rowClick)="rowClick($event, logFrameRowTypesOutputs)"></app-logframerows>
                 </div>
 
                 <div class="rowType" id="activities">
                     <div class="rowLabel">
                         Activities<i class="fa fa-plus-circle ms-1 text-primary cursor-pointer" (click)="addRow(logFrameRowTypesActivities)" ngbTooltip="Add an Activities row"></i>
                     </div>
-                    <app-logframerows [rows]="logFrameRows | logFrameRowPipe : logFrameRowTypesActivities" (rowClick)="rowClick($event, logFrameRowTypesActivities)"></app-logframerows>
+                    <app-logframerows [rows]="logFrameRows | logFrameRowPipe : logFrameRowTypesActivities" [rowRollupMap]="rowRollupMap" (rowClick)="rowClick($event, logFrameRowTypesActivities)"></app-logframerows>
                 </div>
 
             </div>

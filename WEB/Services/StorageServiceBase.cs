@@ -1,4 +1,4 @@
-﻿using Azure.Storage.Blobs;
+using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 
 namespace Monic.Web.Services
@@ -9,12 +9,16 @@ namespace Monic.Web.Services
 
         protected StorageServiceBase(string connectionString, string containerName)
         {
-            var blobServiceClient = new BlobServiceClient(connectionString);
-            _containerClient = blobServiceClient.GetBlobContainerClient(containerName);
+            if (!string.IsNullOrWhiteSpace(connectionString))
+            {
+                var blobServiceClient = new BlobServiceClient(connectionString);
+                _containerClient = blobServiceClient.GetBlobContainerClient(containerName);
+            }
         }
 
         public async Task UploadBlobAsync(Guid id, byte[] bytes)
         {
+            if (_containerClient == null) return;
             var blobClient = _containerClient.GetBlobClient(id.ToString().ToLowerInvariant());
 
             using var memoryStream = new MemoryStream(bytes);
@@ -23,12 +27,14 @@ namespace Monic.Web.Services
 
         public async Task DeleteBlobAsync(Guid id)
         {
+            if (_containerClient == null) return;
             var blobClient = _containerClient.GetBlobClient(id.ToString().ToLowerInvariant());
             await blobClient.DeleteIfExistsAsync();
         }
 
         public async Task<byte[]> GetBlobAsync(Guid id)
         {
+            if (_containerClient == null) return null;
             var blobClient = _containerClient.GetBlobClient(id.ToString().ToLowerInvariant());
 
             if (!await blobClient.ExistsAsync())
@@ -42,6 +48,7 @@ namespace Monic.Web.Services
 
         public async Task<bool> ExistsAsync(Guid id)
         {
+            if (_containerClient == null) return false;
             var blobClient = _containerClient.GetBlobClient(id.ToString().ToLowerInvariant());
             return await blobClient.ExistsAsync();
         }
@@ -49,6 +56,7 @@ namespace Monic.Web.Services
         public async Task<List<BlobItem>> GetAllBlobsAsync()
         {
             var blobs = new List<BlobItem>();
+            if (_containerClient == null) return blobs;
 
             await foreach (var blobItem in _containerClient.GetBlobsAsync())
             {
@@ -60,6 +68,7 @@ namespace Monic.Web.Services
 
         public Task EnsureContainerExistsAsync()
         {
+            if (_containerClient == null) return Task.CompletedTask;
             return _containerClient.CreateIfNotExistsAsync();
         }
     }

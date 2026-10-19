@@ -7,11 +7,12 @@ import { ToastrService } from 'ngx-toastr';
 import { forkJoin } from 'rxjs';
 import { ConfirmModalComponent, ConfirmModalOptions } from '../common/components/confirm.component';
 import { Enums, LogFrameRowTypes } from '../common/models/enums.model';
-import { LogFrame } from '../common/models/logframe.model';
+import { LogFrame, LogFrameRollup, LogFrameRowRollup } from '../common/models/logframe.model';
 import { LogFrameRow, LogFrameRowSearchOptions } from '../common/models/logframerow.model';
 import { ErrorService } from '../common/services/error.service';
 import { LogFrameService } from '../common/services/logframe.service';
 import { LogFrameRowService } from '../common/services/logframerow.service';
+import { DownloadService } from '../common/services/download.service';
 import { LogFrameRowViewComponent } from './logframe.row.component';
 import { tap } from 'rxjs';
 import { MeReviewService } from '../common/services/mereview.service';
@@ -37,6 +38,10 @@ export class LogFrameComponent implements OnInit {
     protected logFrameRows: LogFrameRow[] = [];
     public logFrameRowTypes = Enums.LogFrameRowTypes;
 
+    public rollup: LogFrameRollup | null = null;
+    public rowRollupMap: { [rowId: string]: LogFrameRowRollup } = {};
+    public exportingCsv = false;
+
     constructor(
         private route: ActivatedRoute,
         private router: Router,
@@ -46,7 +51,8 @@ export class LogFrameComponent implements OnInit {
         private logFrameService: LogFrameService,
         private breadcrumbService: BreadcrumbService,
         private toastr: ToastrService,
-        private meReviewService: MeReviewService
+        private meReviewService: MeReviewService,
+        private downloadService: DownloadService
     ) {
     }
 
@@ -151,10 +157,67 @@ export class LogFrameComponent implements OnInit {
             }
         ).subscribe(
             {
+                next: () => {
+                    this.loadRollup();
+                },
                 error: err => this.errorService.handleError(err, "LogFrame Data", "Load")
             }
         );
 
+    }
+
+    public loadRollup(): void {
+        if (!this.logFrameId || this.isNew) return;
+        this.logFrameService.getRollup(this.logFrameId).subscribe({
+            next: (rollup) => {
+                this.rollup = rollup;
+                this.rowRollupMap = {};
+                if (rollup && rollup.rows) {
+                    for (const row of rollup.rows) {
+                        this.rowRollupMap[row.logFrameRowId] = row;
+                        if (row.logFrameRowId) {
+                            this.rowRollupMap[row.logFrameRowId.toLowerCase()] = row;
+                        }
+                    }
+                }
+            },
+            error: () => {
+                // Non-blocking roll-up fetch
+            }
+        });
+    }
+
+    public downloadDonorCsv(): void {
+        if (!this.logFrameId) return;
+        this.exportingCsv = true;
+        this.downloadService.exportLogFrameCSV(this.logFrameId).subscribe({
+            next: () => {
+                this.exportingCsv = false;
+                this.toastr.success("Donor LogFrame CSV exported successfully", "Export Matrix");
+            },
+            error: (err) => {
+                this.exportingCsv = false;
+                this.errorService.handleError(err, "Donor LogFrame", "Export");
+            }
+        });
+    }
+
+    public getRollupStatusBadgeClass(status?: string): string {
+        switch (status?.toLowerCase()) {
+            case 'ontrack': return 'bg-success text-white';
+            case 'underperforming': return 'bg-danger text-white';
+            case 'exceeding': return 'bg-primary text-white';
+            default: return 'bg-secondary text-white';
+        }
+    }
+
+    public getRollupStatusLabel(status?: string): string {
+        switch (status?.toLowerCase()) {
+            case 'ontrack': return 'On Track';
+            case 'underperforming': return 'Underperforming';
+            case 'exceeding': return 'Exceeding';
+            default: return 'Pending Data';
+        }
     }
 
     private openLogFrameRowModal(rowType: LogFrameRowTypes, logFrameRow?: LogFrameRow): void {

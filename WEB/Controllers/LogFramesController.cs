@@ -120,5 +120,27 @@ namespace Monic.Web.Controllers
             return Ok();
         }
 
+        [HttpGet("{logFrameId:Guid}/rollup"), Authorize]
+        public async Task<IActionResult> GetRollup(Guid logFrameId)
+        {
+            var logFrame = await db.LogFrames
+                .Include(lf => lf.LogFrameRows)
+                    .ThenInclude(r => r.LogFrameRowIndicators)
+                        .ThenInclude(ri => ri.Indicator)
+                            .ThenInclude(i => i.IndicatorTargets)
+                                .ThenInclude(t => t.Date)
+                .Include(lf => lf.LogFrameRows)
+                    .ThenInclude(r => r.LogFrameRowIndicators)
+                        .ThenInclude(ri => ri.Indicator)
+                            .ThenInclude(i => i.Data)
+                                .ThenInclude(d => d.Date)
+                .FirstOrDefaultAsync(lf => lf.LogFrameId == logFrameId);
+
+            if (logFrame == null) return NotFound();
+
+            var rollup = Code.LogFrameRollupEngine.ComputeRollup(logFrame);
+            return Ok(rollup);
+        }
+
     }
 }

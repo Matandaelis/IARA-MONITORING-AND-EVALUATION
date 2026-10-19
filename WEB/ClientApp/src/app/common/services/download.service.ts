@@ -20,6 +20,13 @@ export class DownloadService extends SearchQuery {
             );
     }
 
+    exportLogFrameCSV(logFrameId: string): Observable<void> {
+        return this.http.get<void>(`${environment.baseApiUrl}downloads/logframe/${logFrameId}/export-csv`, { responseType: 'blob' as 'json', observe: 'response' })
+            .pipe(
+                map(response => this.downloadFile(this.convertResponse(response)))
+            );
+    }
+
     downloadDocument(documentId: string): Observable<void> {
         return this.http.get<DownloadModel>(`${environment.baseApiUrl}downloads/documents/${documentId}`, { responseType: 'blob' as 'json', observe: 'response' })
             .pipe(

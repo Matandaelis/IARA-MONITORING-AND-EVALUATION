@@ -167,6 +167,35 @@ namespace Monic.Web.Controllers
             public string DisaggregationBreakdown { get; set; }
         }
 
+        [HttpGet("logframe/{logFrameId:Guid}/export-csv"), Authorize]
+        public async Task<IActionResult> ExportLogFrameCSV(Guid logFrameId)
+        {
+            var logFrame = await db.LogFrames
+                .Include(lf => lf.LogFrameRows)
+                    .ThenInclude(r => r.LogFrameRowIndicators)
+                        .ThenInclude(ri => ri.Indicator)
+                            .ThenInclude(i => i.IndicatorTargets)
+                                .ThenInclude(t => t.Date)
+                .Include(lf => lf.LogFrameRows)
+                    .ThenInclude(r => r.LogFrameRowIndicators)
+                        .ThenInclude(ri => ri.Indicator)
+                            .ThenInclude(i => i.Data)
+                                .ThenInclude(d => d.Date)
+                .FirstOrDefaultAsync(lf => lf.LogFrameId == logFrameId);
+
+            if (logFrame == null) return NotFound();
+
+            var rollup = Code.LogFrameRollupEngine.ComputeRollup(logFrame);
+            var bytes = Code.LogFrameRollupEngine.GenerateDonorCsv(rollup);
+
+            var rawName = logFrame.Name?.Trim();
+            var safeName = string.IsNullOrWhiteSpace(rawName)
+                ? "LogFrame"
+                : string.Join("_", rawName.Split(Path.GetInvalidFileNameChars())).Replace(" ", "_");
+
+            return Download.GetFileContentResult(Response, $"{safeName}_Donor_Matrix.csv", bytes);
+        }
+
         //// if using Azure Blob Storage, use something like this to download the document:
         //[HttpGet("documents/{documentId:Guid}")]
         //public async Task<IActionResult> DownloadDocument([FromRoute] Guid documentId)

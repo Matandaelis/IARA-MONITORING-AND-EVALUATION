@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { LogFrame, LogFrameSearchOptions, LogFrameSearchResponse } from '../models/logframe.model';
+import { LogFrame, LogFrameRollup, LogFrameSearchOptions, LogFrameSearchResponse } from '../models/logframe.model';
 import { SearchQuery, PagingHeaders } from '../models/http.model';
 
 @Injectable({ providedIn: 'root' })
@@ -39,6 +39,10 @@ export class LogFrameService extends SearchQuery {
 
     deleteLogFrameRows(logFrameId: string): Observable<void> {
         return this.http.delete<void>(`${environment.baseApiUrl}logframes/${logFrameId}/logframerows`);
+    }
+
+    getRollup(logFrameId: string): Observable<LogFrameRollup> {
+        return this.http.get<LogFrameRollup>(`${environment.baseApiUrl}logframes/${logFrameId}/rollup`);
     }
 
 }
