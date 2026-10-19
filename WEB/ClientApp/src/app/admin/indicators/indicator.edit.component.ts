@@ -721,11 +721,19 @@ export class IndicatorEditComponent extends ItemComponent implements OnInit {
         if (!this.variance || !this.variance.periods) return 'bg-secondary';
         const p = this.variance.periods.find(x => x.dateId === dateId);
         if (!p || !p.statusBadge) return 'bg-secondary';
-        switch (p.statusBadge) {
-            case 'success': return 'bg-success';
-            case 'warning': return 'bg-warning text-dark';
-            case 'danger': return 'bg-danger';
-            default: return 'bg-secondary';
+        switch (p.statusBadge.toLowerCase()) {
+            case 'exceeding':
+            case 'success':
+                return 'bg-success';
+            case 'ontrack':
+                return 'bg-primary';
+            case 'underperforming':
+            case 'danger':
+                return 'bg-danger';
+            case 'warning':
+                return 'bg-warning text-dark';
+            default:
+                return 'bg-secondary';
         }
     }
 
@@ -733,8 +741,16 @@ export class IndicatorEditComponent extends ItemComponent implements OnInit {
         if (!this.variance || !this.variance.periods) return 'No Data';
         const p = this.variance.periods.find(x => x.dateId === dateId);
         if (!p || p.actualValue === null || p.actualValue === undefined) return 'Pending';
+        if (p.statusBadge) {
+            switch (p.statusBadge.toLowerCase()) {
+                case 'exceeding': return 'Exceeding';
+                case 'ontrack': return 'On Track';
+                case 'underperforming': return 'Underperforming';
+                case 'notapplicable': return 'N/A';
+            }
+        }
         if (p.percentageAchievement !== null && p.percentageAchievement !== undefined) {
-            return p.percentageAchievement >= 100 ? 'Achieved' : (p.percentageAchievement >= 80 ? 'On Track' : 'Off Track');
+            return p.percentageAchievement > 110 ? 'Exceeding' : (p.percentageAchievement >= 75 ? 'On Track' : 'Underperforming');
         }
         return 'Reported';
     }

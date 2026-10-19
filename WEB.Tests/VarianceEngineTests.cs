@@ -66,6 +66,16 @@ namespace Monic.Web.Tests
             var nonZeroHigher = VarianceEngine.CalculateVariance(10m, 0m, IndicatorDirection.HigherIsBetter);
             Assert.Equal(100m, nonZeroHigher.PercentageAchievement);
             Assert.Equal(VarianceEngine.StatusExceeding, nonZeroHigher.StatusBadge);
+
+            // Target 0, Actual -10 (Higher is better -> negative outcome / underperforming)
+            var negativeActualHigher = VarianceEngine.CalculateVariance(-10m, 0m, IndicatorDirection.HigherIsBetter);
+            Assert.Equal(0m, negativeActualHigher.PercentageAchievement);
+            Assert.Equal(VarianceEngine.StatusUnderperforming, negativeActualHigher.StatusBadge);
+
+            // Target 0, Actual -10 (Lower is better -> lower than target is exceeding)
+            var negativeActualLower = VarianceEngine.CalculateVariance(-10m, 0m, IndicatorDirection.LowerIsBetter);
+            Assert.Equal(100m, negativeActualLower.PercentageAchievement);
+            Assert.Equal(VarianceEngine.StatusExceeding, negativeActualLower.StatusBadge);
         }
 
         [Fact]

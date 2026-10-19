@@ -55,16 +55,45 @@ namespace Monic.Web.Tests
         }
 
         [Fact]
-        public void ParityValidation_EmptyDisaggregates_TreatedAsStandardScalar()
+        public void ParityValidation_NullDisaggregates_TreatedAsStandardScalar()
         {
             decimal aggregateTotal = 42m;
-            List<decimal> breakdown = null;
+            List<decimal>? breakdown = null;
 
             var result = VarianceEngine.ValidateDisaggregationParity(aggregateTotal, breakdown);
 
             Assert.True(result.IsValid);
             Assert.Equal(42m, result.CalculatedSum);
             Assert.Equal(0m, result.Discrepancy);
+        }
+
+        [Fact]
+        public void ParityValidation_EmptyDisaggregatesList_TreatedAsStandardScalar()
+        {
+            decimal aggregateTotal = 42m;
+            var breakdown = new List<decimal>();
+
+            var result = VarianceEngine.ValidateDisaggregationParity(aggregateTotal, breakdown);
+
+            Assert.True(result.IsValid);
+            Assert.Equal(42m, result.CalculatedSum);
+            Assert.Equal(0m, result.Discrepancy);
+        }
+
+        [Fact]
+        public void ParityValidation_PrunedDisaggregation_MaintainsParityAfterRemoval()
+        {
+            // Initial breakdown: 3 options summing to 100
+            var initialBreakdown = new List<decimal> { 40m, 35m, 25m };
+            var initialParity = VarianceEngine.ValidateDisaggregationParity(100m, initialBreakdown);
+            Assert.True(initialParity.IsValid);
+
+            // User removes the 25m option and submits new total 75m
+            var prunedBreakdown = new List<decimal> { 40m, 35m };
+            var prunedParity = VarianceEngine.ValidateDisaggregationParity(75m, prunedBreakdown);
+            Assert.True(prunedParity.IsValid);
+            Assert.Equal(75m, prunedParity.CalculatedSum);
+            Assert.Equal(0m, prunedParity.Discrepancy);
         }
 
         [Fact]

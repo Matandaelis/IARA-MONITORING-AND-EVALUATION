@@ -156,6 +156,15 @@ namespace Monic.Web.Controllers
                 ModelFactory.Hydrate(datum, datumDTO);
                 if (string.IsNullOrWhiteSpace(datumDTO.Note)) datum.Note = null;
 
+                // Sync Disaggregation Data: Prune removed, update existing, add new
+                var incomingOptionIds = datumDTO.DisaggregationData?.Select(d => d.DisaggregationOptionId).ToHashSet() ?? new HashSet<Guid>();
+                var toRemove = datum.DisaggregationData.Where(dd => !incomingOptionIds.Contains(dd.DisaggregationOptionId)).ToList();
+                foreach (var dd in toRemove)
+                {
+                    datum.DisaggregationData.Remove(dd);
+                    db.DisaggregationData.Remove(dd);
+                }
+
                 if (datumDTO.DisaggregationData != null && datumDTO.DisaggregationData.Count > 0)
                 {
                     foreach (var ddDto in datumDTO.DisaggregationData)

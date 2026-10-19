@@ -116,9 +116,7 @@
                     <div ngbAccordionCollapse>
                         <div ngbAccordionBody>
 
-                            <div *ngIf="false">
-
-                                <div *ngFor="let subcategoryRow of categoryRow.subcategoryRows" class="subcategorybox mb-4">
+                            <div *ngFor="let subcategoryRow of categoryRow.subcategoryRows" class="subcategorybox mb-4">
 
                                     <h5>{{subcategoryRow.subcategory.name}}</h5>
 
@@ -236,6 +234,9 @@
                                                 <div class="small fw-bold text-muted mb-2">
                                                     <i class="fas fa-sitemap me-1"></i>{{indicatorRow.indicator.disaggregationGroup.name}} Breakdown (Auto-sums to Total):
                                                 </div>
+                                                <div *ngIf="!indicatorRow.indicator.disaggregationGroup.options || indicatorRow.indicator.disaggregationGroup.options.length === 0" class="small text-muted fst-italic ps-3 py-1">
+                                                    No breakdown options configured for this disaggregation group.
+                                                </div>
                                                 <div class="row g-2 align-items-center mb-1" *ngFor="let option of indicatorRow.indicator.disaggregationGroup.options">
                                                     <div class="col-md-6 col-xl-8 small text-secondary ps-3">
                                                         <i class="fas fa-angle-right me-1 text-muted"></i>{{option.name}} <small class="text-muted" *ngIf="option.code">({{option.code}})</small>
@@ -258,8 +259,8 @@
 
                                 </div>
 
-                            </div>
                         </div>
+                    </div>
                     </div>
                 </div>
 

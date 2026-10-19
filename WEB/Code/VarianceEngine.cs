@@ -46,12 +46,18 @@ namespace Monic.Web.Code
                 if (direction == IndicatorDirection.LowerIsBetter)
                 {
                     // Target was 0, but actual > 0 -> Underperforming
-                    return new VarianceResult(0m, StatusUnderperforming, absoluteVariance);
+                    // Target was 0, and actual < 0 -> Exceeding
+                    return act > 0m
+                        ? new VarianceResult(0m, StatusUnderperforming, absoluteVariance)
+                        : new VarianceResult(100m, StatusExceeding, absoluteVariance);
                 }
                 else
                 {
-                    // Target was 0, but actual > 0 -> Exceeding
-                    return new VarianceResult(100m, StatusExceeding, absoluteVariance);
+                    // Target was 0, and actual > 0 -> Exceeding
+                    // Target was 0, but actual < 0 -> Underperforming
+                    return act > 0m
+                        ? new VarianceResult(100m, StatusExceeding, absoluteVariance)
+                        : new VarianceResult(0m, StatusUnderperforming, absoluteVariance);
                 }
             }
 
@@ -69,6 +75,7 @@ namespace Monic.Web.Code
             {
                 // Standard calculation: higher actual means higher achievement
                 percentage = Math.Round((act / tgt) * 100m, 2);
+                if (percentage < 0m) percentage = 0m;
             }
 
             string badge;
@@ -95,7 +102,13 @@ namespace Monic.Web.Code
                 return new ParityValidationResult(true, aggregateTotal, 0m);
             }
 
-            decimal calculatedSum = disaggregatedValues.Sum();
+            var valuesList = disaggregatedValues as IList<decimal> ?? disaggregatedValues.ToList();
+            if (valuesList.Count == 0)
+            {
+                return new ParityValidationResult(true, aggregateTotal, 0m);
+            }
+
+            decimal calculatedSum = valuesList.Sum();
             decimal discrepancy = Math.Abs(aggregateTotal - calculatedSum);
             bool isValid = discrepancy <= tolerance;
 
