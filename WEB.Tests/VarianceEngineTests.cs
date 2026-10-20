@@ -116,5 +116,67 @@ namespace Monic.Web.Tests
             Assert.True(res.IsValid);
             Assert.Equal(100.00m, res.CalculatedSum);
         }
+
+        [Fact]
+        public void CalculateVariance_BaselineAware_HigherIsBetter_ComputesTrueProgress()
+        {
+            // Baseline 50, Target 80, Actual 65 -> (65-50)/(80-50) = 15/30 = 50% (Underperforming)
+            var under = VarianceEngine.CalculateVariance(65m, 80m, IndicatorDirection.HigherIsBetter, 50m);
+            Assert.Equal(50.0m, under.PercentageAchievement);
+            Assert.Equal(VarianceEngine.StatusUnderperforming, under.StatusBadge);
+
+            // Baseline 50, Target 80, Actual 80 -> 100% (On Track)
+            var onTrack = VarianceEngine.CalculateVariance(80m, 80m, IndicatorDirection.HigherIsBetter, 50m);
+            Assert.Equal(100.0m, onTrack.PercentageAchievement);
+            Assert.Equal(VarianceEngine.StatusOnTrack, onTrack.StatusBadge);
+
+            // Baseline 50, Target 80, Actual 95 -> (95-50)/(80-50) = 45/30 = 150% (Exceeding)
+            var exceed = VarianceEngine.CalculateVariance(95m, 80m, IndicatorDirection.HigherIsBetter, 50m);
+            Assert.Equal(150.0m, exceed.PercentageAchievement);
+            Assert.Equal(VarianceEngine.StatusExceeding, exceed.StatusBadge);
+
+            // Baseline 50, Target 80, Actual 40 (worse than baseline) -> 0%
+            var worse = VarianceEngine.CalculateVariance(40m, 80m, IndicatorDirection.HigherIsBetter, 50m);
+            Assert.Equal(0.0m, worse.PercentageAchievement);
+            Assert.Equal(VarianceEngine.StatusUnderperforming, worse.StatusBadge);
+        }
+
+        [Fact]
+        public void CalculateVariance_BaselineAware_LowerIsBetter_ComputesTrueProgress()
+        {
+            // Baseline 100, Target 60, Actual 80 -> (100-80)/(100-60) = 20/40 = 50% (Underperforming)
+            var under = VarianceEngine.CalculateVariance(80m, 60m, IndicatorDirection.LowerIsBetter, 100m);
+            Assert.Equal(50.0m, under.PercentageAchievement);
+            Assert.Equal(VarianceEngine.StatusUnderperforming, under.StatusBadge);
+
+            // Baseline 100, Target 60, Actual 60 -> 100% (On Track)
+            var onTrack = VarianceEngine.CalculateVariance(60m, 60m, IndicatorDirection.LowerIsBetter, 100m);
+            Assert.Equal(100.0m, onTrack.PercentageAchievement);
+            Assert.Equal(VarianceEngine.StatusOnTrack, onTrack.StatusBadge);
+
+            // Baseline 100, Target 60, Actual 50 -> (100-50)/(100-60) = 50/40 = 125% (Exceeding)
+            var exceed = VarianceEngine.CalculateVariance(50m, 60m, IndicatorDirection.LowerIsBetter, 100m);
+            Assert.Equal(125.0m, exceed.PercentageAchievement);
+            Assert.Equal(VarianceEngine.StatusExceeding, exceed.StatusBadge);
+
+            // Baseline 100, Target 60, Actual 120 (increased instead of reduced) -> 0%
+            var worse = VarianceEngine.CalculateVariance(120m, 60m, IndicatorDirection.LowerIsBetter, 100m);
+            Assert.Equal(0.0m, worse.PercentageAchievement);
+            Assert.Equal(VarianceEngine.StatusUnderperforming, worse.StatusBadge);
+        }
+
+        [Fact]
+        public void CalculateVariance_NegativeTarget_SafeguardsAgainstPolarityFlip()
+        {
+            // Target -100, Actual -150 (deficit widened) -> 50% (Underperforming, NOT Exceeding)
+            var worse = VarianceEngine.CalculateVariance(-150m, -100m, IndicatorDirection.HigherIsBetter);
+            Assert.Equal(50.0m, worse.PercentageAchievement);
+            Assert.Equal(VarianceEngine.StatusUnderperforming, worse.StatusBadge);
+
+            // Target -100, Actual -50 (deficit narrowed) -> 150% (Exceeding)
+            var better = VarianceEngine.CalculateVariance(-50m, -100m, IndicatorDirection.HigherIsBetter);
+            Assert.Equal(150.0m, better.PercentageAchievement);
+            Assert.Equal(VarianceEngine.StatusExceeding, better.StatusBadge);
+        }
     }
 }

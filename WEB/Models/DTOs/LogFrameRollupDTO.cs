@@ -51,5 +51,6 @@ namespace Monic.Web.Models
         public decimal? PercentageAchievement { get; set; }
         public string StatusBadge { get; set; } = "NotApplicable";
         public decimal? AbsoluteVariance { get; set; }
+        public decimal Weight { get; set; } = 1.0m;
     }
 }

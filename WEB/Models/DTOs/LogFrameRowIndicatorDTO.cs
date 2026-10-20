@@ -11,6 +11,8 @@ namespace Monic.Web.Models
         [Required]
         public Guid IndicatorId { get; set; }
 
+        public decimal Weight { get; set; } = 1.0m;
+
         public IndicatorDTO Indicator { get; set; }
 
         public LogFrameRowDTO LogFrameRow { get; set; }
@@ -27,6 +29,7 @@ namespace Monic.Web.Models
 
             logFrameRowIndicatorDTO.LogFrameRowId = logFrameRowIndicator.LogFrameRowId;
             logFrameRowIndicatorDTO.IndicatorId = logFrameRowIndicator.IndicatorId;
+            logFrameRowIndicatorDTO.Weight = logFrameRowIndicator.Weight;
 
             if (includeParents)
             {
@@ -39,6 +42,7 @@ namespace Monic.Web.Models
 
         public static void Hydrate(LogFrameRowIndicator logFrameRowIndicator, LogFrameRowIndicatorDTO logFrameRowIndicatorDTO)
         {
+            logFrameRowIndicator.Weight = logFrameRowIndicatorDTO.Weight > 0 ? logFrameRowIndicatorDTO.Weight : 1.0m;
         }
     }
 }

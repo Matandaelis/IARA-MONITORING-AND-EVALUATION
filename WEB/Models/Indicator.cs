@@ -56,7 +56,14 @@ namespace Monic.Web.Models
         public AggregationType DateAggregationType { get; set; }
 
         [Required]
+        public EntityAggregationType EntityAggregationType { get; set; } = EntityAggregationType.Sum;
+
+        [Column(TypeName = "decimal(20, 8)")]
+        public decimal? Baseline { get; set; }
+
+        [Required]
         public DataType DataType { get; set; }
+
 
         public Guid? OptionListId { get; set; }
 

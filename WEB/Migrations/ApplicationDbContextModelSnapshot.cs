@@ -963,6 +963,9 @@ namespace Monic.Web.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal?>("Baseline")
+                        .HasColumnType("decimal(20, 8)");
+
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -995,6 +998,9 @@ namespace Monic.Web.Migrations
 
                     b.Property<Guid?>("DisaggregationGroupId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("EntityAggregationType")
+                        .HasColumnType("int");
 
                     b.Property<Guid>("EntityTypeId")
                         .HasColumnType("uniqueidentifier");
@@ -1325,6 +1331,9 @@ namespace Monic.Web.Migrations
 
                     b.Property<Guid>("IndicatorId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Weight")
+                        .HasColumnType("decimal(5, 2)");
 
                     b.HasKey("LogFrameRowId", "IndicatorId")
                         .HasName("PK_LogFrameRowIndicator");

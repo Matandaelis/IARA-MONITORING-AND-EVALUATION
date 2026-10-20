@@ -81,14 +81,14 @@ namespace Monic.Web.Tests
 
             Assert.Equal(1, rollup.TotalRows);
             Assert.Equal(1, rollup.TotalIndicators);
-            Assert.Equal(85.0m, rollup.OverallAchievement);
+            Assert.Equal(83.33m, rollup.OverallAchievement);
             Assert.Equal(VarianceEngine.StatusOnTrack, rollup.OverallStatus);
             Assert.Equal(1, rollup.TotalOnTrack);
             Assert.Equal(0, rollup.TotalUnderperforming);
 
             var rowResult = rollup.Rows[0];
             Assert.Equal("Outcome", rowResult.RowTypeName);
-            Assert.Equal(85.0m, rowResult.AverageAchievement);
+            Assert.Equal(83.33m, rowResult.AverageAchievement);
             Assert.Equal(VarianceEngine.StatusOnTrack, rowResult.RowStatus);
 
             var indResult = rowResult.Indicators[0];
@@ -96,7 +96,7 @@ namespace Monic.Web.Tests
             Assert.Equal(100m, indResult.Baseline);
             Assert.Equal(1000m, indResult.Target);
             Assert.Equal(850m, indResult.Actual);
-            Assert.Equal(85.0m, indResult.PercentageAchievement);
+            Assert.Equal(83.33m, indResult.PercentageAchievement);
             Assert.Equal(VarianceEngine.StatusOnTrack, indResult.StatusBadge);
             Assert.Equal(-150m, indResult.AbsoluteVariance);
         }
@@ -143,8 +143,8 @@ namespace Monic.Web.Tests
 
             var rollup = LogFrameRollupEngine.ComputeRollup(logFrame);
 
-            // 100 + ((20 - 15) / 20) * 100 = 125% -> Exceeding
-            Assert.Equal(125.0m, rollup.OverallAchievement);
+            // (35 - 15) / (35 - 20) * 100 = 133.33% -> Exceeding
+            Assert.Equal(133.33m, rollup.OverallAchievement);
             Assert.Equal(VarianceEngine.StatusExceeding, rollup.OverallStatus);
             Assert.Equal(1, rollup.TotalExceeding);
         }
@@ -415,7 +415,7 @@ namespace Monic.Web.Tests
             Assert.Contains("50", csvText);
             Assert.Contains("45", csvText);
             Assert.Contains("-5", csvText);
-            Assert.Contains("90", csvText);
+            Assert.Contains("87.5", csvText);
             Assert.Contains("OnTrack", csvText);
         }
 
@@ -469,7 +469,7 @@ namespace Monic.Web.Tests
             var indResult = rollup.Rows[0].Indicators[0];
             Assert.Equal(80m, indResult.Target);
             Assert.Equal(76m, indResult.Actual);
-            Assert.Equal(95.0m, indResult.PercentageAchievement);
+            Assert.Equal(90.0m, indResult.PercentageAchievement);
             Assert.Equal(VarianceEngine.StatusOnTrack, indResult.StatusBadge);
             Assert.Equal(-4m, indResult.AbsoluteVariance);
             Assert.Equal(40m, indResult.Baseline);
@@ -627,6 +627,57 @@ namespace Monic.Web.Tests
             Assert.Equal(LogFrameRowType.Outcomes, rollup.Rows[1].RowType);
             Assert.Equal(LogFrameRowType.Outputs, rollup.Rows[2].RowType);
             Assert.Equal(LogFrameRowType.Activities, rollup.Rows[3].RowType);
+        }
+
+        [Fact]
+        public void ComputeRollup_MultipleIndicators_WithWeights_CalculatesWeightedAverage()
+        {
+            var indFlyers = new Indicator
+            {
+                IndicatorId = Guid.NewGuid(),
+                Code = "IND-FLYERS",
+                Name = "Flyers Distributed",
+                IndicatorTargets = new List<IndicatorTarget> { new IndicatorTarget { TargetValue = 100m } },
+                Data = new List<Datum> { new Datum { Value = 100m } } // 100% achievement
+            };
+
+            var indMortality = new Indicator
+            {
+                IndicatorId = Guid.NewGuid(),
+                Code = "IND-MORTALITY",
+                Name = "Mortality Reduction",
+                IndicatorTargets = new List<IndicatorTarget> { new IndicatorTarget { TargetValue = 100m } },
+                Data = new List<Datum> { new Datum { Value = 40m } } // 40% achievement
+            };
+
+            var row = new LogFrameRow
+            {
+                LogFrameRowId = Guid.NewGuid(),
+                RowNumber = 1,
+                RowType = LogFrameRowType.Outcomes,
+                Description = "Outcome 1: Community Health",
+                LogFrameRowIndicators = new List<LogFrameRowIndicator>
+                {
+                    // Weight 1.0 vs Weight 4.0
+                    new LogFrameRowIndicator { IndicatorId = indFlyers.IndicatorId, Indicator = indFlyers, Weight = 1.0m },
+                    new LogFrameRowIndicator { IndicatorId = indMortality.IndicatorId, Indicator = indMortality, Weight = 4.0m }
+                }
+            };
+
+            var logFrame = new LogFrame
+            {
+                LogFrameId = Guid.NewGuid(),
+                Name = "Health Intervention",
+                LogFrameRows = new List<LogFrameRow> { row }
+            };
+
+            var rollup = LogFrameRollupEngine.ComputeRollup(logFrame);
+
+            // Weighted Average: (100 * 1.0 + 40 * 4.0) / (1.0 + 4.0) = 260 / 5 = 52.0%
+            // Note: Simple unweighted average would have been (100 + 40) / 2 = 70.0%
+            Assert.Equal(52.0m, rollup.Rows[0].AverageAchievement);
+            Assert.Equal(VarianceEngine.StatusUnderperforming, rollup.Rows[0].RowStatus);
+            Assert.Equal(52.0m, rollup.OverallAchievement);
         }
     }
 }

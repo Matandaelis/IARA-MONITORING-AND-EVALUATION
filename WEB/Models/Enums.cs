@@ -6,6 +6,14 @@ namespace Monic.Web.Models
         MostRecent
     }
 
+    public enum EntityAggregationType
+    {
+        Sum,
+        Average,
+        None
+    }
+
+
     public enum Associativeness
     {
         Left,

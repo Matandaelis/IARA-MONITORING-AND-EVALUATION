@@ -12,6 +12,10 @@ namespace Monic.Web.Models
         [Required]
         public Guid IndicatorId { get; set; }
 
+        [Column(TypeName = "decimal(5, 2)")]
+        public decimal Weight { get; set; } = 1.0m;
+
+
         [ForeignKey("IndicatorId")]
         public virtual Indicator Indicator { get; set; }
 

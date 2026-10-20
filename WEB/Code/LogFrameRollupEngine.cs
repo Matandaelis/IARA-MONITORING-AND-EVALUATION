@@ -61,6 +61,7 @@ namespace Monic.Web.Code
                         if (indicator == null) continue;
 
                         var indRollup = ComputeIndicatorRollup(indicator);
+                        indRollup.Weight = rowIndicator.Weight > 0 ? rowIndicator.Weight : 1.0m;
                         rowRollup.Indicators.Add(indRollup);
                         allIndicatorRollups.Add(indRollup);
 
@@ -84,11 +85,13 @@ namespace Monic.Web.Code
 
                     rowRollup.TotalIndicators = rowRollup.Indicators.Count;
 
-                    // Compute row-level average achievement
+                    // Compute row-level weighted average achievement
                     var rowMeasurable = rowRollup.Indicators.Where(i => i.PercentageAchievement.HasValue).ToList();
                     if (rowMeasurable.Count > 0)
                     {
-                        rowRollup.AverageAchievement = Math.Round(rowMeasurable.Average(i => i.PercentageAchievement.Value), 2);
+                        decimal totalWeight = rowMeasurable.Sum(i => i.Weight > 0 ? i.Weight : 1.0m);
+                        decimal weightedSum = rowMeasurable.Sum(i => i.PercentageAchievement.Value * (i.Weight > 0 ? i.Weight : 1.0m));
+                        rowRollup.AverageAchievement = Math.Round(weightedSum / totalWeight, 2);
                         rowRollup.RowStatus = ClassifyStatus(rowRollup.AverageAchievement.Value);
                     }
                     else
@@ -116,7 +119,9 @@ namespace Monic.Web.Code
             var projectMeasurable = distinctIndicators.Where(i => i.PercentageAchievement.HasValue).ToList();
             if (projectMeasurable.Count > 0)
             {
-                rollup.OverallAchievement = Math.Round(projectMeasurable.Average(i => i.PercentageAchievement.Value), 2);
+                decimal totalWeight = projectMeasurable.Sum(i => i.Weight > 0 ? i.Weight : 1.0m);
+                decimal weightedSum = projectMeasurable.Sum(i => i.PercentageAchievement.Value * (i.Weight > 0 ? i.Weight : 1.0m));
+                rollup.OverallAchievement = Math.Round(weightedSum / totalWeight, 2);
                 rollup.OverallStatus = ClassifyStatus(rollup.OverallAchievement.Value);
             }
             else
@@ -132,8 +137,8 @@ namespace Monic.Web.Code
         {
             if (indicator == null) throw new ArgumentNullException(nameof(indicator));
 
-            // Baseline from the chronologically earliest target with a baseline
-            decimal? baseline = indicator.IndicatorTargets?
+            // Baseline from indicator or the chronologically earliest target with a baseline
+            decimal? baseline = indicator.Baseline ?? indicator.IndicatorTargets?
                 .Where(t => t.BaselineValue.HasValue)
                 .OrderBy(t => t.Date?.SortOrder ?? 0)
                 .ThenBy(t => t.Date?.OpenFrom ?? DateTime.MinValue)
@@ -216,7 +221,7 @@ namespace Monic.Web.Code
                 }
             }
 
-            var variance = VarianceEngine.CalculateVariance(actual, target, indicator.Direction);
+            var variance = VarianceEngine.CalculateVariance(actual, target, indicator.Direction, baseline);
 
             return new LogFrameIndicatorRollupDTO
             {
@@ -230,7 +235,8 @@ namespace Monic.Web.Code
                 Actual = actual,
                 PercentageAchievement = variance.PercentageAchievement,
                 StatusBadge = variance.StatusBadge,
-                AbsoluteVariance = variance.AbsoluteVariance
+                AbsoluteVariance = variance.AbsoluteVariance,
+                Weight = 1.0m
             };
         }
 

@@ -171,15 +171,16 @@ namespace Monic.Web.Controllers
             {
                 var target = targets.FirstOrDefault(t => t.DateId == date.DateId);
                 var datum = actualData.FirstOrDefault(d => d.DateId == date.DateId);
+                var baseline = target?.BaselineValue ?? indicator.Baseline;
 
-                var variance = VarianceEngine.CalculateVariance(datum?.Value, target?.TargetValue, indicator.Direction);
+                var variance = VarianceEngine.CalculateVariance(datum?.Value, target?.TargetValue, indicator.Direction, baseline);
 
                 var periodDto = new PeriodVarianceDTO
                 {
                     DateId = date.DateId,
                     PeriodName = date.Name,
                     TargetValue = target?.TargetValue,
-                    BaselineValue = target?.BaselineValue,
+                    BaselineValue = baseline,
                     ActualValue = datum?.Value,
                     PercentageAchievement = variance.PercentageAchievement,
                     StatusBadge = variance.StatusBadge

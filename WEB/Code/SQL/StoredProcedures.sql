@@ -548,6 +548,9 @@ BEGIN TRY
 	
 	DECLARE @AggregationType_SUM tinyint = 0,
 			@AggregationType_MOSTRECENT tinyint = 1,
+			@EntityAggregationType_SUM tinyint = 0,
+			@EntityAggregationType_AVERAGE tinyint = 1,
+			@EntityAggregationType_NONE tinyint = 2,
 			@DateType_YEAR tinyint = 0,
 			@DateType_QUARTER tinyint = 1,
 			@DateType_MONTH tinyint = 2,
@@ -560,6 +563,7 @@ BEGIN TRY
 		DateId uniqueidentifier NOT NULL,
 		Frequency int NOT NULL,
 		DateAggregationType int NOT NULL,
+		EntityAggregationType int NOT NULL,
 		IndicatorEntityTypeId uniqueidentifier NOT NULL,
 		EntityEntityTypeId uniqueidentifier NOT NULL,
 		DateType int NOT NULL,
@@ -577,6 +581,7 @@ BEGIN TRY
 				da.Id, 
 				Frequency, 
 				DateAggregationType, 
+				COALESCE(si.EntityAggregationType, 0),
 				si.EntityTypeId, 
 				entities.EntityTypeId, 
 				dates.DateType, 
@@ -847,9 +852,10 @@ BEGIN TRY
 		SELECT		d.*
 		FROM		Data d
 		INNER JOIN	@filters f ON d.IndicatorId = f.SourceIndicatorId AND d.EntityId = f.EntityId AND d.DateId = f.DateId
-		-- restrict to: aggregated data for the same date frequency but different entitytypes
+		-- restrict to: aggregated data for the same date frequency but different entitytypes, and EntityAggregationType = SUM
 		WHERE		Aggregated = 1
 		AND			f.EntityEntityTypeId <> f.IndicatorEntityTypeId
+		AND			f.EntityAggregationType = @EntityAggregationType_SUM
 	)
 	MERGE	d
 	USING	(
@@ -865,6 +871,54 @@ BEGIN TRY
 		WHERE		d.Value IS NOT NULL
 		AND			en.EntityTypeId = f.IndicatorEntityTypeId
 		AND			f.EntityEntityTypeId <> f.IndicatorEntityTypeId
+		AND			f.EntityAggregationType = @EntityAggregationType_SUM
+		GROUP BY	f.SourceIndicatorId,
+					f.EntityId, 
+					f.DateId
+	) source
+	ON		d.IndicatorId = source.SourceIndicatorId
+	AND		d.EntityId = source.EntityId
+	AND		d.DateId = source.DateId
+	WHEN MATCHED THEN
+		UPDATE SET 
+			d.Value = source.Value,
+			d.Note = @step,
+			d.LastSavedDateUtc = GETUTCDATE(),
+			d.LastSavedById = @UserId
+	WHEN NOT MATCHED BY TARGET THEN
+		INSERT (IndicatorId, EntityId, DateId, Value, Note, Aggregated, LastSavedDateUtc, LastSavedById)
+		VALUES (source.SourceIndicatorId, source.EntityId, source.DateId, source.Value, @step, 1, GETUTCDATE(), @UserId)
+	WHEN NOT MATCHED BY SOURCE THEN
+		DELETE;
+
+	-----------------------------------------------------------------------------------------------------------------------------------------------------
+
+	SET @step = 'AGGREGATE.ENTITY(AVG)'
+
+	;WITH	d AS ( 
+		SELECT		d.*
+		FROM		Data d
+		INNER JOIN	@filters f ON d.IndicatorId = f.SourceIndicatorId AND d.EntityId = f.EntityId AND d.DateId = f.DateId
+		-- restrict to: aggregated data for the same date frequency but different entitytypes, and EntityAggregationType = AVERAGE
+		WHERE		Aggregated = 1
+		AND			f.EntityEntityTypeId <> f.IndicatorEntityTypeId
+		AND			f.EntityAggregationType = @EntityAggregationType_AVERAGE
+	)
+	MERGE	d
+	USING	(
+		SELECT		f.SourceIndicatorId,
+					f.EntityId, 
+					f.DateId, 
+					AVG(d.Value) Value
+		FROM		Data d
+		INNER JOIN	Entities en ON d.EntityId = en.EntityId
+		INNER JOIN	EntityLinks enL ON d.EntityId = enL.ChildEntityId
+		INNER JOIN	@filters f ON d.IndicatorId = f.SourceIndicatorId AND enL.ParentEntityId = f.EntityId AND d.DateId = f.DateId
+		-- filter: exclude nulls, non-aggregated (source) data at the level of collection frequency
+		WHERE		d.Value IS NOT NULL
+		AND			en.EntityTypeId = f.IndicatorEntityTypeId
+		AND			f.EntityEntityTypeId <> f.IndicatorEntityTypeId
+		AND			f.EntityAggregationType = @EntityAggregationType_AVERAGE
 		GROUP BY	f.SourceIndicatorId,
 					f.EntityId, 
 					f.DateId

@@ -24,7 +24,11 @@ namespace Monic.Web.Code
         public const string StatusExceeding = "Exceeding";
         public const string StatusNotApplicable = "NotApplicable";
 
-        public static VarianceResult CalculateVariance(decimal? actual, decimal? target, IndicatorDirection direction = IndicatorDirection.HigherIsBetter)
+        public static VarianceResult CalculateVariance(
+            decimal? actual, 
+            decimal? target, 
+            IndicatorDirection direction = IndicatorDirection.HigherIsBetter, 
+            decimal? baseline = null)
         {
             if (!actual.HasValue || !target.HasValue)
             {
@@ -35,47 +39,110 @@ namespace Monic.Web.Code
             decimal tgt = target.Value;
             decimal absoluteVariance = act - tgt;
 
-            // Zero Target Boundary Safeguards
-            if (tgt == 0m)
+            decimal percentage;
+
+            if (baseline.HasValue)
             {
-                if (act == 0m)
+                decimal b = baseline.Value;
+
+                if (direction == IndicatorDirection.LowerIsBetter)
                 {
-                    return new VarianceResult(100m, StatusOnTrack, 0m);
+                    // Reduction indicator: Target is lower than baseline
+                    // True achievement = (Baseline - Actual) / (Baseline - Target) * 100
+                    decimal targetReduction = b - tgt;
+
+                    if (targetReduction == 0m)
+                    {
+                        if (act <= tgt)
+                        {
+                            percentage = act < tgt ? 120m : 100m;
+                        }
+                        else
+                        {
+                            percentage = 0m;
+                        }
+                    }
+                    else
+                    {
+                        percentage = Math.Round(((b - act) / targetReduction) * 100m, 2);
+                        if (percentage < 0m) percentage = 0m;
+                    }
+                }
+                else
+                {
+                    // Standard increase indicator: Target is higher than baseline
+                    // True achievement = (Actual - Baseline) / (Target - Baseline) * 100
+                    decimal targetIncrease = tgt - b;
+
+                    if (targetIncrease == 0m)
+                    {
+                        if (act >= tgt)
+                        {
+                            percentage = act > tgt ? 120m : 100m;
+                        }
+                        else
+                        {
+                            percentage = 0m;
+                        }
+                    }
+                    else
+                    {
+                        percentage = Math.Round(((act - b) / targetIncrease) * 100m, 2);
+                        if (percentage < 0m) percentage = 0m;
+                    }
+                }
+            }
+            else
+            {
+                // Fallback when baseline is not provided (un-baselined indicator)
+                // Zero Target Boundary Safeguards
+                if (tgt == 0m)
+                {
+                    if (act == 0m)
+                    {
+                        return new VarianceResult(100m, StatusOnTrack, 0m);
+                    }
+
+                    if (direction == IndicatorDirection.LowerIsBetter)
+                    {
+                        // Target was 0, but actual > 0 -> Underperforming
+                        // Target was 0, and actual < 0 -> Exceeding
+                        return act > 0m
+                            ? new VarianceResult(0m, StatusUnderperforming, absoluteVariance)
+                            : new VarianceResult(100m, StatusExceeding, absoluteVariance);
+                    }
+                    else
+                    {
+                        // Target was 0, and actual > 0 -> Exceeding
+                        // Target was 0, but actual < 0 -> Underperforming
+                        return act > 0m
+                            ? new VarianceResult(100m, StatusExceeding, absoluteVariance)
+                            : new VarianceResult(0m, StatusUnderperforming, absoluteVariance);
+                    }
                 }
 
                 if (direction == IndicatorDirection.LowerIsBetter)
                 {
-                    // Target was 0, but actual > 0 -> Underperforming
-                    // Target was 0, and actual < 0 -> Exceeding
-                    return act > 0m
-                        ? new VarianceResult(0m, StatusUnderperforming, absoluteVariance)
-                        : new VarianceResult(100m, StatusExceeding, absoluteVariance);
+                    // Inverted calculation: lower actual means higher achievement
+                    // e.g. Target = 100, Actual = 80 -> 100 + ((100 - 80) / 100) * 100 = 120% (Exceeding)
+                    // e.g. Target = 100, Actual = 130 -> 100 + ((100 - 130) / 100) * 100 = 70% (Underperforming)
+                    percentage = Math.Round((1m + (tgt - act) / Math.Abs(tgt)) * 100m, 2);
+                    if (percentage < 0m) percentage = 0m;
                 }
                 else
                 {
-                    // Target was 0, and actual > 0 -> Exceeding
-                    // Target was 0, but actual < 0 -> Underperforming
-                    return act > 0m
-                        ? new VarianceResult(100m, StatusExceeding, absoluteVariance)
-                        : new VarianceResult(0m, StatusUnderperforming, absoluteVariance);
+                    // Standard calculation: higher actual means higher achievement
+                    if (tgt > 0m)
+                    {
+                        percentage = Math.Round((act / tgt) * 100m, 2);
+                    }
+                    else
+                    {
+                        // Negative target safeguard (e.g. tgt = -100, act = -150 -> 50%; act = -50 -> 150%)
+                        percentage = Math.Round((1m + (act - tgt) / Math.Abs(tgt)) * 100m, 2);
+                    }
+                    if (percentage < 0m) percentage = 0m;
                 }
-            }
-
-            decimal percentage;
-
-            if (direction == IndicatorDirection.LowerIsBetter)
-            {
-                // Inverted calculation: lower actual means higher achievement
-                // e.g. Target = 100, Actual = 80 -> 100 + ((100 - 80) / 100) * 100 = 120% (Exceeding)
-                // e.g. Target = 100, Actual = 130 -> 100 + ((100 - 130) / 100) * 100 = 70% (Underperforming)
-                percentage = Math.Round((1m + (tgt - act) / tgt) * 100m, 2);
-                if (percentage < 0m) percentage = 0m;
-            }
-            else
-            {
-                // Standard calculation: higher actual means higher achievement
-                percentage = Math.Round((act / tgt) * 100m, 2);
-                if (percentage < 0m) percentage = 0m;
             }
 
             string badge;

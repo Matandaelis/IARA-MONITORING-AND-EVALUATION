@@ -53,6 +53,10 @@ namespace Monic.Web.Models
         [Required]
         public AggregationType DateAggregationType { get; set; }
 
+        public EntityAggregationType EntityAggregationType { get; set; } = EntityAggregationType.Sum;
+
+        public decimal? Baseline { get; set; }
+
         [Required]
         public DataType DataType { get; set; }
 
@@ -141,6 +145,8 @@ namespace Monic.Web.Models
             indicatorDTO.EntityTypeId = indicator.EntityTypeId;
             indicatorDTO.Frequency = indicator.Frequency;
             indicatorDTO.DateAggregationType = indicator.DateAggregationType;
+            indicatorDTO.EntityAggregationType = indicator.EntityAggregationType;
+            indicatorDTO.Baseline = indicator.Baseline;
             indicatorDTO.DataType = indicator.DataType;
             indicatorDTO.OptionListId = indicator.OptionListId;
             indicatorDTO.DecimalPlaces = indicator.DecimalPlaces;
@@ -210,6 +216,8 @@ namespace Monic.Web.Models
             if (isNew) indicator.EntityTypeId = indicatorDTO.EntityTypeId;
             if (isNew) indicator.Frequency = indicatorDTO.Frequency;
             if (isNew) indicator.DateAggregationType = indicatorDTO.DateAggregationType;
+            indicator.EntityAggregationType = indicatorDTO.EntityAggregationType;
+            indicator.Baseline = indicatorDTO.Baseline;
             indicator.DataType = indicatorDTO.DataType;
             indicator.OptionListId = indicatorDTO.OptionListId;
             indicator.DecimalPlaces = indicatorDTO.DecimalPlaces;
