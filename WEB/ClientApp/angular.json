@@ -81,7 +81,13 @@
                         "development": {
                             "optimization": false,
                             "extractLicenses": false,
-                            "sourceMap": true,
+                            // Sourcemaps for the large global stylesheets are
+                            // expensive to generate on every dev-server start
+                            // or rebuild; CSS remains inspectable directly.
+                            "sourceMap": {
+                                "scripts": true,
+                                "styles": false
+                            },
                             "namedChunks": true
                         }
                     },
