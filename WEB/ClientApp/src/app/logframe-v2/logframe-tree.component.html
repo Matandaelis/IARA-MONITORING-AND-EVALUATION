@@ -1,0 +1,50 @@
+<div class="d-flex align-items-center mb-3">
+    <p-button icon="pi pi-arrow-left" [text]="true" [rounded]="true" (onClick)="goBack()" label="Back" />
+    <h1 class="ms-3 m-0">{{ store.tree()?.name ?? 'Results framework' }}</h1>
+</div>
+
+<div *ngIf="store.loading()">
+    <p-skeleton height="14rem" width="100%" shape="rect" [style]="{ 'border-radius': '0.25rem' }" />
+</div>
+
+<div *ngIf="store.error()" class="alert alert-warning">
+    {{ store.error() }}
+    <p-button label="Retry" (onClick)="store.load(logFrameId ?? '')" />
+</div>
+
+<p-treetable
+    *ngIf="!store.loading() && !store.error()"
+    [value]="store.roots()"
+    dataKey="id"
+    [scrollable]="true"
+    scrollHeight="flex"
+    [tableStyle]="{ 'min-width': '960px' }">
+
+    <ng-template pTemplate="header">
+        <tr>
+            <th style="min-width: 24rem">Result / Activity</th>
+            <th style="width: 7rem">Code</th>
+            <th style="width: 8rem">Level</th>
+            <th style="width: 8rem">Indicators</th>
+            <th style="width: 4rem"></th>
+        </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-rowNode let-rowData="rowData">
+        <tr>
+            <td>
+                <p-treeTableToggler [rowNode]="rowNode" />
+                <span class="fw-semibold">{{ rowData.title }}</span>
+                <div class="text-muted small" *ngIf="rowData.description">{{ rowData.description }}</div>
+            </td>
+            <td><span class="badge bg-light text-dark">{{ rowData.code }}</span></td>
+            <td>{{ rowData.level }}</td>
+            <td>{{ rowData.indicatorCount }}</td>
+            <td></td>
+        </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+        <tr><td colspan="5">No results-framework nodes found for this logframe.</td></tr>
+    </ng-template>
+</p-treetable>

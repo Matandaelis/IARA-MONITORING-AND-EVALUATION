@@ -4,6 +4,7 @@ import { NavigationEnd, Router } from '@angular/router';
 import { ProfileModel } from '../models/profile.models';
 import { AuthService } from '../services/auth.service';
 import { ActivatedRoute } from '@angular/router';
+import { environment } from '../../../environments/environment';
 import { filter, map, tap } from 'rxjs';
 
 @Component({
@@ -20,6 +21,7 @@ export class NavMenuComponent implements OnInit {
     public isCollapsed = true;
     public menuStates: { [key: string]: boolean; } = { admin: true, home: true };
     public activeMenu: string;
+    readonly env = environment;
 
     constructor(
         private authService: AuthService,

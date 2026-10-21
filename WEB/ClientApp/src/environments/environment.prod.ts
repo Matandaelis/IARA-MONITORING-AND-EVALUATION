@@ -3,5 +3,6 @@ export const environment = {
     baseUrl: `${window.location.origin}/`,
     baseApiUrl: `${window.location.origin}/api/`,
     baseAuthUrl: `${window.location.origin}/`,
-    siteName: 'MONIC'
+    siteName: 'MONIC',
+    logFrameV2: false
 };

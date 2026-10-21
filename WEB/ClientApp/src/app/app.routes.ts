@@ -2,6 +2,7 @@ import { Route, } from '@angular/router';
 import { NotFoundComponent } from './common/components/notfound.component';
 import { MainComponent } from './main.component';
 import { SetupComponent } from './setup/setup.component';
+import { environment } from '../environments/environment';
 
 export const AppRoutes: Route[] = [
     {
@@ -16,6 +17,11 @@ export const AppRoutes: Route[] = [
     {
         path: 'public',
         loadChildren: () => import('./public/public.module').then(m => m.PublicModule)
+    },
+    {
+        path: 'logframe-v2',
+        loadChildren: () => import('./logframe-v2/logframe-v2.module').then(m => m.LogFrameV2Module),
+        canMatch: [() => environment.logFrameV2]
     },
     {
         path: '',
