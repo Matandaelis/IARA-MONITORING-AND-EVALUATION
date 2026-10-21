@@ -271,6 +271,7 @@ builder.Services.AddScoped<IIdentityService, IdentityService>();
 builder.Services.AddScoped<ApiExceptionAttribute>();
 builder.Services.AddScoped<DocumentsStorageService>();
 builder.Services.AddScoped<IMeReviewService, MeReviewService>();
+builder.Services.AddScoped<LogFrameTreeService>();
 
 var app = builder.Build();
 
