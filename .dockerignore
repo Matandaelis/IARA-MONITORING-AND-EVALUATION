@@ -6,27 +6,35 @@
 # IDEs
 .vs
 .vscode
-*.user
-*.sln.docstates
 .idea
 *.swp
 *.swo
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
 
-# Build outputs
-bin/
-obj/
-dist/
-.angular/
+# Docker files themselves (not needed inside the image)
+Dockerfile
+docker-compose.yml
+.dockerignore
+progress.md
 
-# Node modules and npm
-node_modules/
+# Build outputs (any depth: WEB/bin, WEB/obj, ...)
+**/bin/
+**/obj/
+**/dist/
+**/.angular/
+
+# Node dependencies (source + lockfile + patches ARE included)
+**/node_modules/
 npm-debug.log
 yarn.lock
 
 # Dependencies
 packages/
 
-# Environment files
+# Environment files (secrets must never enter the image)
 .env
 .env.local
 .env.*.local
@@ -36,30 +44,25 @@ packages/
 Thumbs.db
 *.tmp
 
-# Build artifacts
+# Logs and symbols
 *.log
 *.pdb
 *.cache
 
-# Frontend build
-WEB/ClientApp/dist/
-WEB/ClientApp/.angular/
-
-# Editor files
-*.sublime-project
-*.sublime-workspace
-
-# Documentation
-docs/
-*.md
-
-# Testing
+# Tests and coverage (backend tests are not part of the runtime image)
+WEB.Tests/
 coverage/
 test-results/
 
+# Docs
+docs/
+*.md
+
 # CI/CD
-.github/workflows/
+.github/
 
 # Misc
 .prettierignore
 .editorconfig
+*.sublime-project
+*.sublime-workspace
