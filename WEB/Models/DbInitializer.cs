@@ -12,18 +12,22 @@ namespace Monic.Web.Models
         private readonly UserManager<User> um;
         private const int errorExpiryDays = 7;
         private readonly IHostEnvironment environment;
+        private readonly ILogger logger;
 
-        public DbInitializer(AppSettings appSettings, ApplicationDbContext db, UserManager<User> um, RoleManager<Role> rm, IHostEnvironment environment)
+        public DbInitializer(AppSettings appSettings, ApplicationDbContext db, UserManager<User> um, RoleManager<Role> rm, IHostEnvironment environment, ILogger logger)
         {
             this.appSettings = appSettings;
             this.db = db;
             this.um = um;
             this.rm = rm;
             this.environment = environment;
+            this.logger = logger;
         }
 
         public async System.Threading.Tasks.Task InitializeAsync()
         {
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
             if (environment.IsDevelopment())
             {
                 // dev option 1: drop & recreate
@@ -38,19 +42,42 @@ namespace Monic.Web.Models
                 db.Database.Migrate();
             }
 
+            stopwatch.Stop();
+
+            logger.LogInformation(
+                "MONIC startup: migration check in {ElapsedMs:N0} ms",
+                stopwatch.ElapsedMilliseconds);
+
+            var seedStopwatch = System.Diagnostics.Stopwatch.StartNew();
+
             await SeedAsync();
+
+            seedStopwatch.Stop();
+
+            logger.LogInformation(
+                "MONIC startup: seed in {ElapsedMs:N0} ms",
+                seedStopwatch.ElapsedMilliseconds);
+
+            var rolesStopwatch = System.Diagnostics.Stopwatch.StartNew();
+
             await CreateRolesAsync();
+
+            rolesStopwatch.Stop();
+
+            logger.LogInformation(
+                "MONIC startup: roles in {ElapsedMs:N0} ms",
+                rolesStopwatch.ElapsedMilliseconds);
+
+            var indexesStopwatch = System.Diagnostics.Stopwatch.StartNew();
 
             db.AddNullableUniqueIndexes();
 
-            // remove old errors so they don't bloat the database
-            await DeleteErrors();
+            indexesStopwatch.Stop();
 
-            // clean up expired/old openiddict tokens & authorizations
-            await db.Database.ExecuteSqlRawAsync("delete from OpenIddictTokens where (ExpirationDate < getdate() or Status = 'Redeemed')");
-            await db.Database.ExecuteSqlRawAsync("delete from OpenIddictAuthorizations where id not in (select authorizationid from OpenIddictTokens)");
+            logger.LogInformation(
+                "MONIC startup: nullable unique indexes in {ElapsedMs:N0} ms",
+                indexesStopwatch.ElapsedMilliseconds);
         }
-
         private async System.Threading.Tasks.Task SeedAsync()
         {
             if (!db.Settings.Any())
@@ -62,10 +89,22 @@ namespace Monic.Web.Models
 
         private async System.Threading.Tasks.Task CreateRolesAsync()
         {
-            var roles = Enum.GetNames(typeof(Roles));
+            var roleNames = Enum.GetNames(typeof(Roles)).ToList();
 
-            foreach (var role in roles)
-                if (!await rm.RoleExistsAsync(role)) await rm.CreateAsync(new Role { Name = role });
+            // Single query for the roles that already exist instead of one
+            // round-trip per role (sequential Identity calls are slow).
+            var existingRoles = (await rm.Roles.ToListAsync())
+                .Select(r => r.NormalizedName)
+                .Where(n => n != null)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var role in roleNames)
+            {
+                if (!existingRoles.Contains(role))
+                {
+                    await rm.CreateAsync(new Role { Name = role });
+                }
+            }
         }
 
         private async System.Threading.Tasks.Task DeleteErrors()
@@ -83,6 +122,26 @@ namespace Monic.Web.Models
                 }
             }
             await db.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Housekeeping work (expired error and OpenIddict token cleanup).
+        /// Called off the startup critical path in the background so the
+        /// server can serve requests while it runs.
+        /// </summary>
+        public async System.Threading.Tasks.Task CleanupAsync()
+        {
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+            await DeleteErrors();
+
+            // clean up expired/old openiddict tokens & authorizations
+            await db.Database.ExecuteSqlRawAsync("delete from OpenIddictTokens where (ExpirationDate < getdate() or Status = 'Redeemed')");
+            await db.Database.ExecuteSqlRawAsync("delete from OpenIddictAuthorizations where id not in (select authorizationid from OpenIddictTokens)");
+
+            stopwatch.Stop();
+
+            logger.LogInformation("MONIC startup: housekeeping in {ElapsedMs:N0} ms", stopwatch.ElapsedMilliseconds);
         }
     }
 }

@@ -276,25 +276,89 @@ builder.Services.AddScoped<LogFrameBackfillService>();
 
 var app = builder.Build();
 
-using (var scope = app.Services
-    .GetRequiredService<IServiceScopeFactory>()
-    .CreateScope())
-using (var db =
-    scope.ServiceProvider.GetService<ApplicationDbContext>())
-using (var um =
-    scope.ServiceProvider.GetService<UserManager<User>>())
-using (var rm =
-    scope.ServiceProvider.GetService<RoleManager<Role>>())
-{
-    var initializer = new DbInitializer(
-        appSettings,
-        db,
-        um,
-        rm,
-        builder.Environment);
+// ---- startup database initialization --------------------------------------
+//
+// Development fast-restart: when Features:SkipStartupDatabaseInit=true and the
+// environment is Development, the blocking database initialization (migration
+// check, seed, roles, indexes) is skipped entirely to speed up restarts.
+// The schema is then assumed to be current: set the flag back to false (or
+// run "dotnet ef database update") after adding migrations or schema changes.
+var skipStartupDatabaseInit =
+    app.Environment.IsDevelopment() &&
+    app.Configuration.GetValue<bool>("Features:SkipStartupDatabaseInit");
 
-    await initializer.InitializeAsync();
+if (skipStartupDatabaseInit)
+{
+    app.Logger.LogWarning(
+        "MONIC startup: Features:SkipStartupDatabaseInit enabled - skipping startup database initialization. " +
+        "Set it back to false after schema changes (new migration) so the database catches up.");
 }
+else
+{
+    var initializationStopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+    using (var scope = app.Services
+        .GetRequiredService<IServiceScopeFactory>()
+        .CreateScope())
+    using (var db =
+        scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
+    using (var um =
+        scope.ServiceProvider.GetRequiredService<UserManager<User>>())
+    using (var rm =
+        scope.ServiceProvider.GetRequiredService<RoleManager<Role>>())
+    {
+        var initializer = new DbInitializer(
+            appSettings,
+            db,
+            um,
+            rm,
+            app.Environment,
+            app.Logger);
+
+        await initializer.InitializeAsync();
+    }
+
+    initializationStopwatch.Stop();
+
+    app.Logger.LogInformation(
+        "MONIC startup: blocking initialization in {ElapsedMs:N0} ms (housekeeping deferred to background)",
+        initializationStopwatch.ElapsedMilliseconds);
+}
+
+// ---- startup housekeeping (background) ------------------------------------
+// Expired error rows and redeemed/expired OpenIddict tokens are cleaned up in
+// the background so they never delay the first request. Failures are logged
+// and retried implicitly on the next start: this is pure housekeeping.
+_ = System.Threading.Tasks.Task.Run(async () =>
+{
+    try
+    {
+        await System.Threading.Tasks.Task.Delay(TimeSpan.FromSeconds(2));
+
+        using (var scope = app.Services
+            .GetRequiredService<IServiceScopeFactory>()
+            .CreateScope())
+        using (var db =
+            scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
+        {
+            var initializer = new DbInitializer(
+                appSettings,
+                db,
+                null,
+                null,
+                app.Environment,
+                app.Logger);
+
+            await initializer.CleanupAsync();
+        }
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(
+            ex,
+            "MONIC startup: background housekeeping failed (retried on next server start)");
+    }
+});
 
 app.UseForwardedHeaders();
 
