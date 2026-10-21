@@ -46,6 +46,8 @@ namespace Monic.Web.Models
             ConfigureModelBuilder(modelBuilder);
             ConfigureMeReviewModel(modelBuilder);
             ConfigureDisaggregationModel(modelBuilder);
+            ConfigureLogFrameV2Model(modelBuilder);
+            ConfigureLogFrameV2Model(modelBuilder);
 
             modelBuilder.Entity<User>(o => o.HasMany(u => u.Roles).WithOne().HasForeignKey(ur => ur.UserId).IsRequired());
 

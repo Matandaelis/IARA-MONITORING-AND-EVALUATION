@@ -1270,6 +1270,173 @@ namespace Monic.Web.Migrations
                     b.ToTable("LogFrames");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.LogFrameLevel", b =>
+                {
+                    b.Property<Guid>("LogFrameLevelId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Color")
+                        .HasMaxLength(7)
+                        .HasColumnType("nvarchar(7)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsIndicatorLevel")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("LogFrameId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid?>("OrganisationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("PluralName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Rank")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RequiredFieldsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("LogFrameLevelId");
+
+                    b.HasIndex("LogFrameId", "Rank")
+                        .IsUnique()
+                        .HasDatabaseName("UX_LogFrameLevels_LogFrame_Rank")
+                        .HasFilter("[LogFrameId] IS NOT NULL");
+
+                    b.HasIndex("OrganisationId", "Rank")
+                        .IsUnique()
+                        .HasDatabaseName("UX_LogFrameLevels_Org_Rank")
+                        .HasFilter("[OrganisationId] IS NOT NULL AND [LogFrameId] IS NULL");
+
+                    b.ToTable("LogFrameLevels");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.LogFrameNode", b =>
+                {
+                    b.Property<Guid>("LogFrameNodeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CustomFieldsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Depth")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("InheritedFromNodeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("LegacyLogFrameRowId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("LogFrameId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("LogFrameLevelId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("MeansOfVerification")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("ParentNodeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("RisksAndAssumptions")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("LogFrameNodeId");
+
+                    b.HasIndex("LegacyLogFrameRowId")
+                        .HasDatabaseName("IX_LogFrameNodes_LegacyRow");
+
+                    b.HasIndex("LogFrameLevelId");
+
+                    b.HasIndex("ParentNodeId");
+
+                    b.HasIndex("LogFrameId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("UX_LogFrameNodes_Code")
+                        .HasFilter("[Code] <> ''");
+
+                    b.HasIndex("LogFrameId", "ParentNodeId", "SortOrder")
+                        .HasDatabaseName("IX_LogFrameNodes_Tree");
+
+                    b.ToTable("LogFrameNodes");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.LogFrameNodeIndicator", b =>
+                {
+                    b.Property<Guid>("LogFrameNodeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("IndicatorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsPrimary")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Weight")
+                        .HasColumnType("decimal(9,4)");
+
+                    b.HasKey("LogFrameNodeId", "IndicatorId");
+
+                    b.HasIndex("IndicatorId")
+                        .HasDatabaseName("IX_LogFrameNodeIndicators_Indicator");
+
+                    b.ToTable("LogFrameNodeIndicators");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.LogFrameRow", b =>
                 {
                     b.Property<Guid>("LogFrameRowId")
@@ -3099,6 +3266,61 @@ namespace Monic.Web.Migrations
                     b.Navigation("Option");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.LogFrameLevel", b =>
+                {
+                    b.HasOne("Monic.Web.Models.LogFrame", "LogFrame")
+                        .WithMany()
+                        .HasForeignKey("LogFrameId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("LogFrame");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.LogFrameNode", b =>
+                {
+                    b.HasOne("Monic.Web.Models.LogFrame", "LogFrame")
+                        .WithMany()
+                        .HasForeignKey("LogFrameId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Monic.Web.Models.LogFrameLevel", "Level")
+                        .WithMany("Nodes")
+                        .HasForeignKey("LogFrameLevelId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Monic.Web.Models.LogFrameNode", "ParentNode")
+                        .WithMany("ChildNodes")
+                        .HasForeignKey("ParentNodeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Level");
+
+                    b.Navigation("LogFrame");
+
+                    b.Navigation("ParentNode");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.LogFrameNodeIndicator", b =>
+                {
+                    b.HasOne("Monic.Web.Models.Indicator", "Indicator")
+                        .WithMany()
+                        .HasForeignKey("IndicatorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Monic.Web.Models.LogFrameNode", "Node")
+                        .WithMany("Indicators")
+                        .HasForeignKey("LogFrameNodeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Indicator");
+
+                    b.Navigation("Node");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.LogFrameRow", b =>
                 {
                     b.HasOne("Monic.Web.Models.LogFrame", "LogFrame")
@@ -3648,6 +3870,18 @@ namespace Monic.Web.Migrations
             modelBuilder.Entity("Monic.Web.Models.LogFrame", b =>
                 {
                     b.Navigation("LogFrameRows");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.LogFrameLevel", b =>
+                {
+                    b.Navigation("Nodes");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.LogFrameNode", b =>
+                {
+                    b.Navigation("ChildNodes");
+
+                    b.Navigation("Indicators");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.LogFrameRow", b =>
