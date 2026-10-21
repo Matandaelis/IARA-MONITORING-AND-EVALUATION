@@ -82,6 +82,36 @@ StoreLocation.CurrentUser);
             X509KeyStorageFlags.Exportable);
     }
 
+    /// <summary>
+    /// Loads a development certificate from the persistent data directory,
+    /// creating it first when it does not exist yet. Saves the RSA key pair
+    /// generation cost at every server start and keeps tokens valid across
+    /// development restarts.
+    /// </summary>
+    public static X509Certificate2 GetOrCreateDevCertificate(
+        AppSettings appSettings,
+        string certificatePath,
+        Action createCertificate)
+    {
+        var dataDirectory = Path.GetDirectoryName(certificatePath);
+
+        Directory.CreateDirectory(dataDirectory!);
+
+        if (!File.Exists(certificatePath))
+        {
+            createCertificate();
+        }
+
+        var password = appSettings.CertificatePassword ?? string.Empty;
+
+        return X509CertificateLoader.LoadPkcs12FromFile(
+            certificatePath,
+            password,
+            X509KeyStorageFlags.MachineKeySet |
+            X509KeyStorageFlags.PersistKeySet |
+            X509KeyStorageFlags.Exportable);
+    }
+
     public static X509Certificate2 BuildSelfSignedServerCertificate(
         string certificateName,
         string password)

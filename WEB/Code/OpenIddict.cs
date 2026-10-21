@@ -69,10 +69,31 @@ builder.Services
                          string.IsNullOrEmpty(
                              appSettings.CertificatePassword))
                 {
-                    // Development certificates are suitable for local
-                    // development when no certificate password is configured.
-                    options.AddDevelopmentEncryptionCertificate()
-                        .AddDevelopmentSigningCertificate();
+                    // Development certificates are persisted under data/ and
+                    // reused across restarts: the RSA key pair is generated
+                    // once instead of at every server start, and refresh
+                    // tokens stay valid between development restarts.
+                    var encryptionCertificate =
+                        CertificateHelper.GetOrCreateDevCertificate(
+                            appSettings,
+                            CertificateHelper.GetEncryptionCertificatePath(
+                                appSettings),
+                            () => CertificateHelper.CreateEncryptionCertificate(
+                                appSettings));
+
+                    options.AddEncryptionCertificate(
+                        encryptionCertificate);
+
+                    var signingCertificate =
+                        CertificateHelper.GetOrCreateDevCertificate(
+                            appSettings,
+                            CertificateHelper.GetSigningCertificatePath(
+                                appSettings),
+                            () => CertificateHelper.CreateSigningCertificate(
+                                appSettings));
+
+                    options.AddSigningCertificate(
+                        signingCertificate);
                 }
                 else
                 {
