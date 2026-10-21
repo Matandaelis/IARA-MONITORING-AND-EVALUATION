@@ -112,6 +112,7 @@ import { QuestionnaireDownloadComponent } from './admin/questionnaires/questionn
 import { QuestionnaireGenerateSummariesComponent } from './admin/questionnaires/questionnaire.generate.summaries.component';
 import { FrequencyAdverb } from './common/pipes/frequencyadverbpipe';
 import { QuillModule } from 'ngx-quill';
+import { PrimeNgModule } from './prime-ng.module';
 
 @NgModule({
     imports: [
@@ -120,7 +121,8 @@ import { QuillModule } from 'ngx-quill';
         FormsModule,
         NgbModule,
         DragDropModule,
-        QuillModule
+        QuillModule,
+        PrimeNgModule
     ],
     declarations: [
         MainComponent,
@@ -340,7 +342,8 @@ import { QuillModule } from 'ngx-quill';
         TheoryOfChangeModalComponent,
         UserSelectComponent,
         UserModalComponent,
-        QuillModule
+        QuillModule,
+        PrimeNgModule
     ]
 })
 export class SharedModule { }

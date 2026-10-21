@@ -8,6 +8,17 @@ import { AppRoutes } from './app.routes';
 import { AppComponent } from './app.component';
 import { FormsModule } from '@angular/forms';
 import { NgbModule, NgbDateAdapter, NgbDateNativeAdapter, NgbTooltipConfig } from '@ng-bootstrap/ng-bootstrap';
+import { providePrimeNG } from 'primeng/config';
+import { definePreset } from '@primeuix/styled';
+import Aura from '@primeng/themes/aura';
+
+export const MonicPreset = definePreset(Aura, {
+    semantic: {
+        primary: {
+            500: '#2563eb'
+        }
+    }
+});
 import { ErrorService } from './common/services/error.service';
 import { NotFoundComponent } from './common/components/notfound.component';
 import { AccessGuard } from './common/auth/auth.accessguard';
@@ -70,7 +81,19 @@ export function initApp(auth: AuthService) {
                 config.container = 'body';
                 return config;
             }
-        }
+        },
+        providePrimeNG({
+            theme: {
+                preset: MonicPreset,
+                options: {
+                    darkModeSelector: '.app-dark',
+                    cssLayer: {
+                        name: 'primeng',
+                        order: 'bootstrap-base, primeng, bootstrap-utilities'
+                    }
+                }
+            }
+        })
     ]
 })
 export class AppModule { }
