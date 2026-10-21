@@ -86,8 +86,13 @@ namespace Monic.Web.Models
         private void CreateNullableUniqueIndex(string tableName, string fieldName)
         {
 #pragma warning disable EF1002 // Risk of vulnerability to SQL injection.
-            Database.ExecuteSqlRaw($"DROP INDEX IF EXISTS IX_{tableName}_{fieldName} ON {tableName};");
-            Database.ExecuteSqlRaw($"CREATE UNIQUE NONCLUSTERED INDEX IX_{tableName}_{fieldName} ON {tableName}({fieldName}) WHERE {fieldName} IS NOT NULL;");
+            // Check-first (IF NOT EXISTS) so an existing schema does not pay
+            // a drop-and-recreate penalty on every server start.
+            Database.ExecuteSqlRaw($@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_{tableName}_{fieldName}' AND object_id = OBJECT_ID(N'[dbo].[{tableName}]'))
+BEGIN
+    CREATE UNIQUE NONCLUSTERED INDEX IX_{tableName}_{fieldName} ON {tableName}({fieldName}) WHERE {fieldName} IS NOT NULL;
+END");
 #pragma warning restore EF1002 // Risk of vulnerability to SQL injection.
         }
 

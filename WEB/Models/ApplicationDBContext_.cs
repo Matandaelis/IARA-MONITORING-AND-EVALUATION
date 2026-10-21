@@ -393,8 +393,13 @@ namespace Monic.Web.Models
 
         public void AddNullableUniqueIndexes()
         {
-            Database.ExecuteSqlRaw($"DROP INDEX IF EXISTS IX_Options_OptionListId_Value ON Options;");
-            Database.ExecuteSqlRaw($"CREATE UNIQUE NONCLUSTERED INDEX IX_Options_OptionListId_Value ON Options(OptionListId, Value) WHERE Value IS NOT NULL;");
+            // Check-first (IF NOT EXISTS) so an existing schema does not pay
+            // a drop-and-recreate penalty on every server start.
+            Database.ExecuteSqlRaw($@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Options_OptionListId_Value' AND object_id = OBJECT_ID(N'[dbo].[Options]'))
+BEGIN
+    CREATE UNIQUE NONCLUSTERED INDEX IX_Options_OptionListId_Value ON Options(OptionListId, Value) WHERE Value IS NOT NULL;
+END");
             CreateNullableUniqueIndex("Questionnaires", "PublicCode");
             CreateNullableUniqueIndex("Responses", "PublicCode");
         }
