@@ -327,37 +327,42 @@ else
 
 // ---- startup housekeeping (background) ------------------------------------
 // Expired error rows and redeemed/expired OpenIddict tokens are cleaned up in
-// the background so they never delay the first request. Failures are logged
-// and retried implicitly on the next start: this is pure housekeeping.
-_ = System.Threading.Tasks.Task.Run(async () =>
+// the background so they never delay the first request. Registered on
+// ApplicationStarted so it only runs after a successful start (a failed
+// start - e.g. port conflict - disposes the root provider). Failures are
+// logged and retried implicitly on the next start: this is pure housekeeping.
+app.Lifetime.ApplicationStarted.Register(() =>
 {
-    try
+    _ = System.Threading.Tasks.Task.Run(async () =>
     {
-        await System.Threading.Tasks.Task.Delay(TimeSpan.FromSeconds(2));
-
-        using (var scope = app.Services
-            .GetRequiredService<IServiceScopeFactory>()
-            .CreateScope())
-        using (var db =
-            scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
+        try
         {
-            var initializer = new DbInitializer(
-                appSettings,
-                db,
-                null,
-                null,
-                app.Environment,
-                app.Logger);
+            await System.Threading.Tasks.Task.Delay(TimeSpan.FromSeconds(2));
 
-            await initializer.CleanupAsync();
+            using (var scope = app.Services
+                .GetRequiredService<IServiceScopeFactory>()
+                .CreateScope())
+            using (var db =
+                scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
+            {
+                var initializer = new DbInitializer(
+                    appSettings,
+                    db,
+                    null,
+                    null,
+                    app.Environment,
+                    app.Logger);
+
+                await initializer.CleanupAsync();
+            }
         }
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogError(
-            ex,
-            "MONIC startup: background housekeeping failed (retried on next server start)");
-    }
+        catch (Exception ex)
+        {
+            app.Logger.LogError(
+                ex,
+                "MONIC startup: background housekeeping failed (retried on next server start)");
+        }
+    });
 });
 
 app.UseForwardedHeaders();
