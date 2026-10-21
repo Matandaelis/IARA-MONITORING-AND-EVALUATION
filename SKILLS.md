@@ -16,6 +16,15 @@ This document defines the specialized **Skills** available to AI agents and deve
 | `skill-efcore-database-ops` | Engineering | Execute database migrations and manage filtered indexes |
 | `skill-openiddict-rbac-auth` | Security | Manage OAuth 2.0 tokens, PKCE, roles, and entity permissions |
 | `skill-docker-cloud-deploy` | DevOps | Package, test, and deploy containers across multi-cloud targets |
+| `optimizing-ef-core-queries` | Engineering | EF Core data access optimization — N+1 detection, DbContext lifetime, paging (installed) |
+| `dotnet-webapi` | Backend | ASP.NET Core Web API endpoints — OpenAPI, error handling, `.http` test files (installed) |
+| `run-tests` | Testing / QA | .NET test execution — `dotnet test` syntax, filters, coverage collection (installed) |
+| `test-anti-patterns` | Testing / QA | Test suite auditing — severity-ranked diagnostics (installed) |
+| `ef-core` | Engineering | EF Core best practices — DbContext design, entity modeling, migrations (installed) |
+| `sql-optimization` | Engineering | SQL Server performance — execution plans, indexing, batch operations (installed) |
+| `containerize-aspnetcore` | DevOps | Dockerfile / `.dockerignore` creation, ASP.NET Core containerization (installed) |
+| `github-actions-templates` | CI/CD | GitHub Actions workflows — testing, Docker publishing, security scanning (installed) |
+| `dotnet-backend-patterns` | Backend | .NET backend patterns — async/await, DI, EF Core/Dapper, xUnit testing (installed) |
 
 ---
 
@@ -173,3 +182,23 @@ Packages, configures, and deploys MONIC containers across local environments and
   * **Render**: Dynamic `$PORT` detection, external SQL Server connection string.
   * **AWS (ECS / App Runner)**: ECR image push, `/health` endpoint load-balancer target.
   * **Local Host**: Port forwarding to `http://localhost:8080` with SQL Server 2022 container.
+
+---
+
+## 🔧 Installed Ecosystem Skills
+
+The following skills were installed project-wide via `npx skills add <repo> --skill <name>` into `.agents/skills/`. All passed Gen Agent Trust Hub / Socket / Snyk security audits.
+
+| Skill | Source | Installs | Install command |
+|---|---|---|---|
+| `optimizing-ef-core-queries` | dotnet/skills | 5.3K | `npx skills add dotnet/skills --skill optimizing-ef-core-queries -y` |
+| `dotnet-webapi` | dotnet/skills | 3.9K | `npx skills add dotnet/skills --skill dotnet-webapi -y` |
+| `run-tests` | dotnet/skills | 5.4K | `npx skills add dotnet/skills --skill run-tests -y` |
+| `test-anti-patterns` | dotnet/skills | 4.2K | `npx skills add dotnet/skills --skill test-anti-patterns -y` |
+| `ef-core` | github/awesome-copilot | 9.6K | `npx skills add github/awesome-copilot --skill ef-core -y` |
+| `sql-optimization` | github/awesome-copilot | 15.6K | `npx skills add github/awesome-copilot --skill sql-optimization -y` |
+| `containerize-aspnetcore` | github/awesome-copilot | 8.9K | `npx skills add github/awesome-copilot --skill containerize-aspnetcore -y` |
+| `dotnet-backend-patterns` | wshobson/agents | 18.9K | `npx skills add wshobson/agents --skill dotnet-backend-patterns -y` |
+| `github-actions-templates` | wshobson/agents | 17.2K | `npx skills add wshobson/agents --skill github-actions-templates -y` |
+
+> ⚠️ **Note:** Skills run with full agent permissions. Review each `SKILL.md` before relying on it.
