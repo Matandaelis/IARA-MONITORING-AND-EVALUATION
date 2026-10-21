@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Monic.Web.Models
 {
-    public class Answer
+    public partial class Answer
     {
         [Key, Required]
         public Guid AnswerId { get; set; }
@@ -17,6 +17,12 @@ namespace Monic.Web.Models
         public Guid QuestionId { get; set; }
 
         public string Value { get; set; }
+
+        // Typed projections for analytics; populated by AnswerValueProjector.Apply.
+        // Value remains the canonical string.
+        [Column(TypeName = "decimal(20,8)")] public decimal? ValueNumber { get; set; }
+        [Column(TypeName = "date")] public DateTime? ValueDate { get; set; }
+        public bool? ValueBoolean { get; set; }
 
         public virtual ICollection<AnswerOption> AnswerOptions { get; set; } = new List<AnswerOption>();
 

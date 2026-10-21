@@ -46,6 +46,13 @@ namespace Monic.Web.Models
 
         public Guid? SubmittedById { get; set; }
 
+        // Offline / sync columns (Phase 4). Do not redeclare Submitted: it is a computed column.
+        [MaxLength(100)] public string ClientGeneratedId { get; set; }
+        public Guid? ClientDeviceId { get; set; }
+        [Required] public bool IsDeleted { get; set; }
+        public DateTime? LastSyncedAtUtc { get; set; }
+        [Timestamp] public byte[] RowVersion { get; set; }
+
         [DatabaseGenerated(DatabaseGeneratedOption.Computed), Required]
         public bool Submitted { get; private set; }
 

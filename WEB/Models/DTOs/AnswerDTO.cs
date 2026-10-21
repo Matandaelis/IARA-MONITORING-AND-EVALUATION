@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using Monic.Web.Code;
 
 namespace Monic.Web.Models
 {
@@ -57,6 +58,11 @@ namespace Monic.Web.Models
             answer.ResponseId = answerDTO.ResponseId;
             answer.QuestionId = answerDTO.QuestionId;
             answer.Value = answerDTO.Value;
+
+            // Populate typed analytics projections (ValueNumber/ValueDate/ValueBoolean)
+            // so both AnswersController.Save and SurveysController.SaveAnswer get them
+            // without controller changes.
+            AnswerValueProjector.Apply(answer);
         }
     }
 }

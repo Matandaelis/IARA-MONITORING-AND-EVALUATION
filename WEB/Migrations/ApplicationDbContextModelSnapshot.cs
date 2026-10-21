@@ -140,9 +140,20 @@ namespace Monic.Web.Migrations
                     b.Property<string>("Value")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool?>("ValueBoolean")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ValueDate")
+                        .HasColumnType("date");
+
+                    b.Property<decimal?>("ValueNumber")
+                        .HasColumnType("decimal(20,8)");
+
                     b.HasKey("AnswerId");
 
-                    b.HasIndex("QuestionId");
+                    b.HasIndex("QuestionId", "ValueNumber")
+                        .HasDatabaseName("IX_Answers_Question_Number")
+                        .HasFilter("[ValueNumber] IS NOT NULL");
 
                     b.HasIndex("ResponseId", "QuestionId")
                         .IsUnique()
@@ -165,6 +176,53 @@ namespace Monic.Web.Migrations
                     b.HasIndex("QuestionOptionId");
 
                     b.ToTable("AnswerOptions");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.AuditLog", b =>
+                {
+                    b.Property<Guid>("AuditLogId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("AfterJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BeforeJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("AuditLogId");
+
+                    b.HasIndex("EntityType", "EntityId", "CreatedAtUtc")
+                        .HasDatabaseName("IX_AuditLogs_Entity_CreatedAt");
+
+                    b.ToTable("AuditLogs");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.Category", b =>
@@ -2081,6 +2139,13 @@ namespace Monic.Web.Migrations
                     b.Property<int>("ApplicableQuestions")
                         .HasColumnType("int");
 
+                    b.Property<Guid?>("ClientDeviceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ClientGeneratedId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<int>("CompletedQuestions")
                         .HasColumnType("int");
 
@@ -2093,8 +2158,14 @@ namespace Monic.Web.Migrations
                     b.Property<Guid>("EntityId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime?>("LastAnsweredOnUtc")
                         .HasColumnType("smalldatetime");
+
+                    b.Property<DateTime?>("LastSyncedAtUtc")
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("OpenFrom")
                         .HasColumnType("Date");
@@ -2108,6 +2179,11 @@ namespace Monic.Web.Migrations
 
                     b.Property<Guid>("QuestionnaireId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
 
                     b.Property<bool>("Submitted")
                         .ValueGeneratedOnAddOrUpdate()
@@ -2129,9 +2205,12 @@ namespace Monic.Web.Migrations
 
                     b.HasIndex("EntityId");
 
-                    b.HasIndex("QuestionnaireId");
-
                     b.HasIndex("SubmittedById");
+
+                    b.HasIndex("QuestionnaireId", "ClientGeneratedId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Responses_ClientGeneratedId")
+                        .HasFilter("[ClientGeneratedId] IS NOT NULL AND [IsDeleted] = 0");
 
                     b.ToTable("Responses");
                 });
