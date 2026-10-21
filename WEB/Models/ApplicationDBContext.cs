@@ -48,6 +48,7 @@ namespace Monic.Web.Models
             ConfigureDisaggregationModel(modelBuilder);
             ConfigureLogFrameV2Model(modelBuilder);
             ConfigureAuditTypedAnswersModel(modelBuilder);
+            ConfigureFormIndicatorLedgerModel(modelBuilder);
             ConfigureLogFrameV2Model(modelBuilder);
 
             modelBuilder.Entity<User>(o => o.HasMany(u => u.Roles).WithOne().HasForeignKey(ur => ur.UserId).IsRequired());

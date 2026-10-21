@@ -992,6 +992,69 @@ namespace Monic.Web.Migrations
                     b.ToTable("FolderContents");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.FormIndicatorMapping", b =>
+                {
+                    b.Property<Guid>("FormIndicatorMappingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Aggregation")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("CountOnlySubmitted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("DateBindingJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DisaggregationGroupId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("EntityBindingJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FilterJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("IndicatorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("QuestionnaireId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("SectionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ValueExpressionJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("FormIndicatorMappingId");
+
+                    b.HasIndex("IndicatorId");
+
+                    b.HasIndex("QuestionnaireId", "IndicatorId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_FormIndicatorMappings_Form_Indicator")
+                        .HasFilter("[SectionId] IS NULL");
+
+                    b.HasIndex("QuestionnaireId", "IndicatorId", "SectionId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_FormIndicatorMappings_Form_Section_Indicator")
+                        .HasFilter("[SectionId] IS NOT NULL");
+
+                    b.ToTable("FormIndicatorMappings");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.Group", b =>
                 {
                     b.Property<Guid>("GroupId")
@@ -1162,6 +1225,67 @@ namespace Monic.Web.Migrations
                     b.HasIndex("SubcategoryId");
 
                     b.ToTable("Indicators");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.IndicatorContribution", b =>
+                {
+                    b.Property<Guid>("IndicatorContributionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ComputedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("DateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("Denominator")
+                        .HasColumnType("decimal(20,8)");
+
+                    b.Property<Guid?>("DisaggregationOptionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("FormIndicatorMappingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("IndicatorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("Numerator")
+                        .HasColumnType("decimal(20,8)");
+
+                    b.Property<Guid>("ResponseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<decimal>("Value")
+                        .HasColumnType("decimal(20,8)");
+
+                    b.HasKey("IndicatorContributionId");
+
+                    b.HasIndex("ResponseId");
+
+                    b.HasIndex("FormIndicatorMappingId", "ResponseId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Contributions_Response_Total")
+                        .HasFilter("[DisaggregationOptionId] IS NULL");
+
+                    b.HasIndex("FormIndicatorMappingId", "ResponseId", "DisaggregationOptionId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Contributions_Response_Option")
+                        .HasFilter("[DisaggregationOptionId] IS NOT NULL");
+
+                    b.HasIndex("IndicatorId", "EntityId", "DateId")
+                        .HasDatabaseName("IX_Contributions_Aggregate");
+
+                    b.ToTable("IndicatorContributions");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.IndicatorDate", b =>
@@ -1960,6 +2084,40 @@ namespace Monic.Web.Migrations
                         .HasDatabaseName("IX_Question_Code");
 
                     b.ToTable("Questions");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.QuestionIndicatorLink", b =>
+                {
+                    b.Property<Guid>("QuestionIndicatorLinkId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("DisaggregationOptionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("FormIndicatorMappingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("QuestionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ValueMapJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("QuestionIndicatorLinkId");
+
+                    b.HasIndex("QuestionId");
+
+                    b.HasIndex("FormIndicatorMappingId", "Role")
+                        .HasDatabaseName("IX_QuestionIndicatorLinks_Mapping");
+
+                    b.ToTable("QuestionIndicatorLinks");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.QuestionOption", b =>
@@ -3188,6 +3346,25 @@ namespace Monic.Web.Migrations
                     b.Navigation("Folder");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.FormIndicatorMapping", b =>
+                {
+                    b.HasOne("Monic.Web.Models.Indicator", "Indicator")
+                        .WithMany()
+                        .HasForeignKey("IndicatorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Monic.Web.Models.Questionnaire", "Questionnaire")
+                        .WithMany()
+                        .HasForeignKey("QuestionnaireId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Indicator");
+
+                    b.Navigation("Questionnaire");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.Indicator", b =>
                 {
                     b.HasOne("Monic.Web.Models.User", "CreatedBy")
@@ -3234,6 +3411,25 @@ namespace Monic.Web.Migrations
                     b.Navigation("OptionList");
 
                     b.Navigation("Subcategory");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.IndicatorContribution", b =>
+                {
+                    b.HasOne("Monic.Web.Models.FormIndicatorMapping", "Mapping")
+                        .WithMany()
+                        .HasForeignKey("FormIndicatorMappingId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Monic.Web.Models.Response", "Response")
+                        .WithMany()
+                        .HasForeignKey("ResponseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Mapping");
+
+                    b.Navigation("Response");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.IndicatorDate", b =>
@@ -3551,6 +3747,25 @@ namespace Monic.Web.Migrations
                     b.Navigation("QuestionOptionGroup");
 
                     b.Navigation("Section");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.QuestionIndicatorLink", b =>
+                {
+                    b.HasOne("Monic.Web.Models.FormIndicatorMapping", "Mapping")
+                        .WithMany("QuestionLinks")
+                        .HasForeignKey("FormIndicatorMappingId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Monic.Web.Models.Question", "Question")
+                        .WithMany()
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Mapping");
+
+                    b.Navigation("Question");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.QuestionOption", b =>
@@ -3909,6 +4124,11 @@ namespace Monic.Web.Migrations
                     b.Navigation("FolderContents");
 
                     b.Navigation("Subfolders");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.FormIndicatorMapping", b =>
+                {
+                    b.Navigation("QuestionLinks");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.Group", b =>
