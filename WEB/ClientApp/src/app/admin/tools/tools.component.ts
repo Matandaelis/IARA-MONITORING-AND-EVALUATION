@@ -2,6 +2,7 @@ import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
 import { NgForm } from '@angular/forms';
 import { ErrorService } from '../../common/services/error.service';
+import { SetupService } from '../../common/services/setup.service';
 import { EntityType } from '../../common/models/entitytype.model';
 import { ToolsService } from '../../common/services/tools.service';
 import { ImportService } from '../../common/services/import.service';
@@ -11,6 +12,7 @@ import { DownloadService } from '../../common/services/download.service';
 import { Indicator } from '../../common/models/indicator.model';
 import { Entity } from '../../common/models/entity.model';
 import { AppDate } from '../../common/models/date.model';
+import { KestraService, KestraSettings, KestraStatus, KestraConnectorFlow } from '../../common/services/kestra.service';
 
 @Component({
     selector: 'tools',
@@ -43,16 +45,111 @@ export class ToolsComponent implements OnInit {
         dates: [] as AppDate[]
     };
 
+    // --- Kestra ETL connectors ---
+    public kestraSettings: KestraSettings = new KestraSettings();
+    public kestraStatus: KestraStatus;
+    public kestraFlows: KestraConnectorFlow[] = [];
+    public kestraTesting = false;
+    public kestraSaving = false;
+
     constructor(
         private toastr: ToastrService,
         private errorService: ErrorService,
         private toolsService: ToolsService,
+        private setupService: SetupService,
         private importService: ImportService,
         private modalService: NgbModal,
-        private downloadService: DownloadService
+        private downloadService: DownloadService,
+        private kestraService: KestraService
     ) { }
 
     ngOnInit() {
+        this.loadKestra();
+    }
+
+    // --- Kestra ETL connectors ---
+
+    loadKestra(): void {
+        this.kestraService.getSettings()
+            .subscribe({
+                next: settings => this.kestraSettings = settings,
+                error: err => this.errorService.handleError(err, "Kestra", "Load settings")
+            });
+    }
+
+    saveKestraSettings(form: NgForm): void {
+        if (form.invalid) {
+            this.toastr.error("The form has not been completed correctly.");
+            return;
+        }
+
+        this.kestraSaving = true;
+
+        this.kestraService.saveSettings(this.kestraSettings)
+            .subscribe({
+                next: settings => {
+                    this.kestraSettings = settings;
+                    this.kestraSaving = false;
+                    this.toastr.success("Kestra connection settings have been saved", "Kestra");
+                },
+                error: err => {
+                    this.errorService.handleError(err, "Kestra", "Save settings");
+                    this.kestraSaving = false;
+                }
+            });
+    }
+
+    testKestra(): void {
+        this.kestraTesting = true;
+
+        this.kestraService.status()
+            .subscribe({
+                next: status => {
+                    this.kestraStatus = status;
+                    this.kestraTesting = false;
+                },
+                error: err => {
+                    this.errorService.handleError(err, "Kestra", "Test connection");
+                    this.kestraTesting = false;
+                }
+            });
+    }
+
+    loadKestraFlows(): void {
+        this.kestraService.flows()
+            .subscribe({
+                next: flows => {
+                    this.kestraFlows = flows;
+                },
+                error: err => this.errorService.handleError(err, "Kestra", "Load connectors")
+            });
+    }
+
+    downloadFlow(flow: KestraConnectorFlow): void {
+        const blob = new Blob([flow.template], { type: "application/x-yaml;charset=utf-8;" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `${flow.id}.yaml`;
+        link.click();
+    }
+
+    copyToClipboard(text: string): void {
+        navigator.clipboard.writeText(text).then(() => {
+            this.toastr.success("Copied to clipboard");
+        });
+    }
+
+    regenerateKestraKey(): void {
+        if (!confirm("Generate a new external push API key? Existing Kestra flows will need the new key.")) return;
+
+        this.kestraService.regenerateKey()
+            .subscribe({
+                next: result => {
+                    this.kestraSettings.externalApiKey = result.externalApiKey;
+                    this.toastr.success("A new external push API key has been generated", "Kestra");
+                },
+                error: err => this.errorService.handleError(err, "Kestra", "Regenerate key")
+            });
     }
 
     uploadGeoJSON(form: NgForm) {
@@ -139,6 +236,18 @@ export class ToolsComponent implements OnInit {
                         this.errorService.handleError(err, "CSV", "Export")
                     }
                 }
+            });
+
+    }
+
+    seedDemoProject() {
+
+        this.setupService.seedDemoProject()
+            .subscribe({
+                next: () => {
+                    this.toastr.success("The demo project has been seeded with deterministic entities, indicators, dates and two years of facility data. Use Entities, Indicators and Data to verify the aggregated &amp; calculated values.", "Demo Project Seeded");
+                },
+                error: err => this.errorService.handleError(err, "Demo Project", "Seed")
             });
 
     }

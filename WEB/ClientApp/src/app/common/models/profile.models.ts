@@ -12,7 +12,9 @@ export interface ProfileModel {
     organisationId: string;
     organisation: Organisation;
     entityIds: string[];
+    roles?: string[];
     indicatorPermissions: IndicatorPermission[];
-    dashboardSettings: (WidgetSettings | IndicatorMapSettings | IndicatorLineChartSettings | IndicatorBarChartSettings | IndicatorPieChartSettings | FolderShortcutSettings)[]
+    dashboardSettings: (WidgetSettings | IndicatorMapSettings | IndicatorLineChartSettings | IndicatorBarChartSettings | IndicatorPieChartSettings | FolderShortcutSettings)[];
+    onboardingCompleted?: boolean;
 }
 

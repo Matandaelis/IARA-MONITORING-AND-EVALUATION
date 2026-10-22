@@ -1,5 +1,18 @@
 <div class="mt-6">
 
+    <!-- Onboarding banner -->
+    <div class="alert alert-info alert-dismissible fade show" *ngIf="showOnboardingBanner" role="alert">
+        <h6 class="alert-heading"><i class="fas fa-rocket me-2"></i>Welcome to MONIC! Finish setting up:</h6>
+        <ol class="mb-2">
+            <li>Complete your <a routerLink="/account">profile</a> (name, picture, default org unit)</li>
+            <li>Explore the <a routerLink="/dataentry">Data Entry</a> page or your assigned questionnaires</li>
+            <li>Review <a routerLink="/budget">Budget & Expenditures</a> if you manage finances</li>
+        </ol>
+        <button type="button" class="btn btn-sm btn-outline-primary" (click)="dismissOnboardingBanner()" [disabled]="dismissingBanner">
+            <i class="fas fa-check me-2"></i>Done — don't show again
+        </button>
+    </div>
+
     <div class="row" *ngIf="profile">
 
         <ng-container *ngFor="let settings of profile.dashboardSettings">

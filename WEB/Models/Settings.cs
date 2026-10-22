@@ -37,6 +37,18 @@ namespace Monic.Web.Models
         [MaxLength(100)]
         public string GoogleMapsApiKey { get; set; }
 
+        [MaxLength(300)]
+        public string KestraBaseUrl { get; set; }
+
+        [MaxLength(500)]
+        public string KestraApiToken { get; set; }
+
+        [MaxLength(100)]
+        public string KestraNamespace { get; set; }
+
+        [MaxLength(64)]
+        public string ExternalApiKey { get; set; }
+
         public Settings()
         {
             Id = Guid.Empty;

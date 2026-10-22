@@ -201,6 +201,190 @@
 
 </div>
 
+<!-- Kestra ETL Connectors -->
+<div class="row gx-4 mt-5">
+
+    <div class="col-12">
+
+        <div class="card card-primary">
+            <div class="card-header">
+                <div class="card-header-title">
+                    <h4><i class="fas fa-plug me-2"></i>Kestra ETL Connectors</h4>
+                </div>
+            </div>
+
+            <div class="card-body">
+
+                <p class="text-muted">
+                    Connect external data sources (KoboToolbox, ODK Central, DHIS2, any REST API) through
+                    <a href="https://kestra.io" target="_blank" rel="noopener">Kestra</a> — an open-source orchestration engine.
+                    Configure the connection, download the ready-made flow templates, and import them into your Kestra instance.
+                    Flows push data to MONIC's external push API; pushes land on the
+                    <a routerLink="/imports">Imports page</a> for review before committing.
+                </p>
+
+                <form id="formKestra" (submit)="saveKestraSettings($any(formKestra))" novalidate #formKestra="ngForm">
+
+                    <div class="row g-3">
+
+                        <div class="col-md-4">
+                            <label class="form-label" for="kestraBaseUrl">Kestra Base URL</label>
+                            <input type="text" class="form-control" id="kestraBaseUrl" name="kestraBaseUrl"
+                                   [(ngModel)]="kestraSettings.kestraBaseUrl" placeholder="https://kestra.example.com" />
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label" for="kestraApiToken">Kestra API Token</label>
+                            <input type="password" class="form-control" id="kestraApiToken" name="kestraApiToken"
+                                   [(ngModel)]="kestraSettings.kestraApiToken" placeholder="Bearer token (optional)" autocomplete="new-password" />
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label" for="kestraNamespace">Kestra Namespace</label>
+                            <input type="text" class="form-control" id="kestraNamespace" name="kestraNamespace"
+                                   [(ngModel)]="kestraSettings.kestraNamespace" placeholder="monic.production" />
+                        </div>
+
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100" [disabled]="kestraSaving">
+                                <span *ngIf="kestraSaving" class="spinner-border spinner-border-sm me-1"></span>
+                                Save
+                            </button>
+                        </div>
+
+                    </div>
+
+                </form>
+
+                <div class="d-flex align-items-center gap-2 mt-3">
+                    <button type="button" class="btn btn-outline-secondary" (click)="testKestra()" [disabled]="kestraTesting">
+                        <span *ngIf="kestraTesting" class="spinner-border spinner-border-sm me-1"></span>
+                        <i class="fas fa-satellite-dish me-1" *ngIf="!kestraTesting"></i> Test Connection
+                    </button>
+
+                    <div *ngIf="kestraStatus" class="alert py-2 mb-0 flex-grow-1"
+                         [ngClass]="kestraStatus.reachable ? 'alert-success' : 'alert-warning'">
+                        <i class="fas {{ kestraStatus.reachable ? 'fa-circle-check' : 'fa-triangle-exclamation' }} me-2"></i>
+                        {{ kestraStatus.detail }}
+                    </div>
+                </div>
+
+                <hr />
+
+                <h6><i class="fas fa-key me-2"></i>External Push API Key</h6>
+                <p class="text-muted small mb-2">
+                    Kestra flows authenticate to MONIC with this key (header <code>X-Api-Key</code>).
+                    Push endpoint: <code>{{ kestraFlows.length > 0 ? kestraFlows[0].pushUrl : '…' }}</code>
+                </p>
+
+                <div class="input-group input-group-sm w-auto mb-2">
+                    <input type="text" class="form-control font-monospace" readonly
+                           [value]="kestraSettings.externalApiKey || '(not generated yet)'" />
+                    <button type="button" class="btn btn-outline-secondary" (click)="copyToClipboard(kestraSettings.externalApiKey)"
+                            [disabled]="!kestraSettings.externalApiKey"><i class="fas fa-copy me-1"></i>Copy</button>
+                    <button type="button" class="btn btn-outline-danger" (click)="regenerateKestraKey()">
+                        <i class="fas fa-rotate me-1"></i>Regenerate
+                    </button>
+                </div>
+
+                <hr />
+
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0"><i class="fas fa-diagram-project me-2"></i>Connector Catalog</h6>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="loadKestraFlows()">
+                        <i class="fas fa-rotate me-1"></i>Load / Refresh
+                    </button>
+                </div>
+
+                <div class="table-responsive" *ngIf="kestraFlows.length > 0">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th style="min-width: 220px;">Connector</th>
+                                <th>What it does</th>
+                                <th class="text-end">Flow YAML</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let flow of kestraFlows">
+                                <td>
+                                    <strong>{{ flow.name }}</strong><br />
+                                    <small class="text-muted">{{ flow.sourceSystem }}</small>
+                                </td>
+                                <td><small>{{ flow.description }}</small></td>
+                                <td class="text-end text-nowrap">
+                                    <button type="button" class="btn btn-sm btn-outline-primary me-1" (click)="downloadFlow(flow)">
+                                        <i class="fas fa-download me-1"></i>Download YAML
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="copyToClipboard(flow.template)">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="text-muted small mt-2" *ngIf="kestraFlows.length > 0">
+                    After importing a flow into Kestra, edit its <code>variables</code> section (source credentials, questionnaire id)
+                    and map source fields to MONIC question codes in the transform task. Pushes appear on the Imports page.
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div class="row gx-4 mt-5">
+
+    <div class="col-12">
+
+        <div class="card card-warning">
+
+            <div class="card-header">
+                <div class="card-header-title">
+                    <h4>Seed Demo Project <i class="fas fa-seedling ms-2"></i></h4>
+                </div>
+            </div>
+
+            <div class="card-body">
+
+                <p class="mb-3">
+                    Seeds a complete, deterministic <strong>Rural Health Program 2024-25</strong> demo project:
+                    <em>Demo Health Org</em>, a Country &rarr; Region &rarr; District &rarr; Facility entity hierarchy,
+                    two years of monthly dates, five collected indicators and three calculated indicators
+                    (<code>TOT</code>, <code>CPS</code>, <code>RATE</code>), and 24 months of facility data.
+                </p>
+
+                <p class="mb-3">
+                    Values are seeded through the <strong>real aggregation &amp; calculation pipeline</strong>
+                    (<code>SaveData</code> &rarr; <code>Aggregate</code> &rarr; <code>RunCalculations</code>), so you can
+                    verify numeric accuracy in Entities, Indicators and Data. Re-running is safe (idempotent).
+                </p>
+
+                <div class="alert alert-info small mb-3">
+                    Requires the <strong>Administrator</strong> role. The seeded demo is used by the
+                    <em>DemoProjectAccuracyTests</em> suite to assert that every aggregated and calculated value
+                    matches hand-computed expectations.
+                </div>
+
+            </div>
+
+            <div class="card-footer text-end">
+                <button type="button" class="btn btn-primary ms-2" (click)="seedDemoProject()">
+                    Seed Demo Project<i class="fas fa-database ms-1"></i>
+                </button>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
 <ng-template #csvModal let-modal>
     <div class="modal-header">
         <h4 class="modal-title" id="modal-basic-title">CSV Import Error</h4>

@@ -15,4 +15,9 @@ export class SetupService {
         return this.http.post<Response>(`${environment.baseApiUrl}setup`, setupModel);
     }
 
+    /** Seeds the deterministic demo project used for numeric-accuracy testing. Administrator only. */
+    seedDemoProject() {
+        return this.http.post<void>(`${environment.baseApiUrl}setup/demo-project`, null);
+    }
+
 }

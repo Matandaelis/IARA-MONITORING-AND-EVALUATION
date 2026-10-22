@@ -33,6 +33,8 @@ namespace Monic.Web.Controllers
 
             var indicatorPermissions = await db.IndicatorPermissions.Where(o => o.UserId == CurrentUser.Id).ToListAsync();
 
+            var userEntity = await db.Users.FirstAsync(o => o.UserName == User.Identity.Name);
+
             var profile = new ProfileModel
             {
                 Email = CurrentUser.Email,
@@ -46,10 +48,31 @@ namespace Monic.Web.Controllers
                 Organisation = ModelFactory.Create(CurrentUser.Organisation),
                 EntityIds = entityIds,
                 IndicatorPermissions = indicatorPermissions.Select(o => ModelFactory.Create(o)).ToList(),
-                DashboardSettings = CurrentUser.DashboardSettings
+                DashboardSettings = CurrentUser.DashboardSettings,
+                OnboardingCompleted = userEntity.OnboardingCompleted
             };
 
             return Ok(profile);
+        }
+
+        [HttpPost("onboardingcompleted"), Authorize]
+        public async Task<IActionResult> SaveOnboardingCompleted(OnboardingCompletedDTO onboardingCompletedDTO)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var user = await db.Users.FirstAsync(o => o.UserName == User.Identity.Name);
+
+            user.OnboardingCompleted = onboardingCompletedDTO.OnboardingCompleted;
+            db.Entry(user).State = EntityState.Modified;
+
+            await db.SaveChangesAsync();
+
+            return Ok();
+        }
+
+        public class OnboardingCompletedDTO
+        {
+            public bool OnboardingCompleted { get; set; }
         }
 
         [HttpPost("dashboardsettings"), Authorize]

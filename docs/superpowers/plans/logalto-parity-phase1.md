@@ -128,15 +128,15 @@ Also add `Features:LogFrameV2` (`false`) to `WEB/appsettings.json` and `WEB/apps
 - `WEB/Models/Response.cs` — add the five sync columns (class is already partial; do not redeclare `Submitted`).
 - `WEB/Code/AnswerValueProjector.cs` — new static projector.
 - `WEB/Models/DTOs/AnswerDTO.cs` — call the projector inside `Hydrate`.
-- `WEB/Models/ApplicationDBContext.AuditTypedAnswers.cs` — new partial (DbSet + config), call added after `ConfigureLogFrameV2Model`.
+- `WEB/Models/ApplicationDBContext.AuditTypedAnswers.cs` — new partial (DbSet + `ConfigureAuditTypedAnswersModel(ModelBuilder)`); call added to `ApplicationDBContext.cs` after `ConfigureLogFrameV2Model`.
 - `WEB/Migrations/*` — generated via `dotnet ef migrations add AddAuditTypedAnswersAndResponseSync --project WEB`; backfill SQL added to the generated migration's `Up()` only.
 - `WEB.Tests/AnswerValueProjectorTests.cs` — new.
 
 **Requirements**
 
 1. `AuditLog`: PK `AuditLogId`; `EntityType` required `MaxLength(50)`; `EntityId` Guid; `Action` required `MaxLength(50)`; `UserId` nullable Guid; `BeforeJson`, `AfterJson` strings; `IpAddress` `MaxLength(64)`; `UserAgent` `MaxLength(300)`; `CreatedAtUtc` required. Index `IX_AuditLogs_Entity_CreatedAt` on `(EntityType, EntityId, CreatedAtUtc)`.
-2. `AnswerValueProjector.Apply(Answer answer)` is a pure static void method:
-   - `ValueNumber` = `decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture)` result, else null.
+2. `AnswerValueProjector.Apply(Answer answer)` is a pure static void method. Column types on the new properties: `ValueNumber` `[Column(TypeName = "decimal(20,8)")] decimal?`; `ValueDate` `[Column(TypeName = "date")] DateTime?`; `ValueBoolean` `bool?`.
+   - `ValueNumber` set from `decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture)`, else null.
    - `ValueBoolean` = `bool.TryParse` result; also `"yes"`/`"no"` (case-insensitive) → true/false, else null.
    - `ValueDate` = `DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal)` result, else null.
    - A value may populate more than one column only when parsing genuinely succeeds for both (e.g. `"1"` sets `ValueNumber` and not `ValueDate`); `"2024-03-01"` sets `ValueDate` and not `ValueNumber`. Null/whitespace clears all three.

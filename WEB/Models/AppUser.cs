@@ -90,14 +90,25 @@ namespace Monic.Web.Models
         {
             if (IsInRole(RolesEnums.Administrator)) return true;
 
+            // role→workflow-stage alignment (M&E business logic):
+            // Verifier role grants Verify globally, Approver role grants Approve globally,
+            // Manager keeps view-all. IndicatorPermission remains the fine-grained override layer.
             if (permissionType == PermissionType.View)
             {
                 // if user is an organisation manager
                 if (userManager.IsInRoleAsync(_user, RolesEnums.Manager.ToString()).Result)
                 {
-                    // organisation managers can view all indicators, so return true; 
+                    // organisation managers can view all indicators, so return true;
                     return true;
                 }
+            }
+            else if (permissionType == PermissionType.Verify)
+            {
+                if (userManager.IsInRoleAsync(_user, RolesEnums.Verifier.ToString()).Result) return true;
+            }
+            else if (permissionType == PermissionType.Approve)
+            {
+                if (userManager.IsInRoleAsync(_user, RolesEnums.Approver.ToString()).Result) return true;
             }
 
             // get the indicator & the global permission

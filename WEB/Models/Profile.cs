@@ -12,7 +12,9 @@
         public Guid? OrganisationId { get; set; }
         public OrganisationDTO Organisation { get; set; }
         public Guid[] EntityIds { get; set; }
-        public List<IndicatorPermissionDTO> IndicatorPermissions { get; set; }
-        public string DashboardSettings { get; set; }
+        public List<IndicatorPermissionDTO> IndicatorPermissions { get; set; }        public string DashboardSettings { get; set; }
+
+        /// <summary>True once the user completed the first-login onboarding wizard.</summary>
+        public bool OnboardingCompleted { get; set; }
     }
 }

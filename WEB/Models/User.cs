@@ -23,6 +23,10 @@ namespace Monic.Web.Models
 
         public Guid? OrganisationId { get; set; }
 
+        /// <summary>True once the user has completed the first-login onboarding wizard.</summary>
+        [Required]
+        public bool OnboardingCompleted { get; set; }
+
         public DateTime? LastLoginDate { get; set; }
 
         public string DashboardSettings { get; set; }

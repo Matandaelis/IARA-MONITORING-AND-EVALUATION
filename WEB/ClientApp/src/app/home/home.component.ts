@@ -1,4 +1,6 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../environments/environment';
 import { Enum, Enums, WidgetTypes } from '../common/models/enums.model';
 import { ProfileModel } from '../common/models/profile.models';
 import { FolderShortcutSettings, IndicatorBarChartSettings, IndicatorLineChartSettings, IndicatorMapSettings, IndicatorPieChartSettings, QuestionnaireBarChartSettings, WidgetSettings } from '../common/models/widget.model';
@@ -13,14 +15,38 @@ export class HomeComponent implements OnInit {
 
     public profile: ProfileModel;
     public widgetTypes = Enums.WidgetTypes;
-    
+
+    // onboarding banner state
+    public showOnboardingBanner = false;
+    public dismissingBanner = false;
+
     constructor(
-        private authService: AuthService
+        private authService: AuthService,
+        private http: HttpClient
     ) {
     }
 
     ngOnInit(): void {
         this.profile = this.authService.profile;
+        this.showOnboardingBanner = !!this.profile && !this.profile.onboardingCompleted;
+    }
+
+    dismissOnboardingBanner(): void {
+        if (this.dismissingBanner) return;
+        this.dismissingBanner = true;
+
+        this.http.post(`${environment.baseApiUrl}profile/onboardingcompleted`, { onboardingCompleted: true })
+            .subscribe({
+                next: () => {
+                    this.profile.onboardingCompleted = true;
+                    this.showOnboardingBanner = false;
+                    this.dismissingBanner = false;
+                },
+                error: () => {
+                    this.showOnboardingBanner = false;
+                    this.dismissingBanner = false;
+                }
+            });
     }
 
     addWidget(widgetType: Enum): void {

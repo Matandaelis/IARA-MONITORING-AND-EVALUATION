@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Monic.Web.Models;
+using Monic.Web.Code;
 
 namespace Monic.Web.Controllers
 {
@@ -26,6 +27,41 @@ namespace Monic.Web.Controllers
         public async Task<IActionResult> CheckSetup()
         {
             return Ok(new { runSetup = !(await db.Settings.SingleAsync()).SetupCompleted });
+        }
+
+        /// <summary>
+        /// Seeds a complete, deterministic demo project ("Rural Health Program 2024-25")
+        /// with entities, indicators, dates and 2 years of facility data, running the
+        /// REAL aggregation & calculation pipeline (SaveData / Aggregate / RunCalculations).
+        /// Idempotent: re-running returns the existing demo project without duplicating data.
+        /// </summary>
+        [HttpPost("demo-project"), AuthorizeRoles(Roles.Administrator)]
+        public async Task<IActionResult> SeedDemoProject()
+        {
+            // use the first administrator as the data-owner of the seeded values
+            var adminRoleId = await db.Roles
+                .Where(o => o.Name == Roles.Administrator.ToString())
+                .Select(o => o.Id)
+                .FirstAsync();
+
+            var adminUserId = await db.Users
+                .Where(u => u.Roles.Any(r => r.RoleId == adminRoleId))
+                .OrderBy(o => o.Email)
+                .Select(o => o.Id)
+                .FirstAsync();
+
+            var result = await DemoDataSeeder.SeedAsync(db, adminUserId);
+
+            return Ok(new
+            {
+                organisation = result.OrganisationName,
+                result.EnteredDatumCount,
+                result.DataAlreadySeeded,
+                entities = result.EntityIdsByCode.Count,
+                dates = result.DateIdsByCode.Count,
+                indicators = result.IndicatorIdsByCode.Count,
+                expectedAnnualTotals2025 = result.AnnualTotals2025
+            });
         }
 
         [HttpPost, AllowAnonymous]
