@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -33,6 +34,8 @@ namespace Monic.Web.Models
 
         [ForeignKey("UploadedById")]
         public virtual User UploadedBy { get; set; }
+
+        public virtual ICollection<DocumentTag> DocumentTags { get; set; } = new List<DocumentTag>();
 
         public Document()
         {

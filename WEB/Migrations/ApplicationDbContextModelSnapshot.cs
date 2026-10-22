@@ -225,6 +225,127 @@ namespace Monic.Web.Migrations
                     b.ToTable("AuditLogs");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.BudgetCategory", b =>
+                {
+                    b.Property<Guid>("BudgetCategoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("BudgetCategoryId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("IX_BudgetCategories_Name");
+
+                    b.HasIndex("SortOrder")
+                        .HasDatabaseName("IX_BudgetCategories_SortOrder");
+
+                    b.ToTable("BudgetCategories");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.BudgetLine", b =>
+                {
+                    b.Property<Guid>("BudgetLineId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("ActualAmount")
+                        .HasColumnType("decimal(18, 2)");
+
+                    b.Property<Guid>("BudgetCategoryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("CommittedAmount")
+                        .HasColumnType("decimal(18, 2)");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Currency")
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
+                    b.Property<Guid?>("DateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<decimal>("DisbursedAmount")
+                        .HasColumnType("decimal(18, 2)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("ModifiedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ModifiedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("PeriodEnd")
+                        .HasColumnType("Date");
+
+                    b.Property<DateTime?>("PeriodStart")
+                        .HasColumnType("Date");
+
+                    b.Property<decimal>("PlannedAmount")
+                        .HasColumnType("decimal(18, 2)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("TaskId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("BudgetLineId");
+
+                    b.HasIndex("BudgetCategoryId")
+                        .HasDatabaseName("IX_BudgetLines_BudgetCategoryId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("DateId")
+                        .HasDatabaseName("IX_BudgetLines_DateId");
+
+                    b.HasIndex("IsDeleted")
+                        .HasDatabaseName("IX_BudgetLines_IsDeleted");
+
+                    b.HasIndex("ModifiedById");
+
+                    b.HasIndex("ProjectId")
+                        .HasDatabaseName("IX_BudgetLines_ProjectId");
+
+                    b.HasIndex("TaskId")
+                        .HasDatabaseName("IX_BudgetLines_TaskId");
+
+                    b.ToTable("BudgetLines");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.Category", b =>
                 {
                     b.Property<Guid>("CategoryId")
@@ -279,6 +400,87 @@ namespace Monic.Web.Migrations
                         .HasDatabaseName("IX_Chart_Name");
 
                     b.ToTable("Charts");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.Comment", b =>
+                {
+                    b.Property<Guid>("CommentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ModifiedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ModifiedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ParentCommentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SubjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SubjectType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("CommentId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("CreatedOnUtc")
+                        .HasDatabaseName("IX_Comments_CreatedOnUtc");
+
+                    b.HasIndex("ModifiedById");
+
+                    b.HasIndex("ParentCommentId");
+
+                    b.HasIndex("SubjectType", "SubjectId")
+                        .HasDatabaseName("IX_Comments_Subject");
+
+                    b.ToTable("Comments");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.CommentReaction", b =>
+                {
+                    b.Property<Guid>("CommentReactionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CommentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Reaction")
+                        .IsRequired()
+                        .HasMaxLength(25)
+                        .HasColumnType("nvarchar(25)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("CommentReactionId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("CommentId", "UserId")
+                        .HasDatabaseName("IX_CommentReactions_CommentId_UserId");
+
+                    b.ToTable("CommentReactions");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.Component", b =>
@@ -658,6 +860,33 @@ namespace Monic.Web.Migrations
                     b.HasKey("DocumentId");
 
                     b.ToTable("DocumentContents", (string)null);
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.DocumentTag", b =>
+                {
+                    b.Property<Guid>("DocumentTagId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TagId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("DocumentTagId");
+
+                    b.HasIndex("DocumentId")
+                        .HasDatabaseName("IX_DocumentTags_DocumentId");
+
+                    b.HasIndex("TagId")
+                        .HasDatabaseName("IX_DocumentTags_TagId");
+
+                    b.HasIndex("DocumentId", "TagId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_DocumentTags_DocumentId_TagId");
+
+                    b.ToTable("DocumentTags");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.Entity", b =>
@@ -1055,6 +1284,45 @@ namespace Monic.Web.Migrations
                     b.ToTable("FormIndicatorMappings");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.FxRate", b =>
+                {
+                    b.Property<Guid>("FxRateId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("EffectiveFrom")
+                        .HasColumnType("Date");
+
+                    b.Property<string>("FromCurrency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
+                    b.Property<decimal>("Rate")
+                        .HasColumnType("decimal(18, 8)");
+
+                    b.Property<string>("ToCurrency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
+                    b.HasKey("FxRateId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("FromCurrency", "ToCurrency", "EffectiveFrom")
+                        .IsUnique()
+                        .HasDatabaseName("IX_FxRates_From_To_EffectiveFrom");
+
+                    b.ToTable("FxRates");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.Group", b =>
                 {
                     b.Property<Guid>("GroupId")
@@ -1076,6 +1344,87 @@ namespace Monic.Web.Migrations
                         .HasDatabaseName("IX_Group_Name");
 
                     b.ToTable("Groups");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.ImportJob", b =>
+                {
+                    b.Property<Guid>("ImportJobId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CommittedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CommittedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ErrorRows")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<int>("ImportType")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MappingConfigJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("TargetId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("TotalRows")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ValidRows")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ValidationReportJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ImportJobId");
+
+                    b.HasIndex("CommittedById");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("CreatedOnUtc")
+                        .HasDatabaseName("IX_ImportJobs_CreatedOnUtc");
+
+                    b.HasIndex("ImportType")
+                        .HasDatabaseName("IX_ImportJobs_ImportType");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("IX_ImportJobs_Status");
+
+                    b.ToTable("ImportJobs");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.ImportJobContent", b =>
+                {
+                    b.Property<Guid>("ImportJobId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("FileContents")
+                        .HasColumnType("varbinary(max)");
+
+                    b.HasKey("ImportJobId");
+
+                    b.ToTable("ImportJobContents");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.Indicator", b =>
@@ -1335,6 +1684,33 @@ namespace Monic.Web.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("IndicatorPermissions");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.IndicatorTag", b =>
+                {
+                    b.Property<Guid>("IndicatorTagId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("IndicatorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TagId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("IndicatorTagId");
+
+                    b.HasIndex("IndicatorId")
+                        .HasDatabaseName("IX_IndicatorTags_IndicatorId");
+
+                    b.HasIndex("TagId")
+                        .HasDatabaseName("IX_IndicatorTags_TagId");
+
+                    b.HasIndex("IndicatorId", "TagId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_IndicatorTags_IndicatorId_TagId");
+
+                    b.ToTable("IndicatorTags");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.IndicatorTarget", b =>
@@ -1915,6 +2291,84 @@ namespace Monic.Web.Migrations
                     b.ToTable("Milestones");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.Notification", b =>
+                {
+                    b.Property<Guid>("NotificationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Body")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Link")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("NotificationId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("CreatedOnUtc")
+                        .HasDatabaseName("IX_Notifications_CreatedOnUtc");
+
+                    b.HasIndex("UserId", "IsRead")
+                        .HasDatabaseName("IX_Notifications_UserId_IsRead");
+
+                    b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.NotificationPreference", b =>
+                {
+                    b.Property<Guid>("NotificationPreferenceId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Email")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("InApp")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("NotificationPreferenceId");
+
+                    b.HasIndex("UserId", "Type")
+                        .IsUnique()
+                        .HasDatabaseName("IX_NotificationPreferences_UserId_Type");
+
+                    b.ToTable("NotificationPreferences");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.Option", b =>
                 {
                     b.Property<Guid>("OptionId")
@@ -2011,12 +2465,17 @@ namespace Monic.Web.Migrations
                         .HasMaxLength(7)
                         .HasColumnType("nvarchar(7)");
 
+                    b.Property<Guid?>("EntityId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
                     b.HasKey("ProjectId");
+
+                    b.HasIndex("EntityId");
 
                     b.HasIndex("Name")
                         .IsUnique()
@@ -2436,11 +2895,31 @@ namespace Monic.Web.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("BaseCurrency")
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
                     b.Property<string>("ChatGPTAPIKey")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("ExternalApiKey")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
                     b.Property<string>("GoogleMapsApiKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("KestraApiToken")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("KestraBaseUrl")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("KestraNamespace")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -2519,6 +2998,38 @@ namespace Monic.Web.Migrations
                         .HasDatabaseName("IX_Subcategory_Name");
 
                     b.ToTable("Subcategories");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.Tag", b =>
+                {
+                    b.Property<Guid>("TagId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("TagId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Tags_Name");
+
+                    b.ToTable("Tags");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.Task", b =>
@@ -2695,6 +3206,9 @@ namespace Monic.Web.Migrations
                     b.Property<string>("NormalizedUserName")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
+
+                    b.Property<bool>("OnboardingCompleted")
+                        .HasColumnType("bit");
 
                     b.Property<Guid?>("OrganisationId")
                         .HasColumnType("uniqueidentifier");
@@ -3035,6 +3549,106 @@ namespace Monic.Web.Migrations
                     b.Navigation("QuestionOption");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.BudgetCategory", b =>
+                {
+                    b.HasOne("Monic.Web.Models.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedBy");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.BudgetLine", b =>
+                {
+                    b.HasOne("Monic.Web.Models.BudgetCategory", "BudgetCategory")
+                        .WithMany("BudgetLines")
+                        .HasForeignKey("BudgetCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Monic.Web.Models.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.Date", "Date")
+                        .WithMany()
+                        .HasForeignKey("DateId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.User", "ModifiedBy")
+                        .WithMany()
+                        .HasForeignKey("ModifiedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Monic.Web.Models.Task", "Task")
+                        .WithMany()
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("BudgetCategory");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Date");
+
+                    b.Navigation("ModifiedBy");
+
+                    b.Navigation("Project");
+
+                    b.Navigation("Task");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.Comment", b =>
+                {
+                    b.HasOne("Monic.Web.Models.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.User", "ModifiedBy")
+                        .WithMany()
+                        .HasForeignKey("ModifiedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.Comment", "ParentComment")
+                        .WithMany()
+                        .HasForeignKey("ParentCommentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("ModifiedBy");
+
+                    b.Navigation("ParentComment");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.CommentReaction", b =>
+                {
+                    b.HasOne("Monic.Web.Models.Comment", "Comment")
+                        .WithMany("Reactions")
+                        .HasForeignKey("CommentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Monic.Web.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Comment");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.ComponentIndicator", b =>
                 {
                     b.HasOne("Monic.Web.Models.Component", "Component")
@@ -3223,6 +3837,25 @@ namespace Monic.Web.Migrations
                     b.Navigation("Document");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.DocumentTag", b =>
+                {
+                    b.HasOne("Monic.Web.Models.Document", "Document")
+                        .WithMany("DocumentTags")
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Monic.Web.Models.Tag", "Tag")
+                        .WithMany("DocumentTags")
+                        .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Document");
+
+                    b.Navigation("Tag");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.Entity", b =>
                 {
                     b.HasOne("Monic.Web.Models.EntityType", "EntityType")
@@ -3365,6 +3998,44 @@ namespace Monic.Web.Migrations
                     b.Navigation("Questionnaire");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.FxRate", b =>
+                {
+                    b.HasOne("Monic.Web.Models.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedBy");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.ImportJob", b =>
+                {
+                    b.HasOne("Monic.Web.Models.User", "CommittedBy")
+                        .WithMany()
+                        .HasForeignKey("CommittedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CommittedBy");
+
+                    b.Navigation("CreatedBy");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.ImportJobContent", b =>
+                {
+                    b.HasOne("Monic.Web.Models.ImportJob", "ImportJob")
+                        .WithOne("ImportJobContent")
+                        .HasForeignKey("Monic.Web.Models.ImportJobContent", "ImportJobId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ImportJob");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.Indicator", b =>
                 {
                     b.HasOne("Monic.Web.Models.User", "CreatedBy")
@@ -3467,6 +4138,25 @@ namespace Monic.Web.Migrations
                     b.Navigation("Indicator");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.IndicatorTag", b =>
+                {
+                    b.HasOne("Monic.Web.Models.Indicator", "Indicator")
+                        .WithMany("IndicatorTags")
+                        .HasForeignKey("IndicatorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Monic.Web.Models.Tag", "Tag")
+                        .WithMany()
+                        .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Indicator");
+
+                    b.Navigation("Tag");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.IndicatorTarget", b =>
@@ -3713,6 +4403,35 @@ namespace Monic.Web.Migrations
                     b.Navigation("Project");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.Notification", b =>
+                {
+                    b.HasOne("Monic.Web.Models.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.NotificationPreference", b =>
+                {
+                    b.HasOne("Monic.Web.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.Option", b =>
                 {
                     b.HasOne("Monic.Web.Models.OptionList", "OptionList")
@@ -3722,6 +4441,16 @@ namespace Monic.Web.Migrations
                         .IsRequired();
 
                     b.Navigation("OptionList");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.Project", b =>
+                {
+                    b.HasOne("Monic.Web.Models.Entity", "Entity")
+                        .WithMany()
+                        .HasForeignKey("EntityId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Entity");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.Question", b =>
@@ -3918,6 +4647,16 @@ namespace Monic.Web.Migrations
                     b.Navigation("Category");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.Tag", b =>
+                {
+                    b.HasOne("Monic.Web.Models.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedBy");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.Task", b =>
                 {
                     b.HasOne("Monic.Web.Models.Milestone", "Milestone")
@@ -4015,9 +4754,19 @@ namespace Monic.Web.Migrations
                     b.Navigation("AnswerOptions");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.BudgetCategory", b =>
+                {
+                    b.Navigation("BudgetLines");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.Category", b =>
                 {
                     b.Navigation("Subcategories");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.Comment", b =>
+                {
+                    b.Navigation("Reactions");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.Component", b =>
@@ -4086,6 +4835,8 @@ namespace Monic.Web.Migrations
                 {
                     b.Navigation("DocumentContent")
                         .IsRequired();
+
+                    b.Navigation("DocumentTags");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.Entity", b =>
@@ -4136,6 +4887,11 @@ namespace Monic.Web.Migrations
                     b.Navigation("Fields");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.ImportJob", b =>
+                {
+                    b.Navigation("ImportJobContent");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.Indicator", b =>
                 {
                     b.Navigation("ComponentIndicators");
@@ -4147,6 +4903,8 @@ namespace Monic.Web.Migrations
                     b.Navigation("IndicatorDates");
 
                     b.Navigation("IndicatorPermissions");
+
+                    b.Navigation("IndicatorTags");
 
                     b.Navigation("IndicatorTargets");
 
@@ -4285,6 +5043,11 @@ namespace Monic.Web.Migrations
             modelBuilder.Entity("Monic.Web.Models.Subcategory", b =>
                 {
                     b.Navigation("Indicators");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.Tag", b =>
+                {
+                    b.Navigation("DocumentTags");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.TheoryOfChange", b =>

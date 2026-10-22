@@ -49,6 +49,8 @@ namespace Monic.Web.Models
         [Required]
         public Guid EntityTypeId { get; set; }
 
+        public virtual ICollection<IndicatorTag> IndicatorTags { get; set; } = new List<IndicatorTag>();
+
         [Required]
         public DateType Frequency { get; set; }
 

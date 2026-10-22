@@ -32,10 +32,18 @@ namespace Monic.Web.Controllers
                 results = results.Include(o => o.UploadedBy);
             }
 
+            if (searchOptions.IncludeChildren)
+            {
+                results = results.Include(o => o.DocumentTags).ThenInclude(o => o.Tag);
+            }
+
             if (!string.IsNullOrWhiteSpace(searchOptions.q))
                 results = results.Where(o => o.FileName.Contains(searchOptions.q));
 
             if (searchOptions.ItemId.HasValue) results = results.Where(o => o.ItemId == searchOptions.ItemId);
+
+            if (searchOptions.TagId.HasValue)
+                results = results.Where(o => o.DocumentTags.Any(dt => dt.TagId == searchOptions.TagId.Value));
 
             results = results.OrderBy(o => o.DocumentId);
 
@@ -48,12 +56,13 @@ namespace Monic.Web.Controllers
             var document = await db.Documents
                 .Include(o => o.Item)
                 .Include(o => o.UploadedBy)
+                .Include(o => o.DocumentTags).ThenInclude(o => o.Tag)
                 .FirstOrDefaultAsync(o => o.DocumentId == documentId);
 
             if (document == null)
                 return NotFound();
 
-            return Ok(ModelFactory.Create(document));
+            return Ok(ModelFactory.Create(document, includeParents: true, includeChildren: true));
         }
 
         [HttpPost("{documentId:Guid}"), AuthorizeRoles(Roles.Administrator)]
@@ -88,6 +97,8 @@ namespace Monic.Web.Controllers
 
             ModelFactory.Hydrate(document, documentDTO);
 
+            await SyncDocumentTagsAsync(document, documentDTO);
+
             document.Size = document.DocumentContent.FileContents.Length;
 
             if (documentDTO.FileContents != null)
@@ -119,6 +130,8 @@ namespace Monic.Web.Controllers
 
             using (var transactionScope = Code.Db.CreateTransactionScope())
             {
+                await db.DocumentTags.Where(o => o.DocumentId == documentId).ExecuteDeleteAsync();
+
                 await db.DocumentContents.Where(o => o.DocumentId == documentId).ExecuteDeleteAsync();
 
                 db.Entry(document).State = EntityState.Deleted;
@@ -129,6 +142,38 @@ namespace Monic.Web.Controllers
             }
 
             return Ok();
+        }
+
+        /// <summary>Replaces the document's tag links with the tag set in the DTO.</summary>
+        private async System.Threading.Tasks.Task SyncDocumentTagsAsync(Document document, DocumentDTO documentDTO)
+        {
+            if (documentDTO.Tags == null) return;
+
+            var requestedTagIds = documentDTO.Tags
+                .Where(o => o.TagId != Guid.Empty)
+                .Select(o => o.TagId)
+                .Distinct()
+                .ToList();
+
+            var existing = await db.DocumentTags
+                .Where(o => o.DocumentId == document.DocumentId)
+                .ToListAsync();
+
+            foreach (var existingLink in existing.Where(o => !requestedTagIds.Contains(o.TagId)))
+                db.Entry(existingLink).State = EntityState.Deleted;
+
+            foreach (var tagId in requestedTagIds.Except(existing.Select(o => o.TagId)))
+            {
+                if (!await db.Tags.AnyAsync(o => o.TagId == tagId)) continue;
+
+                var link = new DocumentTag
+                {
+                    DocumentId = document.DocumentId,
+                    TagId = tagId
+                };
+
+                db.DocumentTags.Add(link);
+            }
         }
 
     }

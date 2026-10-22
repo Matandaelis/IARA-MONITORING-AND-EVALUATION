@@ -3,9 +3,11 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { PagingHeaders } from '../../common/models/http.model';
 import { DocumentSearchOptions, DocumentSearchResponse, Document } from '../../common/models/document.model';
+import { Tag, TagSearchOptions } from '../../common/models/tag.model';
 import { FadeThenShrink } from '../../common/animations/fadethenshrink';
 import { ErrorService } from '../../common/services/error.service';
 import { DocumentService } from '../../common/services/document.service';
+import { TagService } from '../../common/services/tag.service';
 import { DownloadService } from '../../common/services/download.service';
 
 @NgComponent({
@@ -20,19 +22,37 @@ export class DocumentListComponent implements OnInit {
     public searchOptions = new DocumentSearchOptions();
     public showSearchOptions = false;
     public headers = new PagingHeaders();
+    public tags: Tag[] = [];
 
     constructor(
         public route: ActivatedRoute,
         private router: Router,
         private errorService: ErrorService,
         private downloadService: DownloadService,
-        private documentService: DocumentService
+        private documentService: DocumentService,
+        private tagService: TagService
     ) {
     }
 
     ngOnInit(): void {
         this.searchOptions.includeParents = true;
+        this.searchOptions.includeChildren = true;
         this.runSearch();
+        this.loadTags();
+    }
+
+    loadTags(): void {
+        const tagSearchOptions = new TagSearchOptions();
+        tagSearchOptions.pageSize = 0;
+        this.tagService.search(tagSearchOptions)
+            .subscribe({
+                next: response => {
+                    this.tags = response.tags;
+                },
+                error: err => {
+                    this.errorService.handleError(err, "Tags", "Load");
+                }
+            });
     }
 
     runSearch(pageIndex = 0): Subject<DocumentSearchResponse> {
@@ -67,4 +87,3 @@ export class DocumentListComponent implements OnInit {
         this.router.navigate(["/items", document.item.itemId, "documents", document.documentId]);
     }
 }
-

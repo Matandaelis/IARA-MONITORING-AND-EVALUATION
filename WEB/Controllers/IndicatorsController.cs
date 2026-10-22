@@ -30,6 +30,7 @@ namespace Monic.Web.Controllers
                 results = results.Include(o => o.OptionList);
                 results = results.Include(o => o.GroupingIndicator);
                 results = results.Include(o => o.DisaggregationGroup).ThenInclude(g => g.Options);
+                results = results.Include(o => o.IndicatorTags).ThenInclude(t => t.Tag);
             }
 
             if (searchOptions.IncludeChildren)
@@ -46,6 +47,9 @@ namespace Monic.Web.Controllers
 
             if (!string.IsNullOrWhiteSpace(searchOptions.q))
                 results = results.Where(o => o.Name.Contains(searchOptions.q) || o.Code.Contains(searchOptions.q));
+
+            if (searchOptions.TagId.HasValue)
+                results = results.Where(o => o.IndicatorTags.Any(t => t.TagId == searchOptions.TagId.Value));
 
             if (searchOptions.SubcategoryId.HasValue) results = results.Where(o => o.SubcategoryId == searchOptions.SubcategoryId);
             if (searchOptions.CategoryId.HasValue) results = results.Where(o => o.Subcategory.CategoryId == searchOptions.CategoryId);
@@ -278,6 +282,45 @@ namespace Monic.Web.Controllers
         public async Task<IActionResult> DeleteComponentIndicators(Guid indicatorId)
         {
             await db.ComponentIndicators.Where(o => o.IndicatorId == indicatorId).ExecuteDeleteAsync();
+
+            return Ok();
+        }
+
+        /// <summary>Replaces the indicator's tags with the provided tag set (indicator library search by tags).</summary>
+        [HttpPost("{indicatorId:Guid}/tags"), AuthorizeRoles(Roles.Manager)]
+        public async Task<IActionResult> SaveTags(Guid indicatorId, [FromBody] List<Guid> tagIds)
+        {
+            var indicator = await db.Indicators
+                .Include(o => o.IndicatorTags)
+                .FirstOrDefaultAsync(o => o.IndicatorId == indicatorId);
+
+            if (indicator == null)
+                return NotFound();
+
+            var requestedTagIds = (tagIds ?? new List<Guid>())
+                .Where(o => o != Guid.Empty)
+                .Distinct()
+                .ToList();
+
+            var existingTagIds = indicator.IndicatorTags.Select(o => o.TagId).ToList();
+
+            foreach (var indicatorTag in indicator.IndicatorTags.Where(o => !requestedTagIds.Contains(o.TagId)).ToList())
+                db.Entry(indicatorTag).State = EntityState.Deleted;
+
+            foreach (var tagId in requestedTagIds.Except(existingTagIds))
+            {
+                if (!await db.Tags.AnyAsync(o => o.TagId == tagId)) continue;
+
+                var indicatorTag = new IndicatorTag
+                {
+                    IndicatorId = indicatorId,
+                    TagId = tagId
+                };
+
+                db.IndicatorTags.Add(indicatorTag);
+            }
+
+            await db.SaveChangesAsync();
 
             return Ok();
         }

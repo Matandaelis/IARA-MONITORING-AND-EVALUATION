@@ -6,5 +6,7 @@ namespace Monic.Web.Models
 
         public Guid? ItemId { get; set; }
 
+        public Guid? TagId { get; set; }
+
     }
 }

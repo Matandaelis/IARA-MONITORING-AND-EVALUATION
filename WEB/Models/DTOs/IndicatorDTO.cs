@@ -8,6 +8,8 @@ namespace Monic.Web.Models
         [Required]
         public Guid IndicatorId { get; set; }
 
+        public System.Collections.Generic.List<TagDTO> Tags { get; set; } = new System.Collections.Generic.List<TagDTO>();
+
         [Required]
         public Guid SubcategoryId { get; set; }
 
@@ -171,6 +173,16 @@ namespace Monic.Web.Models
                 if (indicator.DisaggregationGroup != null)
                 {
                     indicatorDTO.DisaggregationGroup = Create(indicator.DisaggregationGroup, true);
+                }
+            }
+
+            if (includeParents)
+            {
+                // (tag names travel with parents so lists and filters need no extra call)
+                if (indicator.IndicatorTags != null)
+                {
+                    foreach (var indicatorTag in indicator.IndicatorTags)
+                        indicatorDTO.Tags.Add(Create(indicatorTag.Tag, includeParents: false));
                 }
             }
 

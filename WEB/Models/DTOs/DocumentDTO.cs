@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace Monic.Web.Models
@@ -28,6 +29,8 @@ namespace Monic.Web.Models
 
         public UserDTO UploadedBy { get; set; }
 
+        public List<TagDTO> Tags { get; set; } = new List<TagDTO>();
+
     }
 
     public static partial class ModelFactory
@@ -50,6 +53,12 @@ namespace Monic.Web.Models
             {
                 documentDTO.Item = Create(document.Item);
                 documentDTO.UploadedBy = Create(document.UploadedBy);
+            }
+
+            if (includeChildren && document.DocumentTags != null)
+            {
+                foreach (var documentTag in document.DocumentTags)
+                    documentDTO.Tags.Add(Create(documentTag.Tag, includeParents: false));
             }
 
             return documentDTO;

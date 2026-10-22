@@ -31,6 +31,15 @@
                     </div>
                 </div>
 
+                <div class="col-sm-6 col-md-3">
+                    <div class="form-group">
+                        <select id="tagId" name="tagId" class="form-select" [(ngModel)]="searchOptions.tagId">
+                            <option value="">All tags</option>
+                            <option *ngFor="let tag of tags" [value]="tag.tagId">{{ tag.name }} ({{ tag.documentCount }})</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="col-sm-3 col-md-3 col-lg-3 col-xl-2">
                     <div class="form-group">
                         <button type="submit" class="btn btn-outline-primary me-2 mb-1">Search<i class="fas fa-search ms-2"></i></button>
@@ -50,6 +59,7 @@
                 <tr>
                     <th>Item</th>
                     <th>File Name</th>
+                    <th>Tags</th>
                     <th class="w-20px text-center"><i class="fas fa-cloud-download text-secondary"></i></th>
                 </tr>
             </thead>
@@ -57,6 +67,9 @@
                 <tr *ngFor="let document of documents" (click)="goToDocument(document)">
                     <td>{{ document.item.itemId }}</td>
                     <td>{{ document.fileName }}</td>
+                    <td>
+                        <span *ngFor="let tag of document.tags" class="badge text-bg-secondary me-1">{{ tag.name }}</span>
+                    </td>
                     <td class="text-center"><i class="fas fa-cloud-download cursor-pointer p-1 text-primary" (click)="downloadDocument(document, $event)"></i></td>
                 </tr>
             </tbody>

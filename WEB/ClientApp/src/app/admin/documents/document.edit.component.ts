@@ -6,10 +6,13 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ConfirmModalComponent, ConfirmModalOptions } from '../../common/components/confirm.component';
 import { Document } from '../../common/models/document.model';
+import { Tag, TagSearchOptions } from '../../common/models/tag.model';
 import { BreadcrumbService } from '../../common/services/breadcrumb.service';
 import { ErrorService } from '../../common/services/error.service';
 import { DocumentService } from '../../common/services/document.service';
+import { TagService } from '../../common/services/tag.service';
 import { DownloadService } from '../../common/services/download.service';
+import { AuthService } from '../../common/services/auth.service';
 
 @NgComponent({
     selector: 'document-edit',
@@ -20,6 +23,8 @@ export class DocumentEditComponent implements OnInit {
 
     public document: Document = new Document();
     public isNew = true;
+    public tags: Tag[] = [];
+    public newTagName = "";
 
     constructor(
         private router: Router,
@@ -28,8 +33,10 @@ export class DocumentEditComponent implements OnInit {
         private breadcrumbService: BreadcrumbService,
         private modalService: NgbModal,
         private documentService: DocumentService,
+        private tagService: TagService,
         private downloadService: DownloadService,
-        private errorService: ErrorService
+        private errorService: ErrorService,
+        private authService: AuthService
     ) {
     }
 
@@ -50,6 +57,64 @@ export class DocumentEditComponent implements OnInit {
 
         });
 
+        this.loadTags();
+
+    }
+
+    private loadTags(): void {
+
+        const searchOptions = new TagSearchOptions();
+        searchOptions.pageSize = 0;
+
+        this.tagService.search(searchOptions)
+            .subscribe({
+                next: response => {
+                    this.tags = response.tags;
+                },
+                error: err => {
+                    this.errorService.handleError(err, "Tags", "Load");
+                }
+            });
+
+    }
+
+    hasTag(tag: Tag): boolean {
+        return (this.document.tags || []).some(o => o.tagId === tag.tagId);
+    }
+
+    toggleTag(tag: Tag, checked: boolean): void {
+        if (!this.document.tags) this.document.tags = [];
+        if (checked) {
+            if (!this.hasTag(tag)) this.document.tags.push(tag);
+        } else {
+            this.document.tags = this.document.tags.filter(o => o.tagId !== tag.tagId);
+        }
+    }
+
+    createTag(): void {
+        const name = (this.newTagName || "").trim();
+        if (!name) return;
+
+        const tag = new Tag();
+        tag.name = name;
+
+        this.tagService.save(tag)
+            .subscribe({
+                next: created => {
+                    this.tags.push(created);
+                    this.newTagName = "";
+                    if (!this.document.tags) this.document.tags = [];
+                    this.document.tags.push(created);
+                    this.toastr.success("The tag has been created", "Create Tag");
+                },
+                error: err => {
+                    this.errorService.handleError(err, "Tag", "Create");
+                }
+            });
+    }
+
+    get canManageTags(): boolean {
+        return this.authService.isInRole("Manager");
     }
 
     private loadDocument(): void {

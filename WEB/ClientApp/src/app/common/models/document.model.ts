@@ -1,6 +1,7 @@
 import { SearchOptions, PagingHeaders } from './http.model';
 import { Item } from './item.model';
 import { User } from './user.model';
+import { Tag } from './tag.model';
 
 export class Document {
     documentId: string;
@@ -13,6 +14,7 @@ export class Document {
     size: number;
     item: Item;
     uploadedBy: User;
+    tags: Tag[] = [];
 
     constructor() {
         this.documentId = "00000000-0000-0000-0000-000000000000";
@@ -22,6 +24,7 @@ export class Document {
 export class DocumentSearchOptions extends SearchOptions {
     q: string;
     itemId: string;
+    tagId: string;
 }
 
 export class DocumentSearchResponse {

@@ -20,5 +20,7 @@ namespace Monic.Web.Models
 
         public Guid? CreatedById { get; set; }
 
+        public Guid? TagId { get; set; }
+
     }
 }
