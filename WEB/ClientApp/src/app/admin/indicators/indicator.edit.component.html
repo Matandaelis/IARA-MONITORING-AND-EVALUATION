@@ -294,7 +294,7 @@
                             </label>
                             <select id="disaggregationGroupId" name="disaggregationGroupId" [(ngModel)]="indicator.disaggregationGroupId" class="form-select">
                                 <option [ngValue]="null">-- None (Scalar Indicator) --</option>
-                                <option *ngFor="let group of disaggregationGroups" [ngValue]="group.disaggregationGroupId">{{ group.name }}</option>
+                                <option *ngFor="let group of disaggregationGroups" [ngValue]="group.disaggregationGroupId">{{ group.name }}{{ group.isActive ? '' : ' (Inactive)' }}</option>
                             </select>
                         </div>
                     </div>
@@ -857,7 +857,7 @@
 
                         <!-- Chart Container -->
                         <div *ngIf="breakdownChartOptions" class="mb-4">
-                            <div echarts [options]="breakdownChartOptions" style="height: 380px; width: 100%;"></div>
+                            <div echarts [options]="breakdownChartOptions" [autoResize]="true" (chartInit)="onBreakdownChartInit($event)" style="height: 380px; width: 100%;"></div>
                         </div>
 
                         <div *ngIf="!breakdownChartOptions" class="text-center text-muted py-5 border rounded bg-light mb-4">

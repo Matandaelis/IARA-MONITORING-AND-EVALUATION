@@ -112,6 +112,7 @@ namespace Monic.Web.Controllers
             }
 
             ModelFactory.Hydrate(group, dto);
+            db.Entry(group).State = EntityState.Modified;
 
             // Sync Options: Add new or update existing
             if (dto.Options != null)
@@ -138,21 +139,30 @@ namespace Monic.Web.Controllers
                     {
                         var opt = group.Options.First(o => o.DisaggregationOptionId == optDto.DisaggregationOptionId);
                         ModelFactory.Hydrate(opt, optDto);
+                        if (opt.SortOrder <= 0)
+                        {
+                            opt.SortOrder = order;
+                        }
+                        db.Entry(opt).State = EntityState.Modified;
                     }
                     else
                     {
-                        group.Options.Add(new DisaggregationOption
+                        var newOpt = new DisaggregationOption
                         {
                             DisaggregationOptionId = Guid.NewGuid(),
                             DisaggregationGroupId = group.DisaggregationGroupId,
                             Name = optDto.Name,
                             Code = optDto.Code,
-                            SortOrder = optDto.SortOrder > 0 ? optDto.SortOrder : order++
-                        });
+                            SortOrder = optDto.SortOrder > 0 ? optDto.SortOrder : order
+                        };
+                        group.Options.Add(newOpt);
+                        db.DisaggregationOptions.Add(newOpt);
                     }
+                    order++;
                 }
             }
 
+            db.ChangeTracker.DetectChanges();
             await db.SaveChangesAsync();
             return Ok(ModelFactory.Create(group));
         }
@@ -162,7 +172,7 @@ namespace Monic.Web.Controllers
         public async Task<IActionResult> DeleteGroup(Guid id)
         {
             var group = await db.DisaggregationGroups
-                .Include(g => g.Indicators)
+                .Include(g => g.Options)
                 .FirstOrDefaultAsync(g => g.DisaggregationGroupId == id);
 
             if (group == null)
@@ -170,14 +180,20 @@ namespace Monic.Web.Controllers
                 return NotFound();
             }
 
-            if (group.Indicators.Count > 0)
+            bool hasIndicators = await db.Indicators.AnyAsync(i => i.DisaggregationGroupId == id);
+            var optionIds = group.Options.Select(o => o.DisaggregationOptionId).ToList();
+            bool hasRecordedData = optionIds.Count > 0 && await db.DisaggregationData.AnyAsync(d => optionIds.Contains(d.DisaggregationOptionId));
+
+            if (hasIndicators || hasRecordedData)
             {
-                // Soft delete by deactivating if currently linked to indicators
+                // Soft delete by deactivating if currently linked to indicators or recorded data
                 group.IsActive = false;
+                db.Entry(group).State = EntityState.Modified;
                 await db.SaveChangesAsync();
-                return Ok(new { message = "Group is assigned to indicators; marked as inactive instead of deleted." });
+                return Ok(new { message = "Group is assigned to indicators or recorded data; marked as inactive instead of deleted." });
             }
 
+            db.DisaggregationOptions.RemoveRange(group.Options);
             db.DisaggregationGroups.Remove(group);
             await db.SaveChangesAsync();
             return NoContent();

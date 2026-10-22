@@ -153,16 +153,16 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr *ngFor="let opt of editingGroup.options; let i = index">
+                                <tr *ngFor="let opt of editingGroup.options; let i = index; trackBy: trackByOption">
                                     <td class="text-center text-muted small fw-bold">{{ i + 1 }}</td>
                                     <td>
                                         <input type="text" class="form-control form-control-sm text-uppercase"
-                                               [name]="'optCode_' + i" [(ngModel)]="opt.code"
+                                               [name]="'optCode_' + (opt.disaggregationOptionId || opt._tempId || i)" [(ngModel)]="opt.code"
                                                maxlength="20" placeholder="e.g. M" required />
                                     </td>
                                     <td>
                                         <input type="text" class="form-control form-control-sm"
-                                               [name]="'optName_' + i" [(ngModel)]="opt.name"
+                                               [name]="'optName_' + (opt.disaggregationOptionId || opt._tempId || i)" [(ngModel)]="opt.name"
                                                maxlength="100" placeholder="e.g. Male" required />
                                     </td>
                                     <td class="text-center text-nowrap">

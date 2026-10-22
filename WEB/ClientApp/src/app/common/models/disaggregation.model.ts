@@ -4,6 +4,7 @@ export class DisaggregationOption {
     name: string;
     code: string;
     sortOrder: number;
+    _tempId?: string;
 }
 
 export class DisaggregationGroup {

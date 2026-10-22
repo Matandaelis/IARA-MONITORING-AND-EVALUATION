@@ -80,13 +80,23 @@ export class DisaggregationsComponent implements OnInit {
         this.load();
     }
 
+    private tempIdCounter = 0;
+
+    nextTempId(): string {
+        return 'opt_' + (++this.tempIdCounter) + '_' + Math.random().toString(36).substring(2, 7);
+    }
+
+    trackByOption(index: number, opt: any): any {
+        return opt.disaggregationOptionId || opt._tempId || index;
+    }
+
     openCreate(): void {
         this.isNew = true;
         this.editingGroup = new DisaggregationGroup();
         this.editingGroup.isActive = true;
         this.editingGroup.options = [
-            { disaggregationOptionId: undefined, disaggregationGroupId: undefined, code: '', name: '', sortOrder: 1 },
-            { disaggregationOptionId: undefined, disaggregationGroupId: undefined, code: '', name: '', sortOrder: 2 }
+            { disaggregationOptionId: undefined, disaggregationGroupId: undefined, code: '', name: '', sortOrder: 1, _tempId: this.nextTempId() },
+            { disaggregationOptionId: undefined, disaggregationGroupId: undefined, code: '', name: '', sortOrder: 2, _tempId: this.nextTempId() }
         ];
         this.openModal();
     }
@@ -100,7 +110,7 @@ export class DisaggregationsComponent implements OnInit {
             description: group.description,
             isActive: group.isActive !== false,
             createdAt: group.createdAt,
-            options: (group.options || []).map(o => ({ ...o })).sort((a, b) => a.sortOrder - b.sortOrder)
+            options: (group.options || []).map(o => ({ ...o, _tempId: this.nextTempId() })).sort((a, b) => a.sortOrder - b.sortOrder)
         };
         this.openModal();
     }
@@ -123,7 +133,8 @@ export class DisaggregationsComponent implements OnInit {
             disaggregationGroupId: this.editingGroup.disaggregationGroupId,
             code: '',
             name: '',
-            sortOrder: nextOrder
+            sortOrder: nextOrder,
+            _tempId: this.nextTempId()
         });
     }
 

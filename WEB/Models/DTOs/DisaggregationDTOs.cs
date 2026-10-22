@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 namespace Monic.Web.Models
 {
@@ -78,7 +79,7 @@ namespace Monic.Web.Models
 
             if (includeChildren && group.Options != null)
             {
-                foreach (var opt in group.Options)
+                foreach (var opt in group.Options.OrderBy(o => o.SortOrder))
                 {
                     dto.Options.Add(Create(opt));
                 }

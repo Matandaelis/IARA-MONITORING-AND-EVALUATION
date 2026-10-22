@@ -117,9 +117,9 @@ export class IndicatorEditComponent extends ItemComponent implements OnInit {
 
     ngOnInit(): void {
 
-        this.disaggregationService.getGroups().subscribe({
+        this.disaggregationService.getGroups(true).subscribe({
             next: groups => {
-                this.disaggregationGroups = groups;
+                this.disaggregationGroups = groups || [];
                 if (this.variance) {
                     this.buildBreakdownChart();
                 }
@@ -777,14 +777,27 @@ export class IndicatorEditComponent extends ItemComponent implements OnInit {
         return !!(this.variance?.periods?.some(p => p.disaggregations && p.disaggregations.length > 0));
     }
 
+    private breakdownChartInstance: any;
+
+    onBreakdownChartInit(ec: any): void {
+        this.breakdownChartInstance = ec;
+        setTimeout(() => {
+            if (this.breakdownChartInstance) {
+                this.breakdownChartInstance.resize();
+            }
+        }, 100);
+    }
+
     get breakdownOptions(): { code: string; name: string }[] {
         const optionMap = new Map<string, string>();
 
         if (this.indicator.disaggregationGroupId) {
             const grp = this.disaggregationGroups.find(g => g.disaggregationGroupId === this.indicator.disaggregationGroupId);
             if (grp && grp.options) {
-                for (const opt of grp.options) {
-                    optionMap.set(opt.code, opt.name);
+                const sorted = [...grp.options].sort((a, b) => a.sortOrder - b.sortOrder);
+                for (const opt of sorted) {
+                    const optKey = opt.code || opt.name || 'Unknown';
+                    optionMap.set(optKey, opt.name || opt.code || 'Unknown');
                 }
             }
         }
@@ -830,6 +843,11 @@ export class IndicatorEditComponent extends ItemComponent implements OnInit {
     setBreakdownChartType(type: 'bar' | 'donut'): void {
         this.breakdownChartType = type;
         this.buildBreakdownChart();
+        setTimeout(() => {
+            if (this.breakdownChartInstance) {
+                this.breakdownChartInstance.resize();
+            }
+        }, 50);
     }
 
     onBreakdownPeriodChange(): void {
@@ -905,7 +923,7 @@ export class IndicatorEditComponent extends ItemComponent implements OnInit {
                     value: this.getOptionGrandTotal(opt.code)
                 }));
             } else {
-                const targetPeriod = periods.find(p => p.dateId === this.selectedBreakdownPeriod);
+                const targetPeriod = periods.find(p => (p.dateId || '').toLowerCase() === (this.selectedBreakdownPeriod || '').toLowerCase());
                 if (targetPeriod) {
                     pieData = options.map(opt => ({
                         name: opt.name,
@@ -921,7 +939,7 @@ export class IndicatorEditComponent extends ItemComponent implements OnInit {
                     text: 'Demographic Share Breakdown',
                     subtext: this.selectedBreakdownPeriod === 'all'
                         ? `All Periods Combined (Total: ${total})`
-                        : `Period: ${periods.find(p => p.dateId === this.selectedBreakdownPeriod)?.periodName || ''} (Total: ${total})`,
+                        : `Period: ${periods.find(p => (p.dateId || '').toLowerCase() === (this.selectedBreakdownPeriod || '').toLowerCase())?.periodName || ''} (Total: ${total})`,
                     left: 'center',
                     textStyle: { fontSize: 13, fontWeight: 'bold' }
                 },
