@@ -1,0 +1,181 @@
+<app-page-title title="Data Import (Excel / CSV)" />
+
+<div class="container-fluid">
+
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-file-import me-2"></i>Upload Import</span>
+            <button type="button" class="btn btn-sm btn-link" (click)="downloadTemplate()"><i class="fas fa-download me-2"></i>Download Template</button>
+        </div>
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label mb-1">Import Type</label>
+                    <select class="form-select" name="importType" [(ngModel)]="importType" (ngModelChange)="importTypeChanged()">
+                        <option value="Budget">Budget (project expenditures)</option>
+                        <option value="Records">Form Records (questionnaire answers)</option>
+                    </select>
+                </div>
+                <div class="col-md-4" *ngIf="importType === 'Budget'">
+                    <label class="form-label mb-1">Project (context)</label>
+                    <select class="form-select" name="projectId" [(ngModel)]="selectedProjectId">
+                        <option *ngFor="let project of projects" [value]="project.projectId">{{ project.name }}</option>
+                    </select>
+                </div>
+                <div class="col-md-4" *ngIf="importType === 'Records'">
+                    <label class="form-label mb-1">Questionnaire (defines the columns)</label>
+                    <select class="form-select" name="questionnaireId" [(ngModel)]="selectedQuestionnaireId" (click)="loadQuestionnaires()">
+                        <option value="">Select a questionnaire…</option>
+                        <option *ngFor="let questionnaire of questionnaires" [value]="questionnaire.questionnaireId">{{ questionnaire.name }}</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label mb-1">File (.xlsx or .csv)</label>
+                    <input type="file" class="form-control" accept=".xlsx,.csv" (change)="fileSelected($any($event).target.files)" />
+                </div>
+                <div class="col-md-1">
+                    <button type="button" class="btn btn-primary w-100" (click)="upload()" [disabled]="uploading || !file">
+                        <span *ngIf="uploading" class="spinner-border spinner-border-sm me-1"></span>
+                        <i class="fas fa-upload" *ngIf="!uploading"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-text mt-2" *ngIf="importType === 'Budget'">
+                Header row must be: <code>Project, Category, Description, Planned, Committed, Disbursed, Expended, Currency, PeriodStart, PeriodEnd</code>.
+            </div>
+
+            <div class="form-text mt-2" *ngIf="importType === 'Records'">
+                Download the questionnaire template — columns are <code>EntityCode, DateCode, ResponseCode</code> plus one column per question (by code).
+                Option questions accept option labels separated by <code>|</code>. Use <code>ResponseCode</code> to update existing records instead of creating new ones.
+                Answers are validated first — nothing is written until you commit.
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><i class="fas fa-list me-2"></i>Import History</div>
+        <div class="card-body p-0">
+            <div *ngIf="loading" class="text-center text-muted py-3"><span class="spinner-border spinner-border-sm me-2"></span>Loading…</div>
+
+            <div *ngIf="!loading && importJobs.length === 0" class="text-center text-muted py-4">
+                No imports yet.
+            </div>
+
+            <div class="table-responsive" *ngIf="!loading && importJobs.length > 0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>File</th>
+                            <th>Status</th>
+                            <th class="text-end">Rows</th>
+                            <th class="text-end">Valid</th>
+                            <th class="text-end">Errors</th>
+                            <th>Uploaded</th>
+                            <th>Committed</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let importJob of importJobs">
+                            <td>{{ importJob.fileName }}</td>
+                            <td><span class="badge {{ statusClass(importJob.status) }}">{{ importJob.status }}</span></td>
+                            <td class="text-end">{{ importJob.totalRows }}</td>
+                            <td class="text-end">{{ importJob.validRows }}</td>
+                            <td class="text-end" [ngClass]="{ 'text-danger': importJob.errorRows > 0 }">{{ importJob.errorRows }}</td>
+                            <td>{{ importJob.createdOnUtc | momentPipe:'DD MMM YYYY HH:mm' }}</td>
+                            <td>{{ importJob.committedOnUtc | momentPipe:'DD MMM YYYY HH:mm' }}</td>
+                            <td class="text-end text-nowrap">
+                                <button type="button" class="btn btn-sm btn-link p-0 me-2" (click)="showReport(importJob)" title="Validation report"><i class="fas fa-clipboard-list"></i></button>
+                                <button type="button" *ngIf="importJob.status === 'Validated'" class="btn btn-sm btn-link p-0 me-2 text-success" (click)="commit(importJob)" title="Commit"><i class="fas fa-check-double"></i></button>
+                                <button type="button" *ngIf="importJob.status !== 'Committed'" class="btn btn-sm btn-link p-0 text-danger" (click)="delete(importJob)" title="Delete"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Validation report modal -->
+    <ng-template #reportModal let-modal>
+        <div class="modal-header">
+            <h5 class="modal-title">Validation Report — {{ reportJob?.fileName }}</h5>
+            <button type="button" class="btn-close" (click)="modal.dismiss()" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <div class="alert alert-info py-2" *ngIf="reportJob">
+                <strong>{{ reportJob.validRows }}</strong> valid row(s), <strong>{{ reportJob.errorRows }}</strong> error(s) of {{ reportJob.totalRows }}.
+                Only valid rows will be committed.
+            </div>
+
+            <!-- Budget report -->
+            <div class="table-responsive" style="max-height: 60vh; overflow-y: auto;" *ngIf="budgetRows.length > 0">
+                <table class="table table-sm table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Project</th>
+                            <th>Category</th>
+                            <th class="text-end">Planned</th>
+                            <th class="text-end">Expended</th>
+                            <th>Problems</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let row of budgetRows" [ngClass]="{ 'table-danger': row.errors.length > 0 }">
+                            <td>{{ row.rowNumber }}</td>
+                            <td>{{ row.project }}</td>
+                            <td>{{ row.category }}</td>
+                            <td class="text-end">{{ row.planned | number:'1.2-2' }}</td>
+                            <td class="text-end">{{ row.expended | number:'1.2-2' }}</td>
+                            <td>
+                                <span class="text-danger" *ngFor="let error of row.errors">{{ error }}<br /></span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Records report -->
+            <div class="table-responsive" style="max-height: 60vh; overflow-y: auto;" *ngIf="recordsRows.length > 0">
+                <table class="table table-sm table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Entity</th>
+                            <th>Period</th>
+                            <th>Response Code</th>
+                            <th class="text-end">Answers</th>
+                            <th>Problems</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let row of recordsRows" [ngClass]="{ 'table-danger': row.errors.length > 0 }">
+                            <td>{{ row.rowNumber }}</td>
+                            <td>{{ row.entityCode }}</td>
+                            <td>{{ row.dateCode }}</td>
+                            <td>{{ row.responseCode }}</td>
+                            <td class="text-end">{{ row.answersCount }}</td>
+                            <td>
+                                <span class="text-danger" *ngFor="let error of row.errors">{{ error }}<br /></span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline-success me-auto" *ngIf="reportJob?.status === 'Validated' && reportJob?.importType === 'Records'"
+                    (click)="commit(reportJob, true); modal.dismiss()" title="Commit and mark as submitted">
+                <i class="fas fa-paper-plane me-2"></i>Commit & Submit
+            </button>
+            <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">Close</button>
+            <button type="button" class="btn btn-success" *ngIf="reportJob?.status === 'Validated'"
+                    (click)="commit(reportJob); modal.dismiss()">
+                Commit {{ reportJob?.validRows }} valid row(s)
+            </button>
+        </div>
+    </ng-template>
+
+</div>

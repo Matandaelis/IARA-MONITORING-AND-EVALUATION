@@ -146,6 +146,24 @@ namespace Monic.Web.Models
         Approve
     }
 
+    /// <summary>Kinds of data that can be imported via the ETL pipeline (Tier 1).</summary>
+    public enum ImportType
+    {
+        Records,
+        Budget,
+        IndicatorValues,
+        LogFrame
+    }
+
+    /// <summary>Lifecycle of an import job: uploaded → validated (with report) → committed (in Submitted state) or failed.</summary>
+    public enum ImportStatus
+    {
+        Uploaded,
+        Validated,
+        Committed,
+        Failed
+    }
+
     public enum Size
     {
         Small,

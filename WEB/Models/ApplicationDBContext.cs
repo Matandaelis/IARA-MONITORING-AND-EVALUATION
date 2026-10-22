@@ -52,6 +52,7 @@ namespace Monic.Web.Models
             ConfigureLogFrameV2Model(modelBuilder);
             ConfigureCollaborationModel(modelBuilder);
             ConfigureBudgetModel(modelBuilder);
+            ConfigureImportModel(modelBuilder);
 
             modelBuilder.Entity<User>(o => o.HasMany(u => u.Roles).WithOne().HasForeignKey(ur => ur.UserId).IsRequired());
 

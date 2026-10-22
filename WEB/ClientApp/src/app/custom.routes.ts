@@ -22,6 +22,7 @@ import { MeReviewDetailComponent } from './mereview/mereview-detail.component';
 import { BudgetsComponent } from './budget/budgets.component';
 import { BudgetCategoriesComponent } from './budget/budgetcategories.component';
 import { FxRatesComponent } from './budget/fxrates.component';
+import { ImportsComponent } from './imports/imports.component';
 
 export const CustomRoutes: Route[] = [
     {
@@ -229,6 +230,16 @@ export const CustomRoutes: Route[] = [
         component: FxRatesComponent,
         data: {
             breadcrumb: 'FX Rates',
+            menu: 'home'
+        }
+    },
+    {
+        path: 'imports',
+        canActivate: [AccessGuard],
+        canActivateChild: [AccessGuard],
+        component: ImportsComponent,
+        data: {
+            breadcrumb: 'Data Import',
             menu: 'home'
         }
     },
