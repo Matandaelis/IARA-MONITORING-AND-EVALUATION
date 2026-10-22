@@ -9,8 +9,9 @@ export class DisaggregationService {
 
     constructor(private http: HttpClient) { }
 
-    getGroups(): Observable<DisaggregationGroup[]> {
-        return this.http.get<DisaggregationGroup[]>(`${environment.baseApiUrl}disaggregationgroups`);
+    getGroups(includeInactive: boolean = false): Observable<DisaggregationGroup[]> {
+        const query = includeInactive ? '?includeInactive=true' : '';
+        return this.http.get<DisaggregationGroup[]>(`${environment.baseApiUrl}disaggregationgroups${query}`);
     }
 
     getGroup(groupId: string): Observable<DisaggregationGroup> {

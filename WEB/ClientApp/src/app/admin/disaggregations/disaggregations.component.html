@@ -1,0 +1,200 @@
+<app-page-title title="Disaggregation Groups" />
+
+<div class="container-fluid">
+
+    <div class="row mb-3 align-items-center">
+        <div class="col">
+            <p class="text-muted mb-0">
+                Manage demographic and categorical breakdown groups (e.g. Gender, Age Group, Facility Setting)
+                used to disaggregate indicator target and observation values.
+            </p>
+        </div>
+        <div class="col-auto d-flex gap-2 align-items-center">
+            <div class="form-check me-2">
+                <input class="form-check-input" type="checkbox" id="showInactiveToggle" [(ngModel)]="showInactive" (change)="onShowInactiveChange()" />
+                <label class="form-check-label small text-muted" for="showInactiveToggle">
+                    Show Inactive
+                </label>
+            </div>
+            <button type="button" class="btn btn-primary" (click)="openCreate()" *ngIf="canEdit">
+                <i class="fas fa-plus me-2"></i>Add Group
+            </button>
+        </div>
+    </div>
+
+    <!-- Search filter bar -->
+    <div class="row mb-3">
+        <div class="col-md-5 col-lg-4">
+            <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input type="text" class="form-control" placeholder="Search groups or options..." [(ngModel)]="searchTerm" (ngModelChange)="filter()" />
+                <button class="btn btn-outline-secondary" type="button" *ngIf="searchTerm" (click)="searchTerm=''; filter()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Groups list card -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div *ngIf="loading" class="text-center text-muted py-4">
+                <span class="spinner-border spinner-border-sm me-2"></span>Loading disaggregation groups…
+            </div>
+
+            <div *ngIf="!loading && filteredGroups.length === 0" class="text-center text-muted py-4">
+                <i class="fas fa-layer-group fa-2x mb-2 text-muted d-block"></i>
+                No disaggregation groups found. Click <strong>Add Group</strong> to create one.
+            </div>
+
+            <div class="table-responsive" *ngIf="!loading && filteredGroups.length > 0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="min-width: 180px;">Group Name</th>
+                            <th>Description</th>
+                            <th style="min-width: 250px;">Options Breakdown</th>
+                            <th class="text-center" style="width: 110px;">Status</th>
+                            <th class="text-end" style="width: 120px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let group of filteredGroups">
+                            <td>
+                                <i class="fas fa-layer-group text-primary me-2"></i>
+                                <strong>{{ group.name }}</strong>
+                            </td>
+                            <td>
+                                <span *ngIf="group.description">{{ group.description }}</span>
+                                <span *ngIf="!group.description" class="text-muted fst-italic">No description</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary me-1">{{ (group.options?.length || 0) }} option{{ (group.options?.length !== 1 ? 's' : '') }}</span>
+                                <span *ngFor="let opt of (group.options || [])" class="badge bg-light text-dark border me-1 mb-1">
+                                    <strong>{{ opt.code }}:</strong> {{ opt.name }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge" [ngClass]="group.isActive ? 'bg-success' : 'bg-secondary'">
+                                    {{ group.isActive ? 'Active' : 'Inactive' }}
+                                </span>
+                            </td>
+                            <td class="text-end text-nowrap" *ngIf="canEdit">
+                                <button type="button" class="btn btn-sm btn-link p-0 me-3 text-primary" (click)="openEdit(group)" title="Edit Group">
+                                    <i class="fas fa-pencil"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-link p-0 text-danger" (click)="deleteGroup(group)" title="Delete / Deactivate Group">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Create / Edit Modal -->
+<ng-template #groupModal let-modal>
+    <form (ngSubmit)="save()" #groupForm="ngForm">
+        <div class="modal-header">
+            <h5 class="modal-title">
+                <i class="fas fa-layer-group me-2 text-primary"></i>
+                {{ isNew ? 'Add Disaggregation Group' : 'Edit Disaggregation Group' }}
+            </h5>
+            <button type="button" class="btn-close" (click)="cancel()" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+            <!-- Basic info -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Group Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="groupName" [(ngModel)]="editingGroup.name"
+                       maxlength="100" placeholder="e.g. Gender, Age Bracket, Facility Type" required />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Description</label>
+                <input type="text" class="form-control" name="groupDescription" [(ngModel)]="editingGroup.description"
+                       maxlength="250" placeholder="Brief explanation of this disaggregation category" />
+            </div>
+
+            <div class="form-check mb-4">
+                <input class="form-check-input" type="checkbox" id="modalIsActive" name="isActive" [(ngModel)]="editingGroup.isActive" />
+                <label class="form-check-label" for="modalIsActive">
+                    Active (available for selection on indicators)
+                </label>
+            </div>
+
+            <!-- Child Options Table -->
+            <div class="card bg-light border">
+                <div class="card-header d-flex justify-content-between align-items-center py-2">
+                    <span class="fw-bold"><i class="fas fa-list-ol me-2"></i>Child Breakdown Options</span>
+                    <button type="button" class="btn btn-sm btn-outline-primary" (click)="addOptionRow()">
+                        <i class="fas fa-plus me-1"></i>Add Option
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div *ngIf="!editingGroup.options || editingGroup.options.length === 0" class="text-center text-muted py-3">
+                        No options added yet. Click <strong>Add Option</strong> to add options like Male, Female, etc.
+                    </div>
+
+                    <div class="table-responsive" *ngIf="editingGroup.options && editingGroup.options.length > 0">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead>
+                                <tr class="table-light">
+                                    <th style="width: 45px;" class="text-center">#</th>
+                                    <th style="width: 140px;">Code <span class="text-danger">*</span></th>
+                                    <th>Option Name <span class="text-danger">*</span></th>
+                                    <th style="width: 90px;" class="text-center">Order</th>
+                                    <th style="width: 45px;" class="text-center"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let opt of editingGroup.options; let i = index">
+                                    <td class="text-center text-muted small fw-bold">{{ i + 1 }}</td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm text-uppercase"
+                                               [name]="'optCode_' + i" [(ngModel)]="opt.code"
+                                               maxlength="20" placeholder="e.g. M" required />
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm"
+                                               [name]="'optName_' + i" [(ngModel)]="opt.name"
+                                               maxlength="100" placeholder="e.g. Male" required />
+                                    </td>
+                                    <td class="text-center text-nowrap">
+                                        <button type="button" class="btn btn-sm btn-link p-0 me-1" (click)="moveOptionUp(i)"
+                                                [disabled]="i === 0" title="Move Up">
+                                            <i class="fas fa-arrow-up"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-link p-0" (click)="moveOptionDown(i)"
+                                                [disabled]="i === editingGroup.options.length - 1" title="Move Down">
+                                            <i class="fas fa-arrow-down"></i>
+                                        </button>
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-link p-0 text-danger" (click)="removeOptionRow(i)" title="Remove Option">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="saving || !editingGroup.name || !editingGroup.options?.length">
+                <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
+                Save Disaggregation Group
+            </button>
+        </div>
+    </form>
+</ng-template>

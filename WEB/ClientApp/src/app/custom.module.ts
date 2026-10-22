@@ -61,6 +61,7 @@ import { BudgetCategoriesComponent } from './budget/budgetcategories.component';
 import { BudgetLineModal } from './budget/budgetline.modal';
 import { FxRatesComponent } from './budget/fxrates.component';
 import { ImportsComponent } from './imports/imports.component';
+import { DisaggregationsComponent } from './admin/disaggregations/disaggregations.component';
 
 @NgModule({
     imports: [
@@ -126,7 +127,8 @@ import { ImportsComponent } from './imports/imports.component';
         BudgetCategoriesComponent,
         BudgetLineModal,
         FxRatesComponent,
-        ImportsComponent
+        ImportsComponent,
+        DisaggregationsComponent
     ],
     exports: [
         GanttComponent,

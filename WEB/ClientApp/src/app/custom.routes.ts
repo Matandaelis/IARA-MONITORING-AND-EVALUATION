@@ -23,6 +23,7 @@ import { BudgetsComponent } from './budget/budgets.component';
 import { BudgetCategoriesComponent } from './budget/budgetcategories.component';
 import { FxRatesComponent } from './budget/fxrates.component';
 import { ImportsComponent } from './imports/imports.component';
+import { DisaggregationsComponent } from './admin/disaggregations/disaggregations.component';
 
 export const CustomRoutes: Route[] = [
     {
@@ -241,6 +242,16 @@ export const CustomRoutes: Route[] = [
         data: {
             breadcrumb: 'Data Import',
             menu: 'home'
+        }
+    },
+    {
+        path: 'admin/disaggregations',
+        canActivate: [AccessGuard],
+        canActivateChild: [AccessGuard],
+        component: DisaggregationsComponent,
+        data: {
+            breadcrumb: 'Disaggregation Groups',
+            menu: 'admin'
         }
     },
     {

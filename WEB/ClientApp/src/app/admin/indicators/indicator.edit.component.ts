@@ -49,6 +49,9 @@ export class IndicatorEditComponent extends ItemComponent implements OnInit {
     public disaggregationGroups: DisaggregationGroup[] = [];
     public targets: IndicatorTarget[] = [];
     public variance: IndicatorVariance;
+    public breakdownChartType: 'bar' | 'donut' = 'bar';
+    public breakdownChartOptions: any = null;
+    public selectedBreakdownPeriod: string = 'all';
     public newTarget: IndicatorTarget = new IndicatorTarget();
     public showAddTarget: boolean = false;
     public dateTypes: Enum[] = Enums.DateTypes;
@@ -115,7 +118,12 @@ export class IndicatorEditComponent extends ItemComponent implements OnInit {
     ngOnInit(): void {
 
         this.disaggregationService.getGroups().subscribe({
-            next: groups => this.disaggregationGroups = groups,
+            next: groups => {
+                this.disaggregationGroups = groups;
+                if (this.variance) {
+                    this.buildBreakdownChart();
+                }
+            },
             error: err => this.errorService.handleError(err, "Disaggregation Groups", "Load")
         });
 
@@ -661,7 +669,10 @@ export class IndicatorEditComponent extends ItemComponent implements OnInit {
             error: err => this.errorService.handleError(err, "Indicator Targets", "Load")
         });
         this.indicatorTargetService.getVariance(this.indicator.indicatorId).subscribe({
-            next: variance => this.variance = variance,
+            next: variance => {
+                this.variance = variance;
+                this.buildBreakdownChart();
+            },
             error: () => {}
         });
     }
@@ -753,6 +764,201 @@ export class IndicatorEditComponent extends ItemComponent implements OnInit {
             return p.percentageAchievement > 110 ? 'Exceeding' : (p.percentageAchievement >= 75 ? 'On Track' : 'Underperforming');
         }
         return 'Reported';
+    }
+
+    get disaggregationGroupName(): string {
+        if (!this.indicator.disaggregationGroupId) return '';
+        const grp = this.disaggregationGroups.find(g => g.disaggregationGroupId === this.indicator.disaggregationGroupId);
+        return grp ? grp.name : 'Configured Disaggregation';
+    }
+
+    get hasDisaggregationData(): boolean {
+        if (this.indicator && this.indicator.disaggregationGroupId) return true;
+        return !!(this.variance?.periods?.some(p => p.disaggregations && p.disaggregations.length > 0));
+    }
+
+    get breakdownOptions(): { code: string; name: string }[] {
+        const optionMap = new Map<string, string>();
+
+        if (this.indicator.disaggregationGroupId) {
+            const grp = this.disaggregationGroups.find(g => g.disaggregationGroupId === this.indicator.disaggregationGroupId);
+            if (grp && grp.options) {
+                for (const opt of grp.options) {
+                    optionMap.set(opt.code, opt.name);
+                }
+            }
+        }
+
+        if (this.variance?.periods) {
+            for (const p of this.variance.periods) {
+                if (p.disaggregations) {
+                    for (const d of p.disaggregations) {
+                        const code = d.optionCode || d.optionName || 'Unknown';
+                        const name = d.optionName || d.optionCode || 'Unknown';
+                        if (!optionMap.has(code)) {
+                            optionMap.set(code, name);
+                        }
+                    }
+                }
+            }
+        }
+
+        return Array.from(optionMap.entries()).map(([code, name]) => ({ code, name }));
+    }
+
+    getOptionPeriodValue(period: any, code: string): number {
+        if (!period || !period.disaggregations) return 0;
+        const d = period.disaggregations.find((x: any) => x.optionCode === code || x.optionName === code);
+        return d ? d.value : 0;
+    }
+
+    getPeriodDisaggregatedTotal(period: any): number {
+        if (!period || !period.disaggregations) return 0;
+        return period.disaggregations.reduce((sum: number, d: any) => sum + (d.value || 0), 0);
+    }
+
+    getOptionGrandTotal(code: string): number {
+        if (!this.variance?.periods) return 0;
+        return this.variance.periods.reduce((sum, p) => sum + this.getOptionPeriodValue(p, code), 0);
+    }
+
+    getGrandDisaggregatedTotal(): number {
+        if (!this.variance?.periods) return 0;
+        return this.variance.periods.reduce((sum, p) => sum + this.getPeriodDisaggregatedTotal(p), 0);
+    }
+
+    setBreakdownChartType(type: 'bar' | 'donut'): void {
+        this.breakdownChartType = type;
+        this.buildBreakdownChart();
+    }
+
+    onBreakdownPeriodChange(): void {
+        if (this.breakdownChartType === 'donut') {
+            this.buildBreakdownChart();
+        }
+    }
+
+    buildBreakdownChart(): void {
+        const periods = this.variance?.periods || [];
+        const options = this.breakdownOptions;
+
+        const hasAnyDisaggregationValues = periods.some(p => p.disaggregations && p.disaggregations.length > 0);
+        if (periods.length === 0 || options.length === 0 || !hasAnyDisaggregationValues) {
+            this.breakdownChartOptions = null;
+            return;
+        }
+
+        const colors = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#6366f1', '#14b8a6'];
+
+        if (this.breakdownChartType === 'bar') {
+            const xData = periods.map(p => p.periodName);
+            const seriesList = options.map((opt, idx) => ({
+                name: opt.name,
+                type: 'bar',
+                stack: 'total',
+                emphasis: { focus: 'series' },
+                itemStyle: {
+                    color: colors[idx % colors.length]
+                },
+                data: periods.map(p => this.getOptionPeriodValue(p, opt.code))
+            }));
+
+            this.breakdownChartOptions = {
+                title: {
+                    text: 'Demographic Breakdown Over Time (Stacked)',
+                    subtext: this.disaggregationGroupName ? `Category: ${this.disaggregationGroupName}` : '',
+                    left: 'center',
+                    textStyle: { fontSize: 13, fontWeight: 'bold' }
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'shadow' }
+                },
+                legend: {
+                    bottom: 0,
+                    data: options.map(o => o.name)
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '14%',
+                    top: '16%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: xData,
+                    axisLabel: { interval: 0, rotate: xData.length > 6 ? 30 : 0 }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'Disaggregated Value'
+                },
+                series: seriesList
+            };
+        } else {
+            let pieData: { name: string; value: number }[] = [];
+
+            if (this.selectedBreakdownPeriod === 'all') {
+                pieData = options.map(opt => ({
+                    name: opt.name,
+                    value: this.getOptionGrandTotal(opt.code)
+                }));
+            } else {
+                const targetPeriod = periods.find(p => p.dateId === this.selectedBreakdownPeriod);
+                if (targetPeriod) {
+                    pieData = options.map(opt => ({
+                        name: opt.name,
+                        value: this.getOptionPeriodValue(targetPeriod, opt.code)
+                    }));
+                }
+            }
+
+            const total = pieData.reduce((acc, curr) => acc + curr.value, 0);
+
+            this.breakdownChartOptions = {
+                title: {
+                    text: 'Demographic Share Breakdown',
+                    subtext: this.selectedBreakdownPeriod === 'all'
+                        ? `All Periods Combined (Total: ${total})`
+                        : `Period: ${periods.find(p => p.dateId === this.selectedBreakdownPeriod)?.periodName || ''} (Total: ${total})`,
+                    left: 'center',
+                    textStyle: { fontSize: 13, fontWeight: 'bold' }
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{a} <br/>{b}: <strong>{c}</strong> ({d}%)'
+                },
+                legend: {
+                    bottom: 0,
+                    orient: 'horizontal'
+                },
+                color: colors,
+                series: [{
+                    name: 'Demographic Share',
+                    type: 'pie',
+                    radius: ['42%', '70%'],
+                    avoidLabelOverlap: false,
+                    itemStyle: {
+                        borderRadius: 6,
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    },
+                    label: {
+                        show: true,
+                        formatter: '{b}: {c} ({d}%)'
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: 14,
+                            fontWeight: 'bold'
+                        }
+                    },
+                    data: pieData
+                }]
+            };
+        }
     }
 
 }
