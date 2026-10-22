@@ -6,15 +6,20 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Monic.Web.Models;
+using Monic.Web.Services;
 
 namespace Monic.Web.Controllers
 {
     [Route("api/[Controller]"), Authorize]
     public class DataReviewsController : BaseApiController
     {
-        public DataReviewsController(IDbContextFactory<ApplicationDbContext> dbFactory, UserManager<User> um, AppSettings appSettings)
+        private readonly NotificationDispatcher notificationDispatcher;
+
+        public DataReviewsController(IDbContextFactory<ApplicationDbContext> dbFactory, UserManager<User> um, AppSettings appSettings,
+            NotificationDispatcher notificationDispatcher)
             : base(dbFactory, um, appSettings)
         {
+            this.notificationDispatcher = notificationDispatcher;
         }
 
         [HttpGet, AuthorizeRoles(Roles.Administrator)]
@@ -70,9 +75,12 @@ namespace Monic.Web.Controllers
             var isNew = dataReviewDTO.DataReviewId == Guid.Empty;
 
             DataReview dataReview;
+            ReviewResult? previousResult;
             if (isNew)
             {
                 dataReview = new DataReview();
+
+                previousResult = null;
 
                 db.Entry(dataReview).State = EntityState.Added;
             }
@@ -84,12 +92,19 @@ namespace Monic.Web.Controllers
                 if (dataReview == null)
                     return NotFound();
 
+                previousResult = dataReview.ReviewResult;
+
                 db.Entry(dataReview).State = EntityState.Modified;
             }
 
             ModelFactory.Hydrate(dataReview, dataReviewDTO);
 
+            var resultChanged = !isNew && previousResult.HasValue && dataReview.ReviewResult != previousResult.Value;
+
             await db.SaveChangesAsync();
+
+            if (resultChanged)
+                await CreateReviewOutcomeNotificationAsync(dataReview);
 
             return await Get(dataReview.DataReviewId);
         }
@@ -127,6 +142,26 @@ namespace Monic.Web.Controllers
             }
 
             return Ok();
+        }
+
+        /// <summary>Notifies the review's submitter when the outcome (accepted/rejected) changes, unless the reviewer is the submitter.</summary>
+        private async System.Threading.Tasks.Task CreateReviewOutcomeNotificationAsync(DataReview dataReview)
+        {
+            if (dataReview.UserId == CurrentUser.Id) return;
+
+            var outcome = dataReview.ReviewResult == ReviewResult.Accepted ? "approved" : "rejected";
+
+            var submitter = await db.Users
+                .FirstOrDefaultAsync(o => o.Id == dataReview.UserId);
+
+            await notificationDispatcher.DispatchAsync(
+                db,
+                submitter,
+                "DataReview",
+                $"Your submitted data has been {outcome}",
+                string.IsNullOrWhiteSpace(dataReview.Note) ? null : dataReview.Note.Substring(0, Math.Min(dataReview.Note.Length, 300)),
+                "/dataentry",
+                CurrentUser.Id);
         }
 
     }

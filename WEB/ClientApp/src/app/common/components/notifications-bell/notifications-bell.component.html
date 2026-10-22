@@ -1,0 +1,48 @@
+<div class="dropdown" ngbDropdown (shown)="refresh()">
+    <a href="javascript: void(0);" ngbDropdownToggle
+       class="d-flex align-items-center justify-content-center bg-white rounded-circle shadow-sm mx-1 mx-lg-2 w-40px h-40px position-relative link-secondary no-arrow"
+       role="button" aria-haspopup="true" aria-expanded="false" aria-label="Notifications">
+        <i class="far fa-bell"></i>
+        <span *ngIf="unreadCount > 0" class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger">
+            {{ unreadCount > 99 ? '99+' : unreadCount }}
+            <span class="visually-hidden">unread notifications</span>
+        </span>
+    </a>
+
+    <div class="dropdown-menu dropdown-menu-end notifications-menu border-dark" ngbDropdownMenu>
+
+        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+            <h6 class="mb-0">Notifications</h6>
+            <button type="button" class="btn btn-sm btn-link p-0" (click)="markAllRead()" [disabled]="unreadCount === 0">
+                Mark all as read
+            </button>
+        </div>
+
+        <div class="notifications-list">
+            <div *ngIf="loading" class="text-center text-muted py-3">
+                <span class="spinner-border spinner-border-sm me-2"></span>Loading…
+            </div>
+
+            <div *ngIf="!loading && notifications.length === 0" class="text-center text-muted py-3">
+                No notifications yet.
+            </div>
+
+            <a href="javascript: void(0);" *ngFor="let notification of notifications"
+               class="list-group-item list-group-item-action border-0 d-flex"
+               [ngClass]="{ 'unread': !notification.isRead }"
+               (click)="open(notification)">
+                <div class="avatar avatar-circle avatar-xs me-2 mt-1">
+                    <span class="avatar-title text-bg-primary-soft"><i class="fas {{ iconFor(notification) }}"></i></span>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="d-flex w-100 justify-content-between">
+                        <strong class="me-2">{{ notification.title }}</strong>
+                        <small class="text-muted text-nowrap">{{ notification.createdOnUtc | momentPipe:"fromNow" }}</small>
+                    </div>
+                    <small class="text-secondary text-wrap">{{ notification.body }}</small>
+                </div>
+            </a>
+        </div>
+
+    </div>
+</div>

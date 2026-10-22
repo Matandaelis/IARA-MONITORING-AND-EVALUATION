@@ -288,6 +288,18 @@
 
             </ng-container>
 
+            <ng-container ngbNavItem>
+
+                <a ngbNavLink>Comments</a>
+
+                <ng-template ngbNavContent>
+
+                    <app-comments subjectType="Response" [subjectId]="response.responseId" [notificationLink]="notificationLink"></app-comments>
+
+                </ng-template>
+
+            </ng-container>
+
         </nav>
 
         <div [ngbNavOutlet]="nav" class="mt-1"></div>

@@ -40,6 +40,12 @@ export class ResponseEditComponent implements OnInit, OnDestroy {
     public entityType: EntityType;
     public dateType: Enum;
 
+    /** Route used by comment mention notifications to navigate back to this record. */
+    get notificationLink(): string {
+        if (this.isNew || !this.response.responseId || this.response.responseId === "00000000-0000-0000-0000-000000000000") return null;
+        return `/admin/questionnaires/${this.response.questionnaireId}/responses/${this.response.responseId}`;
+    }
+
     constructor(
         private questionnaireService: QuestionnaireService,
         private router: Router,

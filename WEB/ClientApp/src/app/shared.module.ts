@@ -113,6 +113,8 @@ import { QuestionnaireGenerateSummariesComponent } from './admin/questionnaires/
 import { FrequencyAdverb } from './common/pipes/frequencyadverbpipe';
 import { QuillModule } from 'ngx-quill';
 import { PrimeNgModule } from './prime-ng.module';
+import { CommentsComponent } from './common/components/comments/comments.component';
+import { NotificationsBellComponent } from './common/components/notifications-bell/notifications-bell.component';
 
 @NgModule({
     imports: [
@@ -232,7 +234,9 @@ import { PrimeNgModule } from './prime-ng.module';
         TheoryOfChangeSelectComponent,
         TheoryOfChangeModalComponent,
         UserSelectComponent,
-        UserModalComponent
+        UserModalComponent,
+        CommentsComponent,
+        NotificationsBellComponent
     ],
     exports: [
         MainComponent,
@@ -343,7 +347,9 @@ import { PrimeNgModule } from './prime-ng.module';
         UserSelectComponent,
         UserModalComponent,
         QuillModule,
-        PrimeNgModule
+        PrimeNgModule,
+        CommentsComponent,
+        NotificationsBellComponent
     ]
 })
 export class SharedModule { }

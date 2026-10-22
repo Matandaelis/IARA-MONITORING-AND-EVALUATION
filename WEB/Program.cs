@@ -136,6 +136,11 @@ builder.Services.AddControllersWithViews(options =>
         options.JsonSerializerOptions.Converters.Add(
             new DateTimeConverter()));
 
+// Real-time notifications (pushes notification + comment events to connected clients)
+builder.Services.AddSignalR();
+builder.Services.AddScoped<Monic.Web.Services.NotificationDispatcher>();
+builder.Services.AddHttpClient();
+
 var policyName = "_allowSpecificOrigins";
 
 if (builder.Environment.IsDevelopment())
@@ -421,6 +426,8 @@ app.MapHealthChecks("/health");
 app.MapGet("/healthz", () => Results.Ok(new { status = "Healthy" }));
 
 app.MapControllers();
+
+app.MapHub<Monic.Web.Hubs.NotificationHub>("/hubs/notifications");
 
 app.MapFallbackToFile("index.html");
 

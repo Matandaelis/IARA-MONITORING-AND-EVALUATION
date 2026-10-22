@@ -142,6 +142,9 @@ builder.Services
                 // Register the ASP.NET Core host.
                 options.UseAspNetCore();
 
+                // NOTE: SignalR clients use long polling, so access tokens always arrive
+                // in the Authorization header — no query-string token support is needed.
+
                 // For applications that need immediate access token or authorization
                 // revocation, the database entry of the received tokens and their
                 // associated authorizations can be validated for each API call.

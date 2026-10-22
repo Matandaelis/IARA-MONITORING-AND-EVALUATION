@@ -1,0 +1,90 @@
+<div class="card comments-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-comments me-2"></i>Comments</span>
+        <button type="button" class="btn btn-sm btn-link" (click)="load()" title="Refresh">
+            <i class="fas fa-rotate" [ngClass]="{ 'fa-spin': loading }"></i>
+        </button>
+    </div>
+
+    <div class="card-body p-0">
+
+        <div *ngIf="loading" class="p-3 text-center text-muted">
+            <span class="spinner-border spinner-border-sm me-2"></span>Loading comments…
+        </div>
+
+        <div *ngIf="!loading && comments.length === 0" class="p-3 text-center text-muted">
+            No comments yet. Be the first to comment.
+        </div>
+
+        <ul class="list-group list-group-flush" *ngIf="!loading">
+            <li class="list-group-item" *ngFor="let comment of comments">
+                <div class="d-flex">
+                    <div class="avatar avatar-circle avatar-xs me-2 mt-1">
+                        <span class="avatar-title text-bg-info-soft">{{ initials(comment.createdBy?.fullName || comment.createdBy?.email) }}</span>
+                    </div>
+
+                    <div class="flex-grow-1">
+                        <div class="d-flex w-100 justify-content-between">
+                            <strong>{{ comment.createdBy?.fullName || comment.createdBy?.email }}</strong>
+                            <small class="text-muted">{{ comment.createdOnUtc | momentPipe:"fromNow" }}</small>
+                        </div>
+
+                        <div class="comment-body">{{ comment.body }}</div>
+
+                        <div class="d-flex align-items-center mt-1">
+                            <button type="button" class="btn btn-sm btn-link p-0 me-3 reaction-button"
+                                    [ngClass]="{ 'reacted': comment.reactionOf(currentUserId)?.reaction === 'like' }"
+                                    (click)="toggleReaction(comment, 'like')">
+                                <i class="fas fa-thumbs-up"></i> {{ countReactions(comment, 'like') > 0 ? countReactions(comment, 'like') : '' }}
+                            </button>
+
+                            <button type="button" class="btn btn-sm btn-link p-0 reaction-button"
+                                    [ngClass]="{ 'reacted': comment.reactionOf(currentUserId)?.reaction === 'dislike' }"
+                                    (click)="toggleReaction(comment, 'dislike')">
+                                <i class="fas fa-thumbs-down"></i> {{ countReactions(comment, 'dislike') > 0 ? countReactions(comment, 'dislike') : '' }}
+                            </button>
+
+                            <button type="button" *ngIf="canDelete(comment)" class="btn btn-sm btn-link p-0 text-danger ms-auto" (click)="delete(comment)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </li>
+        </ul>
+
+        <div class="p-3 border-top">
+            <textarea class="form-control" rows="2" [(ngModel)]="body" name="commentBody"
+                      placeholder="Write a comment… use the Mention button to tag someone"
+                      [disabled]="saving"></textarea>
+
+            <div class="d-flex justify-content-between align-items-center mt-2">
+                <div class="dropdown" ngbDropdown #mentionDropdown="ngbDropdown">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" ngbDropdownToggle>
+                        <i class="fas fa-at"></i> Mention
+                    </button>
+                    <div class="dropdown-menu p-2" style="min-width: 260px;" ngbDropdownMenu (click)="$event.stopPropagation()">
+                        <input type="text" class="form-control form-control-sm mb-2" placeholder="Search users…"
+                               [(ngModel)]="mentionSearch" name="mentionSearch" (input)="searchMentions()" />
+                        <div *ngIf="mentionSearching" class="text-center text-muted py-1"><span class="spinner-border spinner-border-sm"></span></div>
+                        <ng-container *ngIf="!mentionSearching">
+                            <button type="button" *ngFor="let user of mentionResults" class="dropdown-item text-wrap"
+                                    (click)="addMention(user); mentionDropdown.close()">
+                                {{ user.fullName }} <small class="text-muted">{{ user.email }}</small>
+                            </button>
+                            <div *ngIf="mentionSearch && mentionSearch.length >= 2 && mentionResults.length === 0" class="px-2 py-1 text-muted small">
+                                No users found
+                            </div>
+                        </ng-container>
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-sm btn-primary" (click)="save()" [disabled]="saving || !body || !body.trim()">
+                    <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
+                    Post
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>

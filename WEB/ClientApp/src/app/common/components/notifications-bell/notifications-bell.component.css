@@ -1,0 +1,21 @@
+.notifications-menu {
+    width: 360px;
+    max-width: 90vw;
+}
+
+.notifications-list {
+    max-height: 420px;
+    overflow-y: auto;
+}
+
+.notifications-list .unread {
+    background-color: rgba(37, 99, 235, 0.06);
+}
+
+.notifications-list .unread strong {
+    color: #2563eb;
+}
+
+.no-arrow::after {
+    display: none;
+}

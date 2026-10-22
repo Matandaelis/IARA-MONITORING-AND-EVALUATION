@@ -1,0 +1,29 @@
+.comments-card .comment-body {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.comments-card .reaction-button {
+    color: #6c757d;
+    text-decoration: none;
+}
+
+.comments-card .reaction-button.reacted {
+    color: #2563eb;
+    font-weight: 600;
+}
+
+.comments-card .avatar-xs {
+    width: 2rem;
+    height: 2rem;
+}
+
+.comments-card .avatar-title {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    border-radius: 50%;
+}
