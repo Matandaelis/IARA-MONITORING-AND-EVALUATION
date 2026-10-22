@@ -16,7 +16,13 @@ namespace Monic.Web.Models
         [MaxLength(7)]
         public string Colour { get; set; }
 
+        /// <summary>The organisational unit (Entity) that owns this project. Used for access scoping and roll-ups.</summary>
+        public Guid? EntityId { get; set; }
+
         public virtual ICollection<Milestone> Milestones { get; set; } = new List<Milestone>();
+
+        [ForeignKey("EntityId")]
+        public virtual Entity Entity { get; set; }
 
         public Project()
         {

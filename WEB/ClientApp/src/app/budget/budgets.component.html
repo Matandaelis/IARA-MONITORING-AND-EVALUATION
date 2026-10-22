@@ -1,0 +1,213 @@
+<app-page-title title="Budget & Expenditures" />
+
+<div class="container-fluid">
+
+    <div class="row mb-3 align-items-center">
+        <div class="col-auto">
+            <label class="form-label mb-0 me-2">Project</label>
+            <select class="form-select d-inline-block w-auto" [(ngModel)]="selectedProjectId" (ngModelChange)="projectChanged()" name="selectedProject">
+                <option *ngFor="let project of projects" [value]="project.projectId">{{ project.name }}</option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <label class="form-label mb-0 me-2">Currency</label>
+            <select class="form-select d-inline-block w-auto" [(ngModel)]="currencyMode" (ngModelChange)="currencyModeChanged()" name="currencyMode">
+                <option value="base">Base currency</option>
+                <option value="original">Original currencies</option>
+            </select>
+        </div>
+        <div class="col-auto ms-auto">
+            <a class="btn btn-outline-secondary me-2" routerLink="/budgetcategories"><i class="fas fa-tags me-2"></i>Categories</a>
+            <a class="btn btn-outline-secondary me-2" routerLink="/fxrates" appHasRole="Finance"><i class="fas fa-money-bill-transfer me-2"></i>FX Rates</a>
+            <button type="button" class="btn btn-primary" (click)="addLine()" [disabled]="!selectedProjectId" appHasRole="Manager">
+                <i class="fas fa-plus me-2"></i>Add Budget Line
+            </button>
+        </div>
+    </div>
+
+    <div *ngIf="!selectedProjectId" class="alert alert-info">Select a project to view its budget.</div>
+
+    <div class="alert alert-warning" *ngIf="summary.missingRates && summary.missingRates.length > 0">
+        <i class="fas fa-triangle-exclamation me-2"></i>
+        No FX rate to <strong>{{ summary.baseCurrency }}</strong> for: <strong>{{ summary.missingRates.join(', ') }}</strong>.
+        Lines in these currencies are excluded from base-currency totals.
+        <a routerLink="/fxrates" class="alert-link ms-2">Add rates</a>
+    </div>
+
+    <!-- Totals -->
+    <div class="row mb-4" *ngIf="selectedProjectId">
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small text-uppercase">Planned</div>
+                    <div class="fs-2 fw-bold">{{ totals.planned | number:'1.2-2' }} <small class="fs-6 text-muted">{{ totals.currency }}</small></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small text-uppercase">Committed</div>
+                    <div class="fs-2 fw-bold">{{ totals.committed | number:'1.2-2' }} <small class="fs-6 text-muted">{{ totals.currency }}</small></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small text-uppercase">Disbursed</div>
+                    <div class="fs-2 fw-bold">{{ totals.disbursed | number:'1.2-2' }} <small class="fs-6 text-muted">{{ totals.currency }}</small></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small text-uppercase">Expended · Utilization</div>
+                    <div class="fs-2 fw-bold" [ngClass]="{ 'text-danger': overallUtilization > 100 }">{{ totals.actual | number:'1.2-2' }}
+                        <small class="fs-6 text-muted">{{ totals.currency }} · {{ overallUtilization }}%</small>
+                    </div>
+                    <div class="progress mt-2" style="height: 6px;">
+                        <div class="progress-bar" [ngClass]="progressBarClass(overallUtilization)"
+                             [style.width.%]="overallUtilization > 100 ? 100 : overallUtilization"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Burn chart -->
+    <div class="card mb-4" *ngIf="selectedProjectId && burnChartOptions">
+        <div class="card-header"><i class="fas fa-chart-line me-2"></i>Burn-Up (S-Curve) — base currency</div>
+        <div class="card-body">
+            <div echarts [options]="burnChartOptions" style="height: 320px;"></div>
+        </div>
+    </div>
+
+    <!-- Cost per outcome -->
+    <div class="card mb-4" *ngIf="selectedProjectId">
+        <div class="card-header"><i class="fas fa-calculator me-2"></i>Cost per Outcome</div>
+        <div class="card-body">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-6">
+                    <label class="form-label mb-1">Indicator</label>
+                    <select class="form-select" [(ngModel)]="selectedIndicatorId" (ngModelChange)="indicatorChanged()" (click)="openIndicatorPicker()" name="selectedIndicator">
+                        <option value="">Select an indicator…</option>
+                        <option *ngFor="let indicator of indicators" [value]="indicator.indicatorId">{{ indicator.code ? indicator.code + ' — ' : '' }}{{ indicator.name }}</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row mt-3" *ngIf="costPerOutcome">
+                <div class="col-md-4">
+                    <div class="text-muted small text-uppercase">Expended (base)</div>
+                    <div class="fs-4 fw-bold">{{ costPerOutcome.expended | number:'1.2-2' }} {{ costPerOutcome.currency }}</div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-muted small text-uppercase">Latest approved actual</div>
+                    <div class="fs-4 fw-bold">{{ costPerOutcome.outcomeValue | number:'1.0-4' }}
+                        <small class="text-muted" *ngIf="costPerOutcome.outcomeDateUtc">{{ costPerOutcome.outcomeDateUtc | momentPipe:'DD MMM YYYY' }}</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-muted small text-uppercase">Cost per Outcome</div>
+                    <div class="fs-4 fw-bold text-primary">{{ costPerOutcome.costPerOutcome | number:'1.2-4' }} {{ costPerOutcome.currency }}</div>
+                </div>
+            </div>
+
+            <div class="text-muted mt-3" *ngIf="costPerOutcome && !costPerOutcome.outcomeValue">
+                <i class="fas fa-info-circle me-2"></i>No approved data found for this indicator yet — enter and approve data to compute unit costs.
+            </div>
+        </div>
+    </div>
+
+    <!-- Per-category summary -->
+    <div class="card mb-4" *ngIf="selectedProjectId && summary.rows && summary.rows.length > 0">
+        <div class="card-header"><i class="fas fa-chart-pie me-2"></i>By Expense Category</div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th class="text-end">Planned</th>
+                        <th class="text-end">Committed</th>
+                        <th class="text-end">Disbursed</th>
+                        <th class="text-end">Expended</th>
+                        <th class="text-end">Available</th>
+                        <th style="min-width: 160px;">Burn</th>
+                        <th class="text-end">Lines</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let row of summary.rows">
+                        <td>{{ row.categoryName }}</td>
+                        <td class="text-end">{{ row.planned | number:'1.2-2' }}</td>
+                        <td class="text-end">{{ row.committed | number:'1.2-2' }}</td>
+                        <td class="text-end">{{ row.disbursed | number:'1.2-2' }}</td>
+                        <td class="text-end">{{ row.actual | number:'1.2-2' }}</td>
+                        <td class="text-end" [ngClass]="{ 'text-danger': (row.planned - row.committed) < 0 }">{{ row.planned - row.committed | number:'1.2-2' }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                    <div class="progress-bar" [ngClass]="progressBarClass(row.utilization)"
+                                         [style.width.%]="row.utilization > 100 ? 100 : row.utilization"></div>
+                                </div>
+                                <span class="small text-muted">{{ row.utilization }}%</span>
+                            </div>
+                        </td>
+                        <td class="text-end">{{ row.lineCount }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Lines -->
+    <div class="card" *ngIf="selectedProjectId">
+        <div class="card-header"><i class="fas fa-file-invoice-dollar me-2"></i>Budget Lines</div>
+        <div class="card-body p-0">
+            <div *ngIf="loading" class="text-center text-muted py-3"><span class="spinner-border spinner-border-sm me-2"></span>Loading…</div>
+
+            <div *ngIf="!loading && budgetLines.length === 0" class="text-center text-muted py-4">
+                No budget lines yet for this project.
+            </div>
+
+            <div class="table-responsive" *ngIf="!loading && budgetLines.length > 0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Category</th>
+                            <th>Period</th>
+                            <th class="text-end">Planned</th>
+                            <th class="text-end">Committed</th>
+                            <th class="text-end">Disbursed</th>
+                            <th class="text-end">Expended</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let line of budgetLines">
+                            <td>{{ line.description }}</td>
+                            <td>{{ line.budgetCategory?.name }}</td>
+                            <td>
+                                <span *ngIf="line.periodStart || line.periodEnd">
+                                    {{ line.periodStart | date:'MMM y' }} – {{ line.periodEnd | date:'MMM y' }}
+                                </span>
+                            </td>
+                            <td class="text-end">{{ line.plannedAmount | number:'1.2-2' }} {{ line.currency }}</td>
+                            <td class="text-end">{{ line.committedAmount | number:'1.2-2' }}</td>
+                            <td class="text-end">{{ line.disbursedAmount | number:'1.2-2' }}</td>
+                            <td class="text-end">{{ line.actualAmount | number:'1.2-2' }}</td>
+                            <td class="text-end text-nowrap">
+                                <button type="button" class="btn btn-sm btn-link p-0 me-2" (click)="editLine(line)" appHasRole="Manager"><i class="fas fa-pencil"></i></button>
+                                <button type="button" class="btn btn-sm btn-link p-0 text-danger" (click)="deleteLine(line)" appHasRole="Manager"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>

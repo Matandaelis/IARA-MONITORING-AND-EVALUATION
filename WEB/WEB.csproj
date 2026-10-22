@@ -124,4 +124,15 @@
 		</ItemGroup>
 	</Target>
 
+	<!-- Dev loop: when a production SPA bundle already exists, copy it into the build output so
+	     running the server directly (without `npm start` / SpaProxy) serves the UI from wwwroot.
+	     Skipped silently when no dist exists (e.g. fresh clone before the first ng build). -->
+	<Target Name="CopySpaDistToOutput" AfterTargets="Build" Condition=" Exists('$(SpaRoot)dist\index.html') ">
+		<ItemGroup>
+			<DistFilesForOutput Include="$(SpaRoot)dist\**" />
+		</ItemGroup>
+		<Copy SourceFiles="@(DistFilesForOutput)" DestinationFiles="@(DistFilesForOutput->'$(OutDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+		<Message Importance="high" Text="Copied ClientApp dist to $(OutDir)wwwroot (CopySpaDistToOutput)" />
+	</Target>
+
 </Project>

@@ -19,6 +19,9 @@ import { ChartsComponent } from './charts/charts.component';
 import { ChartComponent } from './charts/chart.component';
 import { MeReviewsComponent } from './mereview/mereviews.component';
 import { MeReviewDetailComponent } from './mereview/mereview-detail.component';
+import { BudgetsComponent } from './budget/budgets.component';
+import { BudgetCategoriesComponent } from './budget/budgetcategories.component';
+import { FxRatesComponent } from './budget/fxrates.component';
 
 export const CustomRoutes: Route[] = [
     {
@@ -185,6 +188,47 @@ export const CustomRoutes: Route[] = [
         component: MeReviewDetailComponent,
         data: {
             breadcrumb: 'M&E Review Scorecard',
+            menu: 'home'
+        }
+    },
+    {
+        path: 'budget',
+        canActivate: [AccessGuard],
+        canActivateChild: [AccessGuard],
+        component: BudgetsComponent,
+        pathMatch: 'full',
+        data: {
+            breadcrumb: 'Budget & Expenditures',
+            menu: 'home'
+        }
+    },
+    {
+        path: 'budget/:projectId',
+        canActivate: [AccessGuard],
+        canActivateChild: [AccessGuard],
+        component: BudgetsComponent,
+        data: {
+            breadcrumb: 'Budget & Expenditures',
+            menu: 'home'
+        }
+    },
+    {
+        path: 'budgetcategories',
+        canActivate: [AccessGuard],
+        canActivateChild: [AccessGuard],
+        component: BudgetCategoriesComponent,
+        data: {
+            breadcrumb: 'Budget Categories',
+            menu: 'home'
+        }
+    },
+    {
+        path: 'fxrates',
+        canActivate: [AccessGuard],
+        canActivateChild: [AccessGuard],
+        component: FxRatesComponent,
+        data: {
+            breadcrumb: 'FX Rates',
             menu: 'home'
         }
     },

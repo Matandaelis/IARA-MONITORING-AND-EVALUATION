@@ -56,6 +56,10 @@ import { SerieComponent } from './charts/serie.component';
 import { MeReviewsComponent } from './mereview/mereviews.component';
 import { MeReviewDetailComponent } from './mereview/mereview-detail.component';
 import { MeReviewModalComponent } from './mereview/mereview.modal.component';
+import { BudgetsComponent } from './budget/budgets.component';
+import { BudgetCategoriesComponent } from './budget/budgetcategories.component';
+import { BudgetLineModal } from './budget/budgetline.modal';
+import { FxRatesComponent } from './budget/fxrates.component';
 
 @NgModule({
     imports: [
@@ -116,7 +120,11 @@ import { MeReviewModalComponent } from './mereview/mereview.modal.component';
         SerieComponent,
         MeReviewsComponent,
         MeReviewDetailComponent,
-        MeReviewModalComponent
+        MeReviewModalComponent,
+        BudgetsComponent,
+        BudgetCategoriesComponent,
+        BudgetLineModal,
+        FxRatesComponent
     ],
     exports: [
         GanttComponent,

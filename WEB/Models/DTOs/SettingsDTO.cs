@@ -23,6 +23,9 @@ namespace Monic.Web.Models
         [Required]
         public bool SimplePermissionsMode { get; set; }
 
+        [MaxLength(3), MinLength(3)]
+        public string BaseCurrency { get; set; }
+
         [MaxLength(100)]
         public string ChatGPTAPIKey { get; set; }
 
@@ -45,6 +48,7 @@ namespace Monic.Web.Models
             settingsDTO.UseApprove = settings.UseApprove;
             settingsDTO.UseReject = settings.UseReject;
             settingsDTO.SimplePermissionsMode = settings.SimplePermissionsMode;
+            settingsDTO.BaseCurrency = settings.BaseCurrency;
             settingsDTO.ChatGPTAPIKey = settings.ChatGPTAPIKey;
             settingsDTO.GoogleMapsApiKey = settings.GoogleMapsApiKey;
 
@@ -58,6 +62,7 @@ namespace Monic.Web.Models
             settings.UseApprove = settingsDTO.UseApprove;
             settings.UseReject = settingsDTO.UseReject;
             settings.SimplePermissionsMode = settingsDTO.SimplePermissionsMode;
+            settings.BaseCurrency = settingsDTO.BaseCurrency;
             settings.ChatGPTAPIKey = settingsDTO.ChatGPTAPIKey;
             settings.GoogleMapsApiKey = settingsDTO.GoogleMapsApiKey;
         }

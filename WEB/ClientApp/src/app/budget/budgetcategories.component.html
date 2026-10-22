@@ -1,0 +1,89 @@
+<app-page-title title="Budget Categories" />
+
+<div class="container-fluid">
+
+    <div class="row mb-3 align-items-center">
+        <div class="col">
+            <p class="text-muted mb-0">Expense categories used to classify budget lines across all projects.</p>
+        </div>
+        <div class="col-auto">
+            <button type="button" class="btn btn-primary" (click)="add()" *ngIf="canEdit">
+                <i class="fas fa-plus me-2"></i>Add Category
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            <div *ngIf="loading" class="text-center text-muted py-3"><span class="spinner-border spinner-border-sm me-2"></span>Loading…</div>
+
+            <div *ngIf="!loading && budgetCategories.length === 0" class="text-center text-muted py-4">
+                No budget categories defined yet.
+            </div>
+
+            <div class="table-responsive" *ngIf="!loading && budgetCategories.length > 0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th class="text-end">Sort Order</th>
+                            <th class="text-end">Lines In Use</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let category of budgetCategories">
+                            <td>{{ category.name }}</td>
+                            <td>{{ category.description }}</td>
+                            <td class="text-end">{{ category.sortOrder }}</td>
+                            <td class="text-end">{{ category.lineCount }}</td>
+                            <td class="text-end text-nowrap" *ngIf="canEdit">
+                                <button type="button" class="btn btn-sm btn-link p-0 me-2" (click)="edit(category)"><i class="fas fa-pencil"></i></button>
+                                <button type="button" class="btn btn-sm btn-link p-0 text-danger" [disabled]="category.lineCount > 0"
+                                        (click)="remove(category)" [title]="category.lineCount > 0 ? 'Category is used by budget lines' : 'Delete'">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<ng-template #categoryModal let-modal>
+    <form class="modal-content" #categoryForm="ngForm" (ngSubmit)="save()">
+        <div class="modal-header">
+            <h5 class="modal-title">{{ editing?.budgetCategoryId && editing?.budgetCategoryId !== '00000000-0000-0000-0000-000000000000' ? 'Edit Budget Category' : 'Add Budget Category' }}</h5>
+            <button type="button" class="btn-close" (click)="cancel()" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+            <div class="mb-3">
+                <label class="form-label">Name *</label>
+                <input type="text" class="form-control" name="name" [(ngModel)]="editing.name" maxlength="100" required />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Description</label>
+                <input type="text" class="form-control" name="description" [(ngModel)]="editing.description" maxlength="250" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Sort Order</label>
+                <input type="number" class="form-control" name="sortOrder" [(ngModel)]="editing.sortOrder" />
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="saving || !categoryForm.valid">
+                <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
+                Save
+            </button>
+        </div>
+    </form>
+</ng-template>

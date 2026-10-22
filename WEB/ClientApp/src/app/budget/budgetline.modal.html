@@ -1,0 +1,73 @@
+<form class="modal-content" #lineForm="ngForm" (ngSubmit)="save()">
+    <div class="modal-header">
+        <h5 class="modal-title">{{ title }}</h5>
+        <button type="button" class="btn-close" (click)="cancel()" aria-label="Close"></button>
+    </div>
+
+    <div class="modal-body">
+        <div class="mb-3">
+            <label class="form-label">Category *</label>
+            <select class="form-select" name="budgetCategoryId" [(ngModel)]="line.budgetCategoryId" required>
+                <option value="">Select a category…</option>
+                <option *ngFor="let category of categories" [value]="category.budgetCategoryId">{{ category.name }}</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Description</label>
+            <input type="text" class="form-control" name="description" [(ngModel)]="line.description" maxlength="250" />
+        </div>
+
+        <div class="row">
+            <div class="col-6 mb-3">
+                <label class="form-label">Planned Amount *</label>
+                <input type="number" step="0.01" min="0" class="form-control" name="plannedAmount" [(ngModel)]="line.plannedAmount" required />
+            </div>
+            <div class="col-6 mb-3">
+                <label class="form-label">Committed</label>
+                <input type="number" step="0.01" min="0" class="form-control" name="committedAmount" [(ngModel)]="line.committedAmount" />
+            </div>
+            <div class="col-6 mb-3">
+                <label class="form-label">Disbursed</label>
+                <input type="number" step="0.01" min="0" class="form-control" name="disbursedAmount" [(ngModel)]="line.disbursedAmount" />
+            </div>
+            <div class="col-6 mb-3">
+                <label class="form-label">Expended (Actual)</label>
+                <input type="number" step="0.01" min="0" class="form-control" name="actualAmount" [(ngModel)]="line.actualAmount" />
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-6 mb-3">
+                <label class="form-label">Currency</label>
+                <input type="text" class="form-control text-uppercase" name="currency" [(ngModel)]="line.currency" maxlength="3" placeholder="USD" />
+            </div>
+            <div class="col-6 mb-3">
+                <label class="form-label">Reporting Period</label>
+                <select class="form-select" name="dateId" [(ngModel)]="line.dateId">
+                    <option value="">— none —</option>
+                    <option *ngFor="let date of dates" [value]="date.dateId">{{ date.name }}</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-6 mb-3">
+                <label class="form-label">Period Start</label>
+                <input type="date" class="form-control" name="periodStart" [(ngModel)]="line.periodStart" />
+            </div>
+            <div class="col-6 mb-3">
+                <label class="form-label">Period End</label>
+                <input type="date" class="form-control" name="periodEnd" [(ngModel)]="line.periodEnd" />
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving || !lineForm.valid">
+            <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
+            Save
+        </button>
+    </div>
+</form>

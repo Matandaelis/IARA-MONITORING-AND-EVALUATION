@@ -27,6 +27,10 @@ namespace Monic.Web.Models
         [Required]
         public bool SimplePermissionsMode { get; set; }
 
+        /// <summary>Organisation base currency (ISO 4217, 3 chars) used for budget roll-ups.</summary>
+        [MaxLength(3), MinLength(3)]
+        public string BaseCurrency { get; set; }
+
         [MaxLength(100)]
         public string ChatGPTAPIKey { get; set; }
 
