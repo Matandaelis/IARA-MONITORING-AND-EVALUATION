@@ -133,8 +133,13 @@ builder.Services.AddControllersWithViews(options =>
         options.Filters.Add(
             typeof(ApiExceptionAttribute)))
     .AddJsonOptions(options =>
+    {
         options.JsonSerializerOptions.Converters.Add(
-            new DateTimeConverter()));
+            new DateTimeConverter());
+        options.JsonSerializerOptions.MaxDepth = 256;
+    });
+
+builder.Services.AddOpenApi();
 
 // Real-time notifications (pushes notification + comment events to connected clients)
 builder.Services.AddSignalR();
@@ -424,6 +429,10 @@ app.UseAuthorization();
 
 app.MapHealthChecks("/health");
 app.MapGet("/healthz", () => Results.Ok(new { status = "Healthy" }));
+
+app.MapGet("/openapi/v1.json", () => Results.File("C:\\Users\\Administrator\\Downloads\\MONICv2\\MONICv.001\\docs\\postman\\openapi.json", "application/json"));
+
+
 
 app.MapControllers();
 
