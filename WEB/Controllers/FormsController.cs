@@ -515,6 +515,18 @@ namespace Monic.Web.Controllers
             // todo: this will overwrite the LastSaved data (in the proc) - need a proc for submit only, verify only, etc.
             await calculation.SaveAsync(data);
 
+            // Automated CAP trigger watcher: detect indicators deviating beyond threshold across associated projects
+            var associatedProjectIds = await db.ProjectIndicators
+                .Where(pi => indicatorIds.Contains(pi.IndicatorId))
+                .Select(pi => pi.ProjectId)
+                .Distinct()
+                .ToListAsync();
+
+            foreach (var pid in associatedProjectIds)
+            {
+                await CorrectiveActionService.DetectAndTriggerCapsAsync(db, pid, dateId);
+            }
+
             return await LoadDataEntry(dateId, entityId, PermissionType.Approve);
         }
 

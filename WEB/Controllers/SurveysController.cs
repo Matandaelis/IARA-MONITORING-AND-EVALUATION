@@ -412,6 +412,8 @@ namespace Monic.Web.Controllers
             db.Entry(response).State = EntityState.Modified;
             await db.SaveChangesAsync();
 
+            await FormIndicatorContributionEngine.ProcessResponseContributionsAsync(db, responseId, AppSettings, CurrentUser.Id);
+
             return GetResponse(new SurveyParams { ResponseId = responseId });
         }
 

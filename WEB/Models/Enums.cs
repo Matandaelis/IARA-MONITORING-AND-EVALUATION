@@ -1,4 +1,4 @@
-﻿namespace Monic.Web.Models
+namespace Monic.Web.Models
 {
     public enum AggregationType
     {
@@ -130,7 +130,12 @@
         OptionList,
         Multiline,
         Note,
-        Document
+        Document,
+        Number,
+        Date,
+        GPS,
+        Likert,
+        Signature
     }
 
     public enum ReviewResult
@@ -470,6 +475,16 @@
                     return "Note";
                 case QuestionType.Document:
                     return "Document";
+                case QuestionType.Number:
+                    return "Number";
+                case QuestionType.Date:
+                    return "Date";
+                case QuestionType.GPS:
+                    return "GPS Location";
+                case QuestionType.Likert:
+                    return "Likert Scale";
+                case QuestionType.Signature:
+                    return "Signature";
                 default:
                     return null;
             }

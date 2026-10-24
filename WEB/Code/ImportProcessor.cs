@@ -395,6 +395,8 @@ namespace Monic.Web.Code
 
                 db.Entry(response).State = EntityState.Modified;
                 await db.SaveChangesAsync();
+
+                await FormIndicatorContributionEngine.ProcessResponseContributionsAsync(db, response.ResponseId, null, userId);
             }
 
             AuditHelper.Write(db, null, null, "ImportJob", questionnaireId,
