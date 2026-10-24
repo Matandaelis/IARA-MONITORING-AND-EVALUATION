@@ -283,6 +283,13 @@ namespace Monic.Web.Controllers
             return Download.GetFileContentResult(Response, $"{safeName}_EU_ROM_Matrix.xlsx", bytes);
         }
 
+        [HttpGet("showcase-pdf"), AllowAnonymous]
+        public IActionResult DownloadSystemShowcasePdf()
+        {
+            var pdfBytes = Code.SystemShowcasePdfBuilder.BuildShowcasePdf();
+            return Download.GetFileContentResult(Response, "MONIC_System_Showcase_Achievements_And_Gaps.pdf", pdfBytes);
+        }
+
         private async Task<(LogFrame logFrame, List<Indicator> indicators, List<MonitoringAction> caps, List<BeneficiaryFeedback> feedbacks)> LoadProjectMePlanContextAsync(Guid projectId)
         {
             var logFrame = await db.LogFrames
