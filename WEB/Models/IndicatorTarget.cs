@@ -17,6 +17,9 @@ namespace Monic.Web.Models
 
         public Guid? EntityId { get; set; }
 
+        /// <summary>Optional disaggregation breakdown (e.g. Male, Female). Null represents the aggregate indicator total.</summary>
+        public Guid? DisaggregationOptionId { get; set; }
+
         [Required]
         [Column(TypeName = "decimal(20, 8)")]
         public decimal TargetValue { get; set; }
@@ -38,5 +41,8 @@ namespace Monic.Web.Models
 
         [ForeignKey("EntityId")]
         public virtual Entity Entity { get; set; }
+
+        [ForeignKey("DisaggregationOptionId")]
+        public virtual DisaggregationOption DisaggregationOption { get; set; }
     }
 }

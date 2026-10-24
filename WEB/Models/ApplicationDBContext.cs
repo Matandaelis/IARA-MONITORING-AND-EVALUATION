@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
@@ -53,6 +53,8 @@ namespace Monic.Web.Models
             ConfigureCollaborationModel(modelBuilder);
             ConfigureBudgetModel(modelBuilder);
             ConfigureImportModel(modelBuilder);
+            ConfigureMonitoringModel(modelBuilder);
+            ConfigureUniversalMeModel(modelBuilder);
 
             modelBuilder.Entity<User>(o => o.HasMany(u => u.Roles).WithOne().HasForeignKey(ur => ur.UserId).IsRequired());
 

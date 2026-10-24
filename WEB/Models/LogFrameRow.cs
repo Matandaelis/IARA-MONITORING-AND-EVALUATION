@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -34,6 +34,11 @@ namespace Monic.Web.Models
         public virtual ICollection<LogFrameRowIndicator> LogFrameRowIndicators { get; set; } = new List<LogFrameRowIndicator>();
 
         public virtual ICollection<LogFrameRowComponent> LogFrameRowComponents { get; set; } = new List<LogFrameRowComponent>();
+        public virtual ICollection<LogFrameRowRiskAssumption> LogFrameRowRiskAssumptions { get; set; } = new List<LogFrameRowRiskAssumption>();
+
+        public virtual ICollection<LogFrameRowTask> LogFrameRowTasks { get; set; } = new List<LogFrameRowTask>();
+
+        public virtual ICollection<LogFrameRowBudgetLine> LogFrameRowBudgetLines { get; set; } = new List<LogFrameRowBudgetLine>();
 
         [ForeignKey("LogFrameId")]
         public virtual LogFrame LogFrame { get; set; }

@@ -1,4 +1,4 @@
-namespace Monic.Web.Models
+﻿namespace Monic.Web.Models
 {
     public enum AggregationType
     {

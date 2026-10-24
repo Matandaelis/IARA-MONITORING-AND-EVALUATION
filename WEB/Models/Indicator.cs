@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -127,6 +127,51 @@ namespace Monic.Web.Models
         public virtual ICollection<IndicatorDate> IndicatorDates { get; set; } = new List<IndicatorDate>();
 
         public Guid? DisaggregationGroupId { get; set; }
+
+        /// <summary>Primary monitoring domain (process, compliance, context, financial, assumption, results, impact…).</summary>
+        [Required]
+        public MonitoringType MonitoringType { get; set; } = MonitoringType.Results;
+
+        /// <summary>The person accountable for collecting and reporting this indicator.</summary>
+        public Guid? ResponsibleUserId { get; set; }
+
+        /// <summary>Optional per-indicator RAG override: achievement % at/above which the status is Green.</summary>
+        [Column(TypeName = "decimal(9, 2)")]
+        public decimal? GreenThreshold { get; set; }
+
+        /// <summary>Optional per-indicator RAG override: achievement % at/above which the status is Amber.</summary>
+        [Column(TypeName = "decimal(9, 2)")]
+        public decimal? AmberThreshold { get; set; }
+        /// <summary>PIRS: Operational Definition (Plain-English narrative explaining how the metric is calculated and measured).</summary>
+        public string OperationalDefinition { get; set; }
+
+        /// <summary>PIRS: Purpose and Strategic Rationale for tracking this indicator.</summary>
+        public string PurposeRationale { get; set; }
+
+        /// <summary>PIRS: Data Quality Protocol (Verification procedures, calibration, error tolerance margin).</summary>
+        public string DataQualityProtocol { get; set; }
+
+        /// <summary>PIRS: Reporting Schedule (Internal vs donor reporting timeline and cadence).</summary>
+        [MaxLength(250)]
+        public string ReportingSchedule { get; set; }
+
+        /// <summary>PIRS: Mathematical calculation narrative.</summary>
+        public string CalculationFormulaNarrative { get; set; }
+
+        /// <summary>Optional first-class numerator indicator reference for ratio metrics.</summary>
+        public Guid? NumeratorIndicatorId { get; set; }
+
+        /// <summary>Optional first-class denominator indicator reference for ratio metrics.</summary>
+        public Guid? DenominatorIndicatorId { get; set; }
+
+        [ForeignKey("NumeratorIndicatorId")]
+        public virtual Indicator NumeratorIndicator { get; set; }
+
+        [ForeignKey("DenominatorIndicatorId")]
+        public virtual Indicator DenominatorIndicator { get; set; }
+
+        [ForeignKey("ResponsibleUserId")]
+        public virtual User ResponsibleUser { get; set; }
 
         public IndicatorDirection Direction
         {

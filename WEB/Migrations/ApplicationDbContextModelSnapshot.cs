@@ -225,6 +225,73 @@ namespace Monic.Web.Migrations
                     b.ToTable("AuditLogs");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.BeneficiaryFeedback", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AssignedToUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ContactDetails")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<DateTime>("DateReceivedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsAnonymous")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ResolutionNotes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ResolvedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Severity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TrackingCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedToUserId");
+
+                    b.HasIndex("TrackingCode")
+                        .IsUnique()
+                        .HasDatabaseName("UX_BeneficiaryFeedbacks_TrackingCode");
+
+                    b.HasIndex("ProjectId", "Status")
+                        .HasDatabaseName("IX_BeneficiaryFeedbacks_Project_Status");
+
+                    b.ToTable("BeneficiaryFeedbacks");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.BudgetCategory", b =>
                 {
                     b.Property<Guid>("BudgetCategoryId")
@@ -298,8 +365,14 @@ namespace Monic.Web.Migrations
                     b.Property<decimal>("DisbursedAmount")
                         .HasColumnType("decimal(18, 2)");
 
+                    b.Property<Guid?>("IndicatorId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
+
+                    b.Property<Guid?>("LogFrameNodeId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("ModifiedById")
                         .HasColumnType("uniqueidentifier");
@@ -332,8 +405,14 @@ namespace Monic.Web.Migrations
                     b.HasIndex("DateId")
                         .HasDatabaseName("IX_BudgetLines_DateId");
 
+                    b.HasIndex("IndicatorId")
+                        .HasDatabaseName("IX_BudgetLines_IndicatorId");
+
                     b.HasIndex("IsDeleted")
                         .HasDatabaseName("IX_BudgetLines_IsDeleted");
+
+                    b.HasIndex("LogFrameNodeId")
+                        .HasDatabaseName("IX_BudgetLines_LogFrameNodeId");
 
                     b.HasIndex("ModifiedById");
 
@@ -682,6 +761,12 @@ namespace Monic.Web.Migrations
                         .HasColumnType("bit")
                         .HasComputedColumnSql("CONVERT(bit, ISNULL(CASE WHEN RejectDataReviewId IS NULL THEN 0 ELSE 1 END, 0))");
 
+                    b.Property<Guid?>("SourceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("SourceType")
+                        .HasColumnType("int");
+
                     b.Property<Guid?>("SubmitDataReviewId")
                         .HasColumnType("uniqueidentifier");
 
@@ -708,8 +793,6 @@ namespace Monic.Web.Migrations
 
                     b.HasIndex("DateId");
 
-                    b.HasIndex("EntityId");
-
                     b.HasIndex("LastSavedById");
 
                     b.HasIndex("RejectDataReviewId");
@@ -717,6 +800,9 @@ namespace Monic.Web.Migrations
                     b.HasIndex("SubmitDataReviewId");
 
                     b.HasIndex("VerifyDataReviewId");
+
+                    b.HasIndex("EntityId", "DateId")
+                        .HasDatabaseName("IX_Data_Entity_Date");
 
                     b.ToTable("Data");
                 });
@@ -1433,8 +1519,14 @@ namespace Monic.Web.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal?>("AmberThreshold")
+                        .HasColumnType("decimal(9, 2)");
+
                     b.Property<decimal?>("Baseline")
                         .HasColumnType("decimal(20, 8)");
+
+                    b.Property<string>("CalculationFormulaNarrative")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Code")
                         .IsRequired()
@@ -1451,6 +1543,9 @@ namespace Monic.Web.Migrations
                     b.Property<DateTime>("CreatedDateUtc")
                         .HasColumnType("smalldatetime");
 
+                    b.Property<string>("DataQualityProtocol")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("DataType")
                         .HasColumnType("int");
 
@@ -1459,6 +1554,9 @@ namespace Monic.Web.Migrations
 
                     b.Property<byte>("DecimalPlaces")
                         .HasColumnType("tinyint");
+
+                    b.Property<Guid?>("DenominatorIndicatorId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("Direction")
                         .HasColumnType("int");
@@ -1477,6 +1575,9 @@ namespace Monic.Web.Migrations
 
                     b.Property<int>("Frequency")
                         .HasColumnType("int");
+
+                    b.Property<decimal?>("GreenThreshold")
+                        .HasColumnType("decimal(9, 2)");
 
                     b.Property<Guid?>("GroupingIndicatorId")
                         .HasColumnType("uniqueidentifier");
@@ -1506,10 +1607,19 @@ namespace Monic.Web.Migrations
                     b.Property<decimal?>("Minimum")
                         .HasColumnType("decimal(20, 8)");
 
+                    b.Property<int>("MonitoringType")
+                        .HasColumnType("int");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid?>("NumeratorIndicatorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("OperationalDefinition")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid?>("OptionListId")
                         .HasColumnType("uniqueidentifier");
@@ -1519,6 +1629,13 @@ namespace Monic.Web.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
+                    b.Property<string>("PurposeRationale")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReportingSchedule")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
                     b.Property<bool>("RequiresApprove")
                         .HasColumnType("bit");
 
@@ -1527,6 +1644,9 @@ namespace Monic.Web.Migrations
 
                     b.Property<bool>("RequiresVerify")
                         .HasColumnType("bit");
+
+                    b.Property<Guid?>("ResponsibleUserId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("ShortName")
                         .HasMaxLength(250)
@@ -1559,17 +1679,27 @@ namespace Monic.Web.Migrations
 
                     b.HasIndex("CreatedById");
 
+                    b.HasIndex("DenominatorIndicatorId");
+
                     b.HasIndex("DisaggregationGroupId");
 
                     b.HasIndex("EntityTypeId");
 
                     b.HasIndex("GroupingIndicatorId");
 
+                    b.HasIndex("MonitoringType")
+                        .HasDatabaseName("IX_Indicators_MonitoringType");
+
                     b.HasIndex("Name")
                         .IsUnique()
                         .HasDatabaseName("IX_Indicator_Name");
 
+                    b.HasIndex("NumeratorIndicatorId");
+
                     b.HasIndex("OptionListId");
+
+                    b.HasIndex("ResponsibleUserId")
+                        .HasDatabaseName("IX_Indicators_ResponsibleUserId");
 
                     b.HasIndex("SubcategoryId");
 
@@ -1725,6 +1855,9 @@ namespace Monic.Web.Migrations
                     b.Property<Guid>("DateId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("DisaggregationOptionId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid?>("EntityId")
                         .HasColumnType("uniqueidentifier");
 
@@ -1745,10 +1878,15 @@ namespace Monic.Web.Migrations
 
                     b.HasIndex("DateId");
 
+                    b.HasIndex("DisaggregationOptionId");
+
                     b.HasIndex("EntityId");
 
                     b.HasIndex("IndicatorId", "DateId", "EntityId")
                         .HasDatabaseName("IX_IndicatorTargets_Indicator_Date_Entity");
+
+                    b.HasIndex("IndicatorId", "DateId", "EntityId", "DisaggregationOptionId")
+                        .HasDatabaseName("IX_IndicatorTargets_Indicator_Date_Entity_Option");
 
                     b.ToTable("IndicatorTargets");
                 });
@@ -1808,6 +1946,58 @@ namespace Monic.Web.Migrations
                     b.ToTable("ItemOptions");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.LessonLearned", b =>
+                {
+                    b.Property<Guid>("LessonLearnedId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ComponentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("LogFrameNodeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("MonitoringType")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Recommendation")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("RecordedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("RecordedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.HasKey("LessonLearnedId");
+
+                    b.HasIndex("ComponentId");
+
+                    b.HasIndex("LogFrameNodeId");
+
+                    b.HasIndex("MonitoringType")
+                        .HasDatabaseName("IX_LessonsLearned_MonitoringType");
+
+                    b.HasIndex("ProjectId")
+                        .HasDatabaseName("IX_LessonsLearned_ProjectId");
+
+                    b.HasIndex("RecordedById");
+
+                    b.ToTable("LessonsLearned");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.LogFrame", b =>
                 {
                     b.Property<Guid>("LogFrameId")
@@ -1819,11 +2009,23 @@ namespace Monic.Web.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("TheoryOfChangeId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("LogFrameId");
 
                     b.HasIndex("Name")
                         .IsUnique()
                         .HasDatabaseName("IX_LogFrame_Name");
+
+                    b.HasIndex("ProjectId")
+                        .HasDatabaseName("IX_LogFrames_ProjectId");
+
+                    b.HasIndex("TheoryOfChangeId")
+                        .HasDatabaseName("IX_LogFrames_TheoryOfChangeId");
 
                     b.ToTable("LogFrames");
                 });
@@ -1865,6 +2067,9 @@ namespace Monic.Web.Migrations
 
                     b.Property<string>("RequiredFieldsJson")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("RollupMethod")
+                        .HasColumnType("int");
 
                     b.HasKey("LogFrameLevelId");
 
@@ -2033,6 +2238,29 @@ namespace Monic.Web.Migrations
                     b.ToTable("LogFrameRows");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.LogFrameRowBudgetLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BudgetLineId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("LogFrameRowId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BudgetLineId");
+
+                    b.HasIndex("LogFrameRowId", "BudgetLineId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_LogFrameRowBudgetLines_Row_BudgetLine");
+
+                    b.ToTable("LogFrameRowBudgetLines");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.LogFrameRowComponent", b =>
                 {
                     b.Property<Guid>("LogFrameRowId")
@@ -2066,6 +2294,52 @@ namespace Monic.Web.Migrations
                     b.HasIndex("IndicatorId");
 
                     b.ToTable("LogFrameRowIndicators");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.LogFrameRowRiskAssumption", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("LogFrameRowId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("RiskAssumptionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RiskAssumptionId");
+
+                    b.HasIndex("LogFrameRowId", "RiskAssumptionId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_LogFrameRowRiskAssumptions_Row_Risk");
+
+                    b.ToTable("LogFrameRowRiskAssumptions");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.LogFrameRowTask", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("LogFrameRowId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TaskId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TaskId");
+
+                    b.HasIndex("LogFrameRowId", "TaskId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_LogFrameRowTasks_Row_Task");
+
+                    b.ToTable("LogFrameRowTasks");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.MeReview", b =>
@@ -2291,6 +2565,360 @@ namespace Monic.Web.Migrations
                     b.ToTable("Milestones");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.MonitoringAction", b =>
+                {
+                    b.Property<Guid>("MonitoringActionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CompletedDate")
+                        .HasColumnType("Date");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<decimal?>("DeviationPercent")
+                        .HasColumnType("decimal(9,2)");
+
+                    b.Property<DateTime?>("DueDate")
+                        .HasColumnType("Date");
+
+                    b.Property<Guid?>("IndicatorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("LinkedTaskId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("MonitoringEventId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("OwnerUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("RiskAssumptionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TriggerSource")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("TriggeredOnUtc")
+                        .HasColumnType("Date");
+
+                    b.HasKey("MonitoringActionId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("IndicatorId");
+
+                    b.HasIndex("LinkedTaskId");
+
+                    b.HasIndex("MonitoringEventId")
+                        .HasDatabaseName("IX_MonitoringActions_EventId");
+
+                    b.HasIndex("OwnerUserId");
+
+                    b.HasIndex("ProjectId")
+                        .HasDatabaseName("IX_MonitoringActions_ProjectId");
+
+                    b.HasIndex("RiskAssumptionId")
+                        .HasDatabaseName("IX_MonitoringActions_RiskId");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("IX_MonitoringActions_Status");
+
+                    b.ToTable("MonitoringActions");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.MonitoringCheck", b =>
+                {
+                    b.Property<Guid>("MonitoringCheckId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DueDate")
+                        .HasColumnType("Date");
+
+                    b.Property<Guid?>("EntityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("EvidenceDocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("PeriodDateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("RequirementSource")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.HasKey("MonitoringCheckId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("EntityId");
+
+                    b.HasIndex("EvidenceDocumentId");
+
+                    b.HasIndex("PeriodDateId");
+
+                    b.HasIndex("ProjectId")
+                        .HasDatabaseName("IX_MonitoringChecks_ProjectId");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("IX_MonitoringChecks_Status");
+
+                    b.HasIndex("Type")
+                        .HasDatabaseName("IX_MonitoringChecks_Type");
+
+                    b.ToTable("MonitoringChecks");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.MonitoringEvent", b =>
+                {
+                    b.Property<Guid>("MonitoringEventId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ConductedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("EntityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("EventDate")
+                        .HasColumnType("Date");
+
+                    b.Property<string>("Findings")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("MeReviewId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Participants")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<Guid?>("PeriodDateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Recommendations")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.HasKey("MonitoringEventId");
+
+                    b.HasIndex("ConductedById");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("EntityId")
+                        .HasDatabaseName("IX_MonitoringEvents_EntityId");
+
+                    b.HasIndex("MeReviewId");
+
+                    b.HasIndex("PeriodDateId");
+
+                    b.HasIndex("Type")
+                        .HasDatabaseName("IX_MonitoringEvents_Type");
+
+                    b.HasIndex("ProjectId", "EventDate")
+                        .HasDatabaseName("IX_MonitoringEvents_Project_Date");
+
+                    b.ToTable("MonitoringEvents");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.MonitoringPlan", b =>
+                {
+                    b.Property<Guid>("MonitoringPlanId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("FromDateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ModifiedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ModifiedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<Guid?>("OwnerUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("ToDateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("MonitoringPlanId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("FromDateId");
+
+                    b.HasIndex("OwnerUserId");
+
+                    b.HasIndex("ProjectId")
+                        .HasDatabaseName("IX_MonitoringPlans_ProjectId");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("IX_MonitoringPlans_Status");
+
+                    b.HasIndex("ToDateId");
+
+                    b.ToTable("MonitoringPlans");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.MonitoringPlanItem", b =>
+                {
+                    b.Property<Guid>("MonitoringPlanItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CollectionMethod")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("DataSource")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<int>("Frequency")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("IndicatorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsMandatory")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MeansOfVerification")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("MonitoringPlanId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("MonitoringType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("ResponsibleEntityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ResponsibleUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("MonitoringPlanItemId");
+
+                    b.HasIndex("IndicatorId")
+                        .HasDatabaseName("IX_MonitoringPlanItems_IndicatorId");
+
+                    b.HasIndex("MonitoringPlanId")
+                        .HasDatabaseName("IX_MonitoringPlanItems_PlanId");
+
+                    b.HasIndex("ResponsibleEntityId");
+
+                    b.HasIndex("ResponsibleUserId");
+
+                    b.HasIndex("MonitoringPlanId", "IndicatorId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_MonitoringPlanItems_Plan_Indicator");
+
+                    b.ToTable("MonitoringPlanItems");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.Notification", b =>
                 {
                     b.Property<Guid>("NotificationId")
@@ -2465,13 +3093,68 @@ namespace Monic.Web.Migrations
                         .HasMaxLength(7)
                         .HasColumnType("nvarchar(7)");
 
+                    b.Property<string>("Currency")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("CurrentPhase")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("DonorName")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<Guid?>("EntityId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("GrantCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Level1Label")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Level2Label")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Level3Label")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Level4Label")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("Sector")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long?>("TargetDirectBeneficiaries")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("TargetIndirectBeneficiaries")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal?>("TotalBudget")
+                        .HasColumnType("decimal(20, 8)");
+
+                    b.Property<string>("WorkflowMode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.HasKey("ProjectId");
 
@@ -2482,6 +3165,36 @@ namespace Monic.Web.Migrations
                         .HasDatabaseName("IX_Project_Name");
 
                     b.ToTable("Projects");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.ProjectIndicator", b =>
+                {
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("IndicatorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsMandatory")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("ProjectId", "IndicatorId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("IndicatorId")
+                        .HasDatabaseName("IX_ProjectIndicators_IndicatorId");
+
+                    b.ToTable("ProjectIndicators");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.Question", b =>
@@ -2501,8 +3214,14 @@ namespace Monic.Web.Migrations
                     b.Property<string>("Explanation")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<decimal?>("MaxValue")
+                        .HasColumnType("decimal(20, 8)");
+
                     b.Property<byte>("MaximumDocuments")
                         .HasColumnType("tinyint");
+
+                    b.Property<decimal?>("MinValue")
+                        .HasColumnType("decimal(20, 8)");
 
                     b.Property<byte>("MinimumDocuments")
                         .HasColumnType("tinyint");
@@ -2531,6 +3250,10 @@ namespace Monic.Web.Migrations
                     b.Property<string>("Text")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ValidationRegex")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
 
                     b.HasKey("QuestionId");
 
@@ -2832,6 +3555,119 @@ namespace Monic.Web.Migrations
                     b.ToTable("Responses");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.RiskAssumption", b =>
+                {
+                    b.Property<Guid>("RiskAssumptionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Impact")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Likelihood")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("LogFrameNodeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Mitigation")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("OwnerUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ReviewDate")
+                        .HasColumnType("Date");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.HasKey("RiskAssumptionId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LogFrameNodeId")
+                        .HasDatabaseName("IX_RiskAssumptions_LogFrameNodeId");
+
+                    b.HasIndex("OwnerUserId");
+
+                    b.HasIndex("ProjectId")
+                        .HasDatabaseName("IX_RiskAssumptions_ProjectId");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("IX_RiskAssumptions_Status");
+
+                    b.ToTable("RiskAssumptions");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.RiskAssumptionUpdate", b =>
+                {
+                    b.Property<Guid>("RiskAssumptionUpdateId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Comment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("EvidenceDocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Impact")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Likelihood")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("RecordedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("RecordedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("RiskAssumptionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("RiskAssumptionUpdateId");
+
+                    b.HasIndex("DateId")
+                        .HasDatabaseName("IX_RiskAssumptionUpdates_DateId");
+
+                    b.HasIndex("EvidenceDocumentId");
+
+                    b.HasIndex("RecordedById");
+
+                    b.HasIndex("RiskAssumptionId")
+                        .HasDatabaseName("IX_RiskAssumptionUpdates_RiskId");
+
+                    b.ToTable("RiskAssumptionUpdates");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.Role", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3085,11 +3921,17 @@ namespace Monic.Web.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("TheoryOfChangeId");
 
                     b.HasIndex("Name")
                         .IsUnique()
                         .HasDatabaseName("IX_TheoryOfChange_Name");
+
+                    b.HasIndex("ProjectId")
+                        .HasDatabaseName("IX_TheoriesOfChange_ProjectId");
 
                     b.ToTable("TheoriesOfChange");
                 });
@@ -3549,6 +4391,24 @@ namespace Monic.Web.Migrations
                     b.Navigation("QuestionOption");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.BeneficiaryFeedback", b =>
+                {
+                    b.HasOne("Monic.Web.Models.User", "AssignedToUser")
+                        .WithMany()
+                        .HasForeignKey("AssignedToUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AssignedToUser");
+
+                    b.Navigation("Project");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.BudgetCategory", b =>
                 {
                     b.HasOne("Monic.Web.Models.User", "CreatedBy")
@@ -3577,6 +4437,16 @@ namespace Monic.Web.Migrations
                         .HasForeignKey("DateId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("Monic.Web.Models.Indicator", "Indicator")
+                        .WithMany()
+                        .HasForeignKey("IndicatorId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.LogFrameNode", "LogFrameNode")
+                        .WithMany()
+                        .HasForeignKey("LogFrameNodeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Monic.Web.Models.User", "ModifiedBy")
                         .WithMany()
                         .HasForeignKey("ModifiedById")
@@ -3598,6 +4468,10 @@ namespace Monic.Web.Migrations
                     b.Navigation("CreatedBy");
 
                     b.Navigation("Date");
+
+                    b.Navigation("Indicator");
+
+                    b.Navigation("LogFrameNode");
 
                     b.Navigation("ModifiedBy");
 
@@ -4044,6 +4918,11 @@ namespace Monic.Web.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Monic.Web.Models.Indicator", "DenominatorIndicator")
+                        .WithMany()
+                        .HasForeignKey("DenominatorIndicatorId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Monic.Web.Models.DisaggregationGroup", "DisaggregationGroup")
                         .WithMany("Indicators")
                         .HasForeignKey("DisaggregationGroupId")
@@ -4060,9 +4939,19 @@ namespace Monic.Web.Migrations
                         .HasForeignKey("GroupingIndicatorId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("Monic.Web.Models.Indicator", "NumeratorIndicator")
+                        .WithMany()
+                        .HasForeignKey("NumeratorIndicatorId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Monic.Web.Models.OptionList", "OptionList")
                         .WithMany("Indicators")
                         .HasForeignKey("OptionListId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.User", "ResponsibleUser")
+                        .WithMany()
+                        .HasForeignKey("ResponsibleUserId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Monic.Web.Models.Subcategory", "Subcategory")
@@ -4073,13 +4962,19 @@ namespace Monic.Web.Migrations
 
                     b.Navigation("CreatedBy");
 
+                    b.Navigation("DenominatorIndicator");
+
                     b.Navigation("DisaggregationGroup");
 
                     b.Navigation("EntityType");
 
                     b.Navigation("GroupingIndicator");
 
+                    b.Navigation("NumeratorIndicator");
+
                     b.Navigation("OptionList");
+
+                    b.Navigation("ResponsibleUser");
 
                     b.Navigation("Subcategory");
                 });
@@ -4167,6 +5062,11 @@ namespace Monic.Web.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Monic.Web.Models.DisaggregationOption", "DisaggregationOption")
+                        .WithMany()
+                        .HasForeignKey("DisaggregationOptionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Monic.Web.Models.Entity", "Entity")
                         .WithMany()
                         .HasForeignKey("EntityId")
@@ -4179,6 +5079,8 @@ namespace Monic.Web.Migrations
                         .IsRequired();
 
                     b.Navigation("Date");
+
+                    b.Navigation("DisaggregationOption");
 
                     b.Navigation("Entity");
 
@@ -4229,6 +5131,55 @@ namespace Monic.Web.Migrations
                     b.Navigation("Item");
 
                     b.Navigation("Option");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.LessonLearned", b =>
+                {
+                    b.HasOne("Monic.Web.Models.Component", "Component")
+                        .WithMany()
+                        .HasForeignKey("ComponentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.LogFrameNode", "LogFrameNode")
+                        .WithMany()
+                        .HasForeignKey("LogFrameNodeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Monic.Web.Models.User", "RecordedBy")
+                        .WithMany()
+                        .HasForeignKey("RecordedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Component");
+
+                    b.Navigation("LogFrameNode");
+
+                    b.Navigation("Project");
+
+                    b.Navigation("RecordedBy");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.LogFrame", b =>
+                {
+                    b.HasOne("Monic.Web.Models.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.TheoryOfChange", "TheoryOfChange")
+                        .WithMany()
+                        .HasForeignKey("TheoryOfChangeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Project");
+
+                    b.Navigation("TheoryOfChange");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.LogFrameLevel", b =>
@@ -4297,6 +5248,25 @@ namespace Monic.Web.Migrations
                     b.Navigation("LogFrame");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.LogFrameRowBudgetLine", b =>
+                {
+                    b.HasOne("Monic.Web.Models.BudgetLine", "BudgetLine")
+                        .WithMany()
+                        .HasForeignKey("BudgetLineId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Monic.Web.Models.LogFrameRow", "LogFrameRow")
+                        .WithMany("LogFrameRowBudgetLines")
+                        .HasForeignKey("LogFrameRowId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("BudgetLine");
+
+                    b.Navigation("LogFrameRow");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.LogFrameRowComponent", b =>
                 {
                     b.HasOne("Monic.Web.Models.Component", "Component")
@@ -4333,6 +5303,44 @@ namespace Monic.Web.Migrations
                     b.Navigation("Indicator");
 
                     b.Navigation("LogFrameRow");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.LogFrameRowRiskAssumption", b =>
+                {
+                    b.HasOne("Monic.Web.Models.LogFrameRow", "LogFrameRow")
+                        .WithMany("LogFrameRowRiskAssumptions")
+                        .HasForeignKey("LogFrameRowId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Monic.Web.Models.RiskAssumption", "RiskAssumption")
+                        .WithMany()
+                        .HasForeignKey("RiskAssumptionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("LogFrameRow");
+
+                    b.Navigation("RiskAssumption");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.LogFrameRowTask", b =>
+                {
+                    b.HasOne("Monic.Web.Models.LogFrameRow", "LogFrameRow")
+                        .WithMany("LogFrameRowTasks")
+                        .HasForeignKey("LogFrameRowId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Monic.Web.Models.Task", "Task")
+                        .WithMany()
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("LogFrameRow");
+
+                    b.Navigation("Task");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.MeReview", b =>
@@ -4403,6 +5411,223 @@ namespace Monic.Web.Migrations
                     b.Navigation("Project");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.MonitoringAction", b =>
+                {
+                    b.HasOne("Monic.Web.Models.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.Indicator", "Indicator")
+                        .WithMany()
+                        .HasForeignKey("IndicatorId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.Task", "LinkedTask")
+                        .WithMany()
+                        .HasForeignKey("LinkedTaskId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.MonitoringEvent", "MonitoringEvent")
+                        .WithMany("Actions")
+                        .HasForeignKey("MonitoringEventId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.User", "OwnerUser")
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Monic.Web.Models.RiskAssumption", "RiskAssumption")
+                        .WithMany()
+                        .HasForeignKey("RiskAssumptionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Indicator");
+
+                    b.Navigation("LinkedTask");
+
+                    b.Navigation("MonitoringEvent");
+
+                    b.Navigation("OwnerUser");
+
+                    b.Navigation("Project");
+
+                    b.Navigation("RiskAssumption");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.MonitoringCheck", b =>
+                {
+                    b.HasOne("Monic.Web.Models.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.Entity", "Entity")
+                        .WithMany()
+                        .HasForeignKey("EntityId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.Document", "EvidenceDocument")
+                        .WithMany()
+                        .HasForeignKey("EvidenceDocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.Date", "PeriodDate")
+                        .WithMany()
+                        .HasForeignKey("PeriodDateId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Entity");
+
+                    b.Navigation("EvidenceDocument");
+
+                    b.Navigation("PeriodDate");
+
+                    b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.MonitoringEvent", b =>
+                {
+                    b.HasOne("Monic.Web.Models.User", "ConductedBy")
+                        .WithMany()
+                        .HasForeignKey("ConductedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.Entity", "Entity")
+                        .WithMany()
+                        .HasForeignKey("EntityId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.MeReview", "MeReview")
+                        .WithMany()
+                        .HasForeignKey("MeReviewId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.Date", "PeriodDate")
+                        .WithMany()
+                        .HasForeignKey("PeriodDateId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ConductedBy");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Document");
+
+                    b.Navigation("Entity");
+
+                    b.Navigation("MeReview");
+
+                    b.Navigation("PeriodDate");
+
+                    b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.MonitoringPlan", b =>
+                {
+                    b.HasOne("Monic.Web.Models.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.Date", "FromDate")
+                        .WithMany()
+                        .HasForeignKey("FromDateId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.User", "OwnerUser")
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Monic.Web.Models.Date", "ToDate")
+                        .WithMany()
+                        .HasForeignKey("ToDateId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("FromDate");
+
+                    b.Navigation("OwnerUser");
+
+                    b.Navigation("Project");
+
+                    b.Navigation("ToDate");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.MonitoringPlanItem", b =>
+                {
+                    b.HasOne("Monic.Web.Models.Indicator", "Indicator")
+                        .WithMany()
+                        .HasForeignKey("IndicatorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Monic.Web.Models.MonitoringPlan", "MonitoringPlan")
+                        .WithMany("Items")
+                        .HasForeignKey("MonitoringPlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Monic.Web.Models.Entity", "ResponsibleEntity")
+                        .WithMany()
+                        .HasForeignKey("ResponsibleEntityId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.User", "ResponsibleUser")
+                        .WithMany()
+                        .HasForeignKey("ResponsibleUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Indicator");
+
+                    b.Navigation("MonitoringPlan");
+
+                    b.Navigation("ResponsibleEntity");
+
+                    b.Navigation("ResponsibleUser");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.Notification", b =>
                 {
                     b.HasOne("Monic.Web.Models.User", "CreatedBy")
@@ -4451,6 +5676,32 @@ namespace Monic.Web.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Entity");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.ProjectIndicator", b =>
+                {
+                    b.HasOne("Monic.Web.Models.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.Indicator", "Indicator")
+                        .WithMany()
+                        .HasForeignKey("IndicatorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Monic.Web.Models.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Indicator");
+
+                    b.Navigation("Project");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.Question", b =>
@@ -4606,6 +5857,70 @@ namespace Monic.Web.Migrations
                     b.Navigation("SubmittedBy");
                 });
 
+            modelBuilder.Entity("Monic.Web.Models.RiskAssumption", b =>
+                {
+                    b.HasOne("Monic.Web.Models.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.LogFrameNode", "LogFrameNode")
+                        .WithMany()
+                        .HasForeignKey("LogFrameNodeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.User", "OwnerUser")
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LogFrameNode");
+
+                    b.Navigation("OwnerUser");
+
+                    b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.RiskAssumptionUpdate", b =>
+                {
+                    b.HasOne("Monic.Web.Models.Date", "Date")
+                        .WithMany()
+                        .HasForeignKey("DateId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.Document", "EvidenceDocument")
+                        .WithMany()
+                        .HasForeignKey("EvidenceDocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.User", "RecordedBy")
+                        .WithMany()
+                        .HasForeignKey("RecordedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Monic.Web.Models.RiskAssumption", "RiskAssumption")
+                        .WithMany("Updates")
+                        .HasForeignKey("RiskAssumptionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Date");
+
+                    b.Navigation("EvidenceDocument");
+
+                    b.Navigation("RecordedBy");
+
+                    b.Navigation("RiskAssumption");
+                });
+
             modelBuilder.Entity("Monic.Web.Models.Section", b =>
                 {
                     b.HasOne("Monic.Web.Models.Questionnaire", "Questionnaire")
@@ -4666,6 +5981,16 @@ namespace Monic.Web.Migrations
                         .IsRequired();
 
                     b.Navigation("Milestone");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.TheoryOfChange", b =>
+                {
+                    b.HasOne("Monic.Web.Models.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Project");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.TheoryOfChangeComponent", b =>
@@ -4943,9 +6268,15 @@ namespace Monic.Web.Migrations
 
             modelBuilder.Entity("Monic.Web.Models.LogFrameRow", b =>
                 {
+                    b.Navigation("LogFrameRowBudgetLines");
+
                     b.Navigation("LogFrameRowComponents");
 
                     b.Navigation("LogFrameRowIndicators");
+
+                    b.Navigation("LogFrameRowRiskAssumptions");
+
+                    b.Navigation("LogFrameRowTasks");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.MeReview", b =>
@@ -4970,6 +6301,16 @@ namespace Monic.Web.Migrations
             modelBuilder.Entity("Monic.Web.Models.Milestone", b =>
                 {
                     b.Navigation("Tasks");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.MonitoringEvent", b =>
+                {
+                    b.Navigation("Actions");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.MonitoringPlan", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.Option", b =>
@@ -5033,6 +6374,11 @@ namespace Monic.Web.Migrations
             modelBuilder.Entity("Monic.Web.Models.Response", b =>
                 {
                     b.Navigation("Answers");
+                });
+
+            modelBuilder.Entity("Monic.Web.Models.RiskAssumption", b =>
+                {
+                    b.Navigation("Updates");
                 });
 
             modelBuilder.Entity("Monic.Web.Models.Section", b =>

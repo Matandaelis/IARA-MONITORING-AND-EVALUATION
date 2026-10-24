@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -21,6 +21,14 @@ namespace Monic.Web.Models
 
         [Required]
         public QuestionType QuestionType { get; set; }
+        [Column(TypeName = "decimal(20, 8)")]
+        public decimal? MinValue { get; set; }
+
+        [Column(TypeName = "decimal(20, 8)")]
+        public decimal? MaxValue { get; set; }
+
+        [MaxLength(250)]
+        public string ValidationRegex { get; set; }
 
         public OptionListType? OptionListType { get; set; }
 
