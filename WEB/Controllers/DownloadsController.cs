@@ -290,6 +290,13 @@ namespace Monic.Web.Controllers
             return Download.GetFileContentResult(Response, "MONIC_System_Showcase_Achievements_And_Gaps.pdf", pdfBytes);
         }
 
+        [HttpGet("system-documentation-pdf"), AllowAnonymous]
+        public IActionResult DownloadSystemFullDocumentationPdf()
+        {
+            var pdfBytes = Code.SystemFullDocumentationPdfBuilder.BuildFullDocumentationPdf();
+            return Download.GetFileContentResult(Response, "MONIC_Full_System_Detailed_Documentation.pdf", pdfBytes);
+        }
+
         private async Task<(LogFrame logFrame, List<Indicator> indicators, List<MonitoringAction> caps, List<BeneficiaryFeedback> feedbacks)> LoadProjectMePlanContextAsync(Guid projectId)
         {
             var logFrame = await db.LogFrames
