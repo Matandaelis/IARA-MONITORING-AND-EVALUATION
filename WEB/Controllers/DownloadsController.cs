@@ -4,7 +4,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using Monic.Web.Models;
 using static Monic.Web.Code.ImportCSV;
 
@@ -196,19 +202,129 @@ namespace Monic.Web.Controllers
             return Download.GetFileContentResult(Response, $"{safeName}_Donor_Matrix.csv", bytes);
         }
 
-        //// if using Azure Blob Storage, use something like this to download the document:
-        //[HttpGet("documents/{documentId:Guid}")]
-        //public async Task<IActionResult> DownloadDocument([FromRoute] Guid documentId)
-        //{
-        //    var document = await db.Documents.FirstOrDefaultAsync(o => o.DocumentId == documentId);
+        [HttpGet("projects/{projectId:Guid}/meplan-pdf"), Authorize]
+        public async Task<IActionResult> DownloadMePlanPdf(Guid projectId)
+        {
+            if (!await CanViewProjectAsync(projectId)) return Forbid();
 
-        //    if (document == null) return NotFound();
+            var project = await db.Projects.FirstOrDefaultAsync(p => p.ProjectId == projectId);
+            if (project == null) return NotFound();
 
-        //    var blobStorageService = new BlobStorageService(AppSettings.AzureBlobStorage.ConnectionString, AppSettings.AzureBlobStorage.ConnectionString);
-        //    var bytes = await blobStorageService.GetBlobAsync(documentId.ToString().ToLowerInvariant());
+            var (logFrame, indicators, caps, feedbacks) = await LoadProjectMePlanContextAsync(projectId);
 
-        //    return Download.GetFileContentResult(Response, document.FileName, bytes);
-        //}
+            var bytes = Code.MePlanDocumentBuilder.GeneratePdf(project, logFrame, indicators, caps, feedbacks);
+            var safeName = GetSafeProjectFileName(project.Name);
 
+            return Download.GetFileContentResult(Response, $"{safeName}_MEAL_Plan.pdf", bytes);
+        }
+
+        [HttpGet("projects/{projectId:Guid}/meplan-excel"), Authorize]
+        public async Task<IActionResult> DownloadMePlanExcel(Guid projectId)
+        {
+            if (!await CanViewProjectAsync(projectId)) return Forbid();
+
+            var project = await db.Projects.FirstOrDefaultAsync(p => p.ProjectId == projectId);
+            if (project == null) return NotFound();
+
+            var (logFrame, indicators, caps, feedbacks) = await LoadProjectMePlanContextAsync(projectId);
+
+            var bytes = Code.MePlanDocumentBuilder.GenerateExcel(project, logFrame, indicators, caps, feedbacks);
+            var safeName = GetSafeProjectFileName(project.Name);
+
+            return Download.GetFileContentResult(Response, $"{safeName}_MEAL_Plan.xlsx", bytes);
+        }
+
+        [HttpGet("projects/{projectId:Guid}/iati-xml"), Authorize]
+        public async Task<IActionResult> DownloadIatiXml(Guid projectId)
+        {
+            if (!await CanViewProjectAsync(projectId)) return Forbid();
+
+            var project = await db.Projects.FirstOrDefaultAsync(p => p.ProjectId == projectId);
+            if (project == null) return NotFound();
+
+            var (logFrame, indicators, _, _) = await LoadProjectMePlanContextAsync(projectId);
+
+            var xmlString = Code.DonorExportService.GenerateIatiXml(project, logFrame, indicators);
+            var bytes = Encoding.UTF8.GetBytes(xmlString);
+            var safeName = GetSafeProjectFileName(project.Name);
+
+            return Download.GetFileContentResult(Response, $"{safeName}_IATI_v203.xml", bytes);
+        }
+
+        [HttpGet("projects/{projectId:Guid}/usaid-qpr"), Authorize]
+        public async Task<IActionResult> DownloadUsaidQpr(Guid projectId)
+        {
+            if (!await CanViewProjectAsync(projectId)) return Forbid();
+
+            var project = await db.Projects.FirstOrDefaultAsync(p => p.ProjectId == projectId);
+            if (project == null) return NotFound();
+
+            var (logFrame, indicators, _, _) = await LoadProjectMePlanContextAsync(projectId);
+
+            var bytes = Code.DonorExportService.GenerateUsaidQprExcel(project, logFrame, indicators);
+            var safeName = GetSafeProjectFileName(project.Name);
+
+            return Download.GetFileContentResult(Response, $"{safeName}_USAID_QPR_IPTT.xlsx", bytes);
+        }
+
+        [HttpGet("projects/{projectId:Guid}/eu-rom"), Authorize]
+        public async Task<IActionResult> DownloadEuRom(Guid projectId)
+        {
+            if (!await CanViewProjectAsync(projectId)) return Forbid();
+
+            var project = await db.Projects.FirstOrDefaultAsync(p => p.ProjectId == projectId);
+            if (project == null) return NotFound();
+
+            var (logFrame, indicators, _, _) = await LoadProjectMePlanContextAsync(projectId);
+
+            var bytes = Code.DonorExportService.GenerateEuRomExport(project, logFrame, indicators);
+            var safeName = GetSafeProjectFileName(project.Name);
+
+            return Download.GetFileContentResult(Response, $"{safeName}_EU_ROM_Matrix.xlsx", bytes);
+        }
+
+        private async Task<(LogFrame logFrame, List<Indicator> indicators, List<MonitoringAction> caps, List<BeneficiaryFeedback> feedbacks)> LoadProjectMePlanContextAsync(Guid projectId)
+        {
+            var logFrame = await db.LogFrames
+                .Include(lf => lf.TheoryOfChange)
+                .Include(lf => lf.LogFrameRows)
+                    .ThenInclude(r => r.LogFrameRowIndicators)
+                        .ThenInclude(ri => ri.Indicator)
+                            .ThenInclude(i => i.Data)
+                .Include(lf => lf.LogFrameRows)
+                    .ThenInclude(r => r.LogFrameRowRiskAssumptions)
+                        .ThenInclude(ra => ra.RiskAssumption)
+                .Include(lf => lf.LogFrameRows)
+                    .ThenInclude(r => r.LogFrameRowTasks)
+                        .ThenInclude(rt => rt.Task)
+                .Include(lf => lf.LogFrameRows)
+                    .ThenInclude(r => r.LogFrameRowBudgetLines)
+                        .ThenInclude(rb => rb.BudgetLine)
+                .FirstOrDefaultAsync(lf => lf.ProjectId == projectId);
+
+            var indicators = logFrame?.LogFrameRows?
+                .SelectMany(r => r.LogFrameRowIndicators.Select(ri => ri.Indicator))
+                .Where(i => i != null)
+                .Distinct()
+                .ToList() ?? new List<Indicator>();
+
+            var caps = await db.MonitoringActions
+                .Where(a => a.ProjectId == projectId)
+                .ToListAsync();
+
+            var feedbacks = await db.BeneficiaryFeedbacks
+                .Where(f => f.ProjectId == projectId)
+                .ToListAsync();
+
+            return (logFrame, indicators, caps, feedbacks);
+        }
+
+        private static string GetSafeProjectFileName(string projectName)
+        {
+            var raw = projectName?.Trim();
+            return string.IsNullOrWhiteSpace(raw)
+                ? "Project"
+                : string.Join("_", raw.Split(Path.GetInvalidFileNameChars())).Replace(" ", "_");
+        }
     }
 }
