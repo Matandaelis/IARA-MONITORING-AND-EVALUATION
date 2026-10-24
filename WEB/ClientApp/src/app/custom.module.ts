@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { SharedModule } from './shared.module';
+import { AdminSharedModule } from './admin-shared.module';
 import { StrongPasswordModule } from './common/zxcvbn/strong-password.module';
 import { NgxGraphModule } from '@swimlane/ngx-graph';
 import { HomeComponent } from './home/home.component';
@@ -62,6 +63,13 @@ import { BudgetLineModal } from './budget/budgetline.modal';
 import { FxRatesComponent } from './budget/fxrates.component';
 import { ImportsComponent } from './imports/imports.component';
 import { DisaggregationsComponent } from './admin/disaggregations/disaggregations.component';
+import { MonitoringDashboardComponent } from './monitoring/monitoring-dashboard.component';
+import { MonitoringMatrixComponent } from './monitoring/monitoring-matrix.component';
+import { MonitoringFinancialComponent } from './monitoring/monitoring-financial.component';
+import { MonitoringRegistersComponent } from './monitoring/monitoring-registers.component';
+import { CapsComponent } from './monitoring/caps.component';
+import { FeedbackRegistryComponent } from './monitoring/feedback-registry.component';
+import { PirsCardComponent } from './monitoring/pirs-card.component';
 
 @NgModule({
     imports: [
@@ -71,6 +79,7 @@ import { DisaggregationsComponent } from './admin/disaggregations/disaggregation
         NgbModule,
         DragDropModule,
         SharedModule,
+        AdminSharedModule,
         StrongPasswordModule,
         NgxGraphModule,
         NgxEchartsModule,
@@ -128,7 +137,14 @@ import { DisaggregationsComponent } from './admin/disaggregations/disaggregation
         BudgetLineModal,
         FxRatesComponent,
         ImportsComponent,
-        DisaggregationsComponent
+        DisaggregationsComponent,
+        MonitoringDashboardComponent,
+        MonitoringMatrixComponent,
+        MonitoringFinancialComponent,
+        MonitoringRegistersComponent,
+        CapsComponent,
+        FeedbackRegistryComponent,
+        PirsCardComponent
     ],
     exports: [
         GanttComponent,

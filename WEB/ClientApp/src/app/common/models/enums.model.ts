@@ -110,7 +110,12 @@ export enum QuestionTypes {
     OptionList,
     Multiline,
     Note,
-    Document
+    Document,
+    Number,
+    Date,
+    GPS,
+    Likert,
+    Signature
 }
 
 export enum ReviewResults {
@@ -274,7 +279,12 @@ export class Enums {
         { value: 1, name: 'OptionList', label: 'Option List' },
         { value: 2, name: 'Multiline', label: 'Multi-line Text' },
         { value: 3, name: 'Note', label: 'Note' },
-        { value: 4, name: 'Document', label: 'Document' }
+        { value: 4, name: 'Document', label: 'Document' },
+        { value: 5, name: 'Number', label: 'Number' },
+        { value: 6, name: 'Date', label: 'Date' },
+        { value: 7, name: 'GPS', label: 'GPS Coordinates' },
+        { value: 8, name: 'Likert', label: 'Likert Scale (1-5)' },
+        { value: 9, name: 'Signature', label: 'Digital Signature' }
      ]
 
      static ReviewResults: Enum[] = [

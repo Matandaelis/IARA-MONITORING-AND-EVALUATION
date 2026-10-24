@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -56,6 +59,21 @@ namespace Monic.Web.Controllers
             if (HttpContext.User.IsInRole(role.ToString())) return true;
             if (role != Roles.Administrator && HttpContext.User.IsInRole(Roles.Administrator.ToString())) return true;
             return false;
+        }
+
+        /// <summary>
+        /// Project-level read scope. Managers and oversight can see every project; other roles are
+        /// limited to projects at their permitted entities (plus projects with no entity restriction).
+        /// </summary>
+        internal async Task<bool> CanViewProjectAsync(Guid projectId)
+        {
+            if (HttpContext?.User?.Identity?.IsAuthenticated != true) return true;
+            if (CurrentUser == null || CurrentUserIsInRole(Roles.Manager) || CurrentUserIsInRole(Roles.Oversight)) return true;
+
+            var permittedEntityIds = CurrentUser.GetPermittedEntityIds();
+            return await db.Projects.AsNoTracking()
+                .AnyAsync(o => o.ProjectId == projectId &&
+                    (o.EntityId == null || permittedEntityIds.Contains(o.EntityId.Value)));
         }
 
         protected async Task<List<T>> GetPaginatedResponse<T>(IQueryable<T> query, SearchOptions pagingOptions)

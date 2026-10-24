@@ -18,6 +18,8 @@ export class Question {
     questionOptionGroupId: string;
     minimumDocuments: number;
     maximumDocuments: number;
+    minValue?: number;
+    maxValue?: number;
     checkQuestionId: string;
     skipLogicAction: SkipLogicActions;
     sortOrder: number;

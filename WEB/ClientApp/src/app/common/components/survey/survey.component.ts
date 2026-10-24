@@ -67,6 +67,127 @@ export class SurveyComponent {
     private skipLogicOptionsLookup: Map<string, string[]> = new Map<string, string[]>();
 
     public optionMap: any = {};
+
+    public isCapturingGps = false;
+    public gpsStatusMessage = '';
+    public readonly likertScaleOptions = [
+        { value: '1', label: 'Strongly Disagree' },
+        { value: '2', label: 'Disagree' },
+        { value: '3', label: 'Neutral' },
+        { value: '4', label: 'Agree' },
+        { value: '5', label: 'Strongly Agree' }
+    ];
+
+    @ViewChild('signatureCanvas') signatureCanvasRef: any;
+    private isDrawing = false;
+    public hasDrawnSignature = false;
+
+    public captureGps(): void {
+        if (!navigator.geolocation) {
+            this.gpsStatusMessage = 'Geolocation is not supported by your browser.';
+            this.toastr.warning(this.gpsStatusMessage, 'GPS Unavailable');
+            return;
+        }
+
+        this.isCapturingGps = true;
+        this.gpsStatusMessage = 'Acquiring GPS fix...';
+        navigator.geolocation.getCurrentPosition(
+            position => {
+                this.isCapturingGps = false;
+                const lat = position.coords.latitude.toFixed(6);
+                const lng = position.coords.longitude.toFixed(6);
+                const acc = Math.round(position.coords.accuracy);
+                this.current.answer.value = lat + ', ' + lng + ' (±' + acc + 'm)';
+                this.gpsStatusMessage = 'Fix acquired: Accuracy ±' + acc + 'm';
+                this.toastr.success('GPS acquired: ' + lat + ', ' + lng, 'Location Captured');
+            },
+            err => {
+                this.isCapturingGps = false;
+                this.gpsStatusMessage = 'GPS error: ' + err.message;
+                this.toastr.error(err.message, 'GPS Error');
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+    }
+
+    public startDrawing(e: MouseEvent): void {
+        if (this.response.submitted) return;
+        this.isDrawing = true;
+        this.hasDrawnSignature = true;
+        const canvas = this.signatureCanvasRef?.nativeElement;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        const rect = canvas.getBoundingClientRect();
+        ctx.beginPath();
+        ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    }
+
+    public draw(e: MouseEvent): void {
+        if (!this.isDrawing) return;
+        const canvas = this.signatureCanvasRef?.nativeElement;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        const rect = canvas.getBoundingClientRect();
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+        ctx.stroke();
+    }
+
+    public stopDrawing(): void {
+        if (!this.isDrawing) return;
+        this.isDrawing = false;
+        const canvas = this.signatureCanvasRef?.nativeElement;
+        if (canvas) {
+            this.current.answer.value = canvas.toDataURL('image/png');
+        }
+    }
+
+    public startTouchDrawing(e: TouchEvent): void {
+        if (this.response.submitted || e.touches.length === 0) return;
+        e.preventDefault();
+        this.isDrawing = true;
+        this.hasDrawnSignature = true;
+        const canvas = this.signatureCanvasRef?.nativeElement;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        ctx.beginPath();
+        ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+    }
+
+    public touchDraw(e: TouchEvent): void {
+        if (!this.isDrawing || e.touches.length === 0) return;
+        e.preventDefault();
+        const canvas = this.signatureCanvasRef?.nativeElement;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+        ctx.stroke();
+    }
+
+    public clearSignature(): void {
+        const canvas = this.signatureCanvasRef?.nativeElement;
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            ctx?.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        this.hasDrawnSignature = false;
+        if (this.current && this.current.answer) {
+            this.current.answer.value = '';
+        }
+    }
     private answerCache = new Map<string, AnswerItem>();
 
     constructor(

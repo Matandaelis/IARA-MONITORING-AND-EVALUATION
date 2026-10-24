@@ -24,6 +24,13 @@ import { BudgetCategoriesComponent } from './budget/budgetcategories.component';
 import { FxRatesComponent } from './budget/fxrates.component';
 import { ImportsComponent } from './imports/imports.component';
 import { DisaggregationsComponent } from './admin/disaggregations/disaggregations.component';
+import { MonitoringDashboardComponent } from './monitoring/monitoring-dashboard.component';
+import { MonitoringMatrixComponent } from './monitoring/monitoring-matrix.component';
+import { MonitoringFinancialComponent } from './monitoring/monitoring-financial.component';
+import { MonitoringRegistersComponent } from './monitoring/monitoring-registers.component';
+import { CapsComponent } from './monitoring/caps.component';
+import { FeedbackRegistryComponent } from './monitoring/feedback-registry.component';
+import { PirsCardComponent } from './monitoring/pirs-card.component';
 
 export const CustomRoutes: Route[] = [
     {
@@ -214,6 +221,77 @@ export const CustomRoutes: Route[] = [
             menu: 'home'
         }
     },
+    {
+        path: 'monitoring',
+        canActivate: [AccessGuard],
+        canActivateChild: [AccessGuard],
+        component: MonitoringDashboardComponent,
+        pathMatch: 'full',
+        data: {
+            breadcrumb: 'Monitoring & Evaluation',
+            menu: 'home'
+        }
+    },
+    {
+        path: 'monitoring/matrix',
+        canActivate: [AccessGuard],
+        canActivateChild: [AccessGuard],
+        component: MonitoringMatrixComponent,
+        data: {
+            breadcrumb: 'Monitoring Matrix',
+            menu: 'home'
+        }
+    },
+    {
+        path: 'monitoring/financial',
+        canActivate: [AccessGuard],
+        canActivateChild: [AccessGuard],
+        component: MonitoringFinancialComponent,
+        data: {
+            breadcrumb: 'Financial Monitoring',
+            menu: 'home'
+        }
+    },
+    {
+        path: 'monitoring/registers',
+        canActivate: [AccessGuard],
+        canActivateChild: [AccessGuard],
+        component: MonitoringRegistersComponent,
+        data: {
+            breadcrumb: 'Monitoring Registers',
+            menu: 'home'
+        }
+    },
+    {
+        path: 'monitoring/feedback',
+        canActivate: [AccessGuard],
+        canActivateChild: [AccessGuard],
+        component: FeedbackRegistryComponent,
+        data: {
+            breadcrumb: 'Beneficiary Feedback',
+            menu: 'feedback'
+        }
+    },
+    {
+        path: 'monitoring/pirs/:id',
+        canActivate: [AccessGuard],
+        canActivateChild: [AccessGuard],
+        component: PirsCardComponent,
+        data: {
+            breadcrumb: 'PIRS Reference',
+            menu: 'pirs'
+        }
+    },
+    {
+        path: 'monitoring/caps',
+        canActivate: [AccessGuard],
+        canActivateChild: [AccessGuard],
+        component: CapsComponent,
+        data: {
+            breadcrumb: 'Corrective Action Plans',
+            menu: 'home'
+        }
+    },
     {
         path: 'budgetcategories',
         canActivate: [AccessGuard],

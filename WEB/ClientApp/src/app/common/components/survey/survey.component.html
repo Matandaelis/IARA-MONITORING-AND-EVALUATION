@@ -211,6 +211,93 @@
 
                             </ng-container>
 
+                            <!-- QUESTION TYPE: Number -->
+                            <ng-container *ngIf="current.question.questionType === questionTypes.Number">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-calculator"></i></span>
+                                    <input id="{{current.question.questionId}}" name="{{current.question.questionId}}" type="number" step="any"
+                                           class="form-control" [(ngModel)]="current.answer.value" [required]="current.question.required"
+                                           [min]="current.question.minValue !== null ? current.question.minValue : null"
+                                           [max]="current.question.maxValue !== null ? current.question.maxValue : null"
+                                           #answer="ngModel" tabindex="1" [disabled]="response.submitted" placeholder="Enter numeric value" />
+                                </div>
+                                <div *ngIf="answer.errors?.required" class="invalid-feedback d-block">A numeric answer is required</div>
+                                <div *ngIf="answer.errors?.min" class="invalid-feedback d-block">Value must be at least {{current.question.minValue}}</div>
+                                <div *ngIf="answer.errors?.max" class="invalid-feedback d-block">Value cannot exceed {{current.question.maxValue}}</div>
+                            </ng-container>
+
+                            <!-- QUESTION TYPE: Date -->
+                            <ng-container *ngIf="current.question.questionType === questionTypes.Date">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                                    <input id="{{current.question.questionId}}" name="{{current.question.questionId}}" type="date"
+                                           class="form-control" [(ngModel)]="current.answer.value" [required]="current.question.required"
+                                           #answer="ngModel" tabindex="1" [disabled]="response.submitted" />
+                                </div>
+                                <div *ngIf="answer.errors?.required" class="invalid-feedback d-block">Date is required</div>
+                            </ng-container>
+
+                            <!-- QUESTION TYPE: GPS Coordinates -->
+                            <ng-container *ngIf="current.question.questionType === questionTypes.GPS">
+                                <div class="border rounded p-3 bg-light">
+                                    <div class="input-group mb-2">
+                                        <span class="input-group-text"><i class="fas fa-map-marker-alt text-danger"></i></span>
+                                        <input id="{{current.question.questionId}}" name="{{current.question.questionId}}" type="text"
+                                               class="form-control" [(ngModel)]="current.answer.value" [required]="current.question.required"
+                                               #answer="ngModel" tabindex="1" [disabled]="response.submitted" placeholder="Latitude, Longitude" />
+                                        <button type="button" class="btn btn-primary" (click)="captureGps()" [disabled]="response.submitted || isCapturingGps">
+                                            <i class="fas fa-crosshairs me-1" [ngClass]="{ 'fa-spin': isCapturingGps }"></i>
+                                            {{ isCapturingGps ? 'Acquiring GPS...' : 'Capture GPS' }}
+                                        </button>
+                                    </div>
+                                    <div *ngIf="gpsStatusMessage" class="small text-muted">{{ gpsStatusMessage }}</div>
+                                    <div *ngIf="answer.errors?.required" class="invalid-feedback d-block">GPS Coordinates are required</div>
+                                </div>
+                            </ng-container>
+
+                            <!-- QUESTION TYPE: Likert Scale -->
+                            <ng-container *ngIf="current.question.questionType === questionTypes.Likert">
+                                <input type="hidden" name="hidden{{current.question.questionId}}" id="hidden{{current.question.questionId}}" [(ngModel)]="current.answer.value" [required]="current.question.required" #hiddenLikert="ngModel" />
+                                <div class="d-flex justify-content-between align-items-center py-3 px-2 border rounded bg-white shadow-sm flex-wrap gap-2">
+                                    <div *ngFor="let option of likertScaleOptions" class="text-center flex-fill px-1">
+                                        <label class="d-block cursor-pointer">
+                                            <div class="small fw-semibold mb-1" [ngClass]="current.answer.value === option.value ? 'text-primary' : 'text-muted'">{{ option.label }}</div>
+                                            <input type="radio" id="{{current.question.questionId}}_{{option.value}}" name="{{current.question.questionId}}" class="form-check-input fs-5"
+                                                   [(ngModel)]="current.answer.value" [value]="option.value" [required]="current.question.required"
+                                                   [disabled]="response.submitted" />
+                                            <div class="badge mt-1" [ngClass]="current.answer.value === option.value ? 'bg-primary text-white' : 'bg-light text-secondary border'">
+                                                {{ option.value }}
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div *ngIf="hiddenLikert.errors?.required" class="invalid-feedback d-block mt-2">A rating selection is required</div>
+                            </ng-container>
+
+                            <!-- QUESTION TYPE: Signature -->
+                            <ng-container *ngIf="current.question.questionType === questionTypes.Signature">
+                                <div class="border rounded p-3 bg-white">
+                                    <label class="form-label small text-muted mb-1"><i class="fas fa-signature me-1"></i>Draw signature in the box below:</label>
+                                    <div class="position-relative border border-2 border-secondary-subtle rounded mb-2 bg-light text-center" style="height: 160px;">
+                                        <canvas #signatureCanvas width="500" height="150" class="w-100 h-100 cursor-crosshair"
+                                                (mousedown)="startDrawing($event)" (mousemove)="draw($event)" (mouseup)="stopDrawing()" (mouseleave)="stopDrawing()"
+                                                (touchstart)="startTouchDrawing($event)" (touchmove)="touchDraw($event)" (touchend)="stopDrawing()"></canvas>
+                                        <div *ngIf="!hasDrawnSignature && !current.answer.value" class="position-absolute top-50 start-50 translate-middle text-muted pointer-events-none small">
+                                            <i class="fas fa-pen me-1"></i>Sign Here
+                                        </div>
+                                        <img *ngIf="current.answer.value && !hasDrawnSignature" [src]="current.answer.value" alt="Signed" class="position-absolute top-0 start-0 w-100 h-100" style="object-fit: contain;" />
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearSignature()" [disabled]="response.submitted">
+                                            <i class="fas fa-eraser me-1"></i>Clear Signature
+                                        </button>
+                                        <span *ngIf="current.answer.value" class="badge bg-success"><i class="fas fa-check me-1"></i>Signed</span>
+                                    </div>
+                                    <input type="hidden" name="{{current.question.questionId}}" [(ngModel)]="current.answer.value" [required]="current.question.required" #sigInput="ngModel" />
+                                    <div *ngIf="sigInput.errors?.required && !current.answer.value" class="invalid-feedback d-block mt-1">A signature is required</div>
+                                </div>
+                            </ng-container>
+
                             <p *ngIf="current.question.explanation" class="my-6 fs-5 cursor-help bg-light p-4 border-gray-400 border fst-italic">{{current.question.explanation}}</p>
 
                             <div class="mt-8 row">

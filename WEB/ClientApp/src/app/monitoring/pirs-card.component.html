@@ -1,0 +1,158 @@
+<div class="pirs-card card shadow-sm border mb-4" *ngIf="indicator">
+
+    <!-- Card Header / Toolbar -->
+    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <span class="badge bg-primary text-uppercase me-2">PIRS Standard Reference</span>
+            <span class="badge bg-secondary me-2">{{ indicator.code }}</span>
+            <span class="badge bg-info text-dark">{{ getMonitoringType(indicator.monitoringType) }}</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-outline-light" (click)="printCard()" ngbTooltip="Print / Save PDF">
+                <i class="fas fa-print me-1"></i>Print PIRS
+            </button>
+            <button *ngIf="isModal" type="button" class="btn-close btn-close-white" (click)="close.emit()" aria-label="Close"></button>
+        </div>
+    </div>
+
+    <div class="card-body p-4">
+
+        <!-- Title Banner -->
+        <div class="border-bottom pb-3 mb-4">
+            <h3 class="h4 mb-1 text-primary">{{ indicator.name }}</h3>
+            <p class="text-muted small mb-0" *ngIf="indicator.subcategory">
+                Sector / Subcategory: <strong>{{ indicator.subcategory.name }}</strong> |
+                Direction: <strong>{{ indicator.lowerIsBetter ? 'Lower is Better (Reduction)' : 'Higher is Better (Growth)' }}</strong> |
+                Unit: <strong>{{ indicator.units || 'Count / Numeric' }}</strong>
+            </p>
+        </div>
+
+        <div class="row g-4">
+
+            <!-- Section 1: Definition & Purpose -->
+            <div class="col-md-6">
+                <div class="border rounded p-3 h-100 bg-light">
+                    <h5 class="h6 text-uppercase fw-bold text-secondary border-bottom pb-2 mb-3">
+                        <i class="fas fa-book me-2 text-primary"></i>1. Definition &amp; Purpose
+                    </h5>
+                    <div class="mb-3">
+                        <label class="form-label small text-muted fw-semibold mb-1">Operational / Precise Definition:</label>
+                        <p class="small mb-0">{{ indicator.operationalDefinition || indicator.description || 'Definition not formally specified in catalog.' }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small text-muted fw-semibold mb-1">Purpose &amp; Strategic Rationale:</label>
+                        <p class="small mb-0">{{ indicator.purposeRationale || 'Tracks milestone delivery toward project outputs and strategic objectives.' }}</p>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label small text-muted fw-semibold mb-1">Disaggregation Dimensions:</label>
+                        <p class="small mb-0">{{ indicator.disaggregationGroup?.name || 'Standard demographic breakdown (Gender, Age cohort, Location)' }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Data Acquisition & Methodology -->
+            <div class="col-md-6">
+                <div class="border rounded p-3 h-100 bg-light">
+                    <h5 class="h6 text-uppercase fw-bold text-secondary border-bottom pb-2 mb-3">
+                        <i class="fas fa-satellite-dish me-2 text-primary"></i>2. Data Acquisition &amp; Methodology
+                    </h5>
+                    <div class="mb-3">
+                        <label class="form-label small text-muted fw-semibold mb-1">Data Source &amp; Means of Verification:</label>
+                        <p class="small mb-0">{{ indicator.dataSource || 'Field survey submission, administrative registers, and routine spot-checks.' }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small text-muted fw-semibold mb-1">Collection Method &amp; Tools:</label>
+                        <p class="small mb-0">{{ indicator.collectionMethod || 'Digital survey collection via MONIC mobile web & verified import.' }}</p>
+                    </div>
+                    <div class="row g-2 mb-0">
+                        <div class="col-6">
+                            <label class="form-label small text-muted fw-semibold mb-1">Frequency:</label>
+                            <p class="small mb-0">Period-based</p>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-muted fw-semibold mb-1">Accountable Role:</label>
+                            <p class="small mb-0">{{ indicator.responsibleUser?.fullName || indicator.responsibleUserName || 'M&E Officer' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Data Quality & Analysis -->
+            <div class="col-12">
+                <div class="border rounded p-3 bg-light">
+                    <h5 class="h6 text-uppercase fw-bold text-secondary border-bottom pb-2 mb-3">
+                        <i class="fas fa-check-double me-2 text-primary"></i>3. Data Quality Protocol &amp; Calculation Formula
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted fw-semibold mb-1">Calculation Formula Narrative:</label>
+                            <div class="p-2 border rounded bg-white font-monospace small">
+                                {{ indicator.calculationFormula || (indicator.isCalculated ? 'Calculated formula indicator' : 'Sum of validated contributions: ∑(ContributionValue)') }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted fw-semibold mb-1">Data Quality Protocol &amp; Known Limitations:</label>
+                            <p class="small mb-0">
+                                {{ indicator.dataQualityProtocol || 'Subject to routine spot-check DQA verification (VF < 5% = Grade A, > 10% = Corrective Action Plan). Verified against source attendance lists and GPS timestamps.' }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 4: Performance Targets & Schedule -->
+            <div class="col-12">
+                <div class="border rounded p-3 bg-white">
+                    <h5 class="h6 text-uppercase fw-bold text-secondary border-bottom pb-2 mb-3">
+                        <i class="fas fa-calendar-check me-2 text-primary"></i>4. Baseline &amp; Milestone Reporting Schedule
+                    </h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Period / Reporting Date</th>
+                                    <th>Disaggregation Option</th>
+                                    <th class="text-end">Baseline</th>
+                                    <th class="text-end">Target</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngIf="!targets || targets.length === 0">
+                                    <td colspan="5" class="text-center text-muted py-2 small">No milestone targets registered for this indicator.</td>
+                                </tr>
+                                <tr *ngFor="let t of targets">
+                                    <td><strong>{{ t.date?.name || t.dateId }}</strong></td>
+                                    <td>
+                                        <span *ngIf="t.disaggregationOptionName" class="badge bg-info text-dark">
+                                            {{ t.disaggregationOptionName }}
+                                        </span>
+                                        <span *ngIf="!t.disaggregationOptionName" class="text-muted small">Total</span>
+                                    </td>
+                                    <td class="text-end">{{ t.baselineValue !== null && t.baselineValue !== undefined ? t.baselineValue : '-' }}</td>
+                                    <td class="text-end"><strong>{{ t.targetValue }}</strong></td>
+                                    <td class="small text-muted">{{ t.notes || '-' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Card Footer -->
+    <div class="card-footer bg-light text-muted small d-flex justify-content-between align-items-center">
+        <span>Generated by MONIC Universal M&amp;E Platform</span>
+        <span>Standard USAID Automated Directive System (ADS) 201 / European Commission ROM Compliance</span>
+    </div>
+
+</div>
+
+<div *ngIf="loading" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading PIRS Reference...</span>
+    </div>
+</div>
