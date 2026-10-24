@@ -10,6 +10,7 @@ namespace Monic.Web.Models
 
         [DisplayFormat(ConvertEmptyStringToNull = false), MaxLength(255)]
         public string Name { get; set; }
+        public Guid? ProjectId { get; set; }
 
         public virtual List<LogFrameRowDTO> LogFrameRows { get; set; } = new List<LogFrameRowDTO>();
 
@@ -25,6 +26,7 @@ namespace Monic.Web.Models
 
             logFrameDTO.LogFrameId = logFrame.LogFrameId;
             logFrameDTO.Name = logFrame.Name;
+            logFrameDTO.ProjectId = logFrame.ProjectId;
 
             if (includeChildren)
             {
@@ -38,6 +40,7 @@ namespace Monic.Web.Models
         public static void Hydrate(LogFrame logFrame, LogFrameDTO logFrameDTO)
         {
             logFrame.Name = logFrameDTO.Name;
+            logFrame.ProjectId = logFrameDTO.ProjectId;
         }
     }
 }

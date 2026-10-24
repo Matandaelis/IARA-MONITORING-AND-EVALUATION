@@ -4,6 +4,8 @@ import { LogFrameRow } from './logframerow.model';
 export class LogFrame {
     logFrameId: string;
     name: string;
+    projectId?: string;
+    theoryOfChangeId?: string;
 
     logFrameRows: LogFrameRow[];
 

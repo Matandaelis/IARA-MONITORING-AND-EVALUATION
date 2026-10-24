@@ -17,7 +17,7 @@
                             Description:
                         </label>
 
-                        <textarea id="description" name="description" class="form-control" rows="5" [(ngModel)]="logFrameRow.description" #description="ngModel" required></textarea>
+                        <textarea id="description" name="description" class="form-control" rows="4" [(ngModel)]="logFrameRow.description" #description="ngModel" required></textarea>
 
                         <div *ngIf="description.errors?.required" class="invalid-feedback">
                             Description is required
@@ -30,10 +30,10 @@
                     <div class="form-group" [ngClass]="{ 'is-invalid': indicators.invalid }">
 
                         <label for="indicators">
-                            Indicators:
+                            Indicators (Narrative):
                         </label>
 
-                        <textarea id="indicators" name="indicators" class="form-control" rows="5" [(ngModel)]="logFrameRow.indicators" #indicators="ngModel" required></textarea>
+                        <textarea id="indicators" name="indicators" class="form-control" rows="4" [(ngModel)]="logFrameRow.indicators" #indicators="ngModel" required></textarea>
 
                         <div *ngIf="indicators.errors?.required" class="invalid-feedback">
                             Indicators is required
@@ -49,7 +49,7 @@
                             Means of Verification:
                         </label>
 
-                        <textarea id="meansOfVerification" name="meansOfVerification" class="form-control" rows="5" [(ngModel)]="logFrameRow.meansOfVerification" #meansOfVerification="ngModel" required></textarea>
+                        <textarea id="meansOfVerification" name="meansOfVerification" class="form-control" rows="4" [(ngModel)]="logFrameRow.meansOfVerification" #meansOfVerification="ngModel" required></textarea>
 
                         <div *ngIf="meansOfVerification.errors?.required" class="invalid-feedback">
                             Means of Verification is required
@@ -62,10 +62,10 @@
                     <div class="form-group" [ngClass]="{ 'is-invalid': risksAndAssumptions.invalid }">
 
                         <label for="risksAndAssumptions">
-                            Risks And Assumptions:
+                            Risks And Assumptions (Narrative):
                         </label>
 
-                        <textarea id="risksAndAssumptions" name="risksAndAssumptions" class="form-control" rows="5" [(ngModel)]="logFrameRow.risksAndAssumptions" #risksAndAssumptions="ngModel" required></textarea>
+                        <textarea id="risksAndAssumptions" name="risksAndAssumptions" class="form-control" rows="4" [(ngModel)]="logFrameRow.risksAndAssumptions" #risksAndAssumptions="ngModel" required></textarea>
 
                         <div *ngIf="risksAndAssumptions.errors?.required" class="invalid-feedback">
                             Risks And Assumptions is required
@@ -100,7 +100,7 @@
                         <thead class="thead-light">
                             <tr>
                                 <th>{{logFrameRowTypes[logFrameRow.rowType].label}}</th>
-                                <th class="w-20px text-center"><i class="fas fa-times text-danger cursor-pointer" (click)="deleteLogFrameRowComponents()" ngbTooltip="Remove all indicators" container="body" placement="left" *ngIf="logFrameRow.logFrameRowComponents.length"></i></th>
+                                <th class="w-20px text-center"><i class="fas fa-times text-danger cursor-pointer" (click)="deleteLogFrameRowComponents()" ngbTooltip="Remove all" container="body" placement="left" *ngIf="logFrameRow.logFrameRowComponents.length"></i></th>
                             </tr>
                         </thead>
                         <tbody class="list cursor-pointer">
@@ -113,7 +113,7 @@
 
                 </div>
 
-                <div class="alert alert-info mt-5" *ngIf="logFrameRow.logFrameRowComponents.length === 0">No {{logFrameRowTypes[logFrameRow.rowType].label}} have been selected</div>
+                <div class="alert alert-info mt-3" *ngIf="logFrameRow.logFrameRowComponents.length === 0">No {{logFrameRowTypes[logFrameRow.rowType].label}} have been selected</div>
 
             </ng-template>
 
@@ -148,7 +148,234 @@
 
                 </div>
 
-                <div class="alert alert-info" *ngIf="logFrameRow.logFrameRowIndicators.length === 0">No indicators have been selected</div>
+                <div class="alert alert-info mt-3" *ngIf="logFrameRow.logFrameRowIndicators.length === 0">No indicators have been selected</div>
+
+            </ng-template>
+
+        </ng-container>
+
+        <!-- Linked Risks & Assumptions -->
+        <ng-container ngbNavItem>
+
+            <a ngbNavLink>Risks &amp; Assumptions</a>
+
+            <ng-template ngbNavContent>
+
+                <div class="row g-2 mb-3 align-items-end">
+                    <div class="col-sm-8 col-md-9">
+                        <label class="form-label small text-muted">Select Project Risk / Assumption to link:</label>
+                        <select class="form-select form-select-sm" [(ngModel)]="selectedRiskId">
+                            <option value="">-- Choose Risk or Assumption --</option>
+                            <option *ngFor="let r of availableRisks" [value]="r.riskAssumptionId">
+                                [{{r.typeLabel || 'Risk'}}] {{r.title}} (L{{r.likelihood}}xI{{r.impact}} - {{r.statusLabel || 'Open'}})
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-sm-4 col-md-3">
+                        <button type="button" class="btn btn-sm btn-outline-primary w-100" [disabled]="!selectedRiskId" (click)="addRisk()">
+                            <i class="fas fa-plus me-1"></i>Link Risk
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped table-nowrap mb-0 align-middle">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Risk / Assumption</th>
+                                <th>Likelihood</th>
+                                <th>Impact</th>
+                                <th>Status</th>
+                                <th class="w-20px text-center"><i class="fas fa-times"></i></th>
+                            </tr>
+                        </thead>
+                        <tbody class="list">
+                            <tr *ngFor="let risk of logFrameRow.logFrameRowRiskAssumptions">
+                                <td>
+                                    <strong>{{ risk.title }}</strong>
+                                    <div class="small text-muted" *ngIf="risk.description">{{ risk.description }}</div>
+                                </td>
+                                <td>{{ risk.likelihood || 1 }}</td>
+                                <td>{{ risk.impact || 1 }}</td>
+                                <td>
+                                    <span class="badge" [ngClass]="risk.status === 'Realized' ? 'bg-danger' : 'bg-secondary'">{{ risk.status || 'Open' }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <i class="fas fa-times cursor-pointer p-1 text-danger" (click)="deleteRisk(risk, $event)" ngbTooltip="Unlink risk"></i>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="alert alert-info mt-3" *ngIf="!logFrameRow.logFrameRowRiskAssumptions || logFrameRow.logFrameRowRiskAssumptions.length === 0">
+                    No structured risks or assumptions linked to this LogFrame row.
+                </div>
+
+            </ng-template>
+
+        </ng-container>
+
+        <!-- Linked Tasks -->
+        <ng-container ngbNavItem>
+
+            <a ngbNavLink>Tasks &amp; Milestones</a>
+
+            <ng-template ngbNavContent>
+
+                <div class="row g-2 mb-3 align-items-end">
+                    <div class="col-sm-8 col-md-9">
+                        <label class="form-label small text-muted">Select Workplan Task to link:</label>
+                        <select class="form-select form-select-sm" [(ngModel)]="selectedTaskId">
+                            <option value="">-- Choose Task --</option>
+                            <option *ngFor="let t of availableTasks" [value]="t.taskId">
+                                {{t.name}} ({{t.percentCompleted || 0}}% complete)
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-sm-4 col-md-3">
+                        <button type="button" class="btn btn-sm btn-outline-primary w-100" [disabled]="!selectedTaskId" (click)="addTask()">
+                            <i class="fas fa-plus me-1"></i>Link Task
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped table-nowrap mb-0 align-middle">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Task Name</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Progress</th>
+                                <th class="w-20px text-center"><i class="fas fa-times"></i></th>
+                            </tr>
+                        </thead>
+                        <tbody class="list">
+                            <tr *ngFor="let t of logFrameRow.logFrameRowTasks">
+                                <td><strong>{{ t.name }}</strong></td>
+                                <td>{{ t.startDate ? (t.startDate | date:'mediumDate') : '-' }}</td>
+                                <td>{{ t.endDate ? (t.endDate | date:'mediumDate') : '-' }}</td>
+                                <td>
+                                    <div class="progress" style="height: 18px; min-width: 100px;">
+                                        <div class="progress-bar bg-success" role="progressbar" [style.width.%]="t.percentCompleted || 0">
+                                            {{ t.percentCompleted || 0 }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <i class="fas fa-times cursor-pointer p-1 text-danger" (click)="deleteTask(t, $event)" ngbTooltip="Unlink task"></i>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="alert alert-info mt-3" *ngIf="!logFrameRow.logFrameRowTasks || logFrameRow.logFrameRowTasks.length === 0">
+                    No workplan tasks linked to this LogFrame row.
+                </div>
+
+            </ng-template>
+
+        </ng-container>
+
+        <!-- Linked Budget Lines -->
+        <ng-container ngbNavItem>
+
+            <a ngbNavLink>Budget Lines</a>
+
+            <ng-template ngbNavContent>
+
+                <div class="row g-2 mb-3 align-items-end">
+                    <div class="col-sm-8 col-md-9">
+                        <label class="form-label small text-muted">Select Project Budget Line to link:</label>
+                        <select class="form-select form-select-sm" [(ngModel)]="selectedBudgetLineId">
+                            <option value="">-- Choose Budget Line --</option>
+                            <option *ngFor="let b of availableBudgetLines" [value]="b.budgetLineId">
+                                {{b.description}} (Planned: {{b.plannedAmount | number:'1.0-0'}} {{b.currency}})
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-sm-4 col-md-3">
+                        <button type="button" class="btn btn-sm btn-outline-primary w-100" [disabled]="!selectedBudgetLineId" (click)="addBudgetLine()">
+                            <i class="fas fa-plus me-1"></i>Link Budget
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped table-nowrap mb-0 align-middle">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Description</th>
+                                <th class="text-end">Planned</th>
+                                <th class="text-end">Actual Expended</th>
+                                <th class="text-center">Currency</th>
+                                <th class="w-20px text-center"><i class="fas fa-times"></i></th>
+                            </tr>
+                        </thead>
+                        <tbody class="list">
+                            <tr *ngFor="let b of logFrameRow.logFrameRowBudgetLines">
+                                <td><strong>{{ b.description }}</strong></td>
+                                <td class="text-end">{{ b.plannedAmount | number:'1.2-2' }}</td>
+                                <td class="text-end">{{ b.actualAmount | number:'1.2-2' }}</td>
+                                <td class="text-center"><span class="badge bg-secondary">{{ b.currency || 'USD' }}</span></td>
+                                <td class="text-center">
+                                    <i class="fas fa-times cursor-pointer p-1 text-danger" (click)="deleteBudgetLine(b, $event)" ngbTooltip="Unlink budget line"></i>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="alert alert-info mt-3" *ngIf="!logFrameRow.logFrameRowBudgetLines || logFrameRow.logFrameRowBudgetLines.length === 0">
+                    No budget lines linked to this LogFrame row.
+                </div>
+
+            </ng-template>
+
+        </ng-container>
+
+        <!-- Live Metrics -->
+        <ng-container ngbNavItem *ngIf="logFrameRow.liveIndicatorMetrics && logFrameRow.liveIndicatorMetrics.length > 0">
+
+            <a ngbNavLink><i class="fas fa-chart-line me-1"></i>Live Progress</a>
+
+            <ng-template ngbNavContent>
+
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped table-nowrap mb-0 align-middle">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Code</th>
+                                <th>Indicator</th>
+                                <th class="text-end">Current Actual</th>
+                                <th class="text-end">Target</th>
+                                <th class="text-center">Achievement</th>
+                                <th class="text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="list">
+                            <tr *ngFor="let m of logFrameRow.liveIndicatorMetrics">
+                                <td><span class="badge bg-secondary">{{ m.code }}</span></td>
+                                <td>{{ m.name }}</td>
+                                <td class="text-end"><strong>{{ m.currentValue !== null && m.currentValue !== undefined ? m.currentValue : '-' }}</strong></td>
+                                <td class="text-end">{{ m.targetValue !== null && m.targetValue !== undefined ? m.targetValue : '-' }}</td>
+                                <td class="text-center">
+                                    <span *ngIf="m.percentageAchievement !== null && m.percentageAchievement !== undefined">
+                                        {{ m.percentageAchievement | number:'1.0-1' }}%
+                                    </span>
+                                    <span *ngIf="m.percentageAchievement === null || m.percentageAchievement === undefined" class="text-muted">-</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge" [ngClass]="m.statusBadgeColor === 'success' ? 'bg-success' : (m.statusBadgeColor === 'danger' ? 'bg-danger' : (m.statusBadgeColor === 'primary' ? 'bg-primary' : 'bg-secondary'))">
+                                        {{ m.statusBadgeColor }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
             </ng-template>
 

@@ -21,6 +21,10 @@ export class IndicatorTargetService {
         return this.http.post<IndicatorTarget>(`${environment.baseApiUrl}indicators/${indicatorId}/targets`, target);
     }
 
+    batchSaveTargets(indicatorId: string, targets: IndicatorTarget[]): Observable<IndicatorTarget[]> {
+        return this.http.post<IndicatorTarget[]>(`${environment.baseApiUrl}indicators/${indicatorId}/targets/batch`, targets);
+    }
+
     deleteTarget(indicatorId: string, targetId: string): Observable<any> {
         return this.http.delete(`${environment.baseApiUrl}indicators/${indicatorId}/targets/${targetId}`);
     }

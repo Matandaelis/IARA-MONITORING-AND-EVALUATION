@@ -4,7 +4,7 @@ import { ErrorService } from '../common/services/error.service';
 import { NgForm } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 import { ConfirmModalComponent, ConfirmModalOptions } from '../common/components/confirm.component';
-import { LogFrameRow } from '../common/models/logframerow.model';
+import { LogFrameRow, LogFrameRowRiskAssumption, LogFrameRowTask, LogFrameRowBudgetLine } from '../common/models/logframerow.model';
 import { LogFrameRowService } from '../common/services/logframerow.service';
 import { ComponentTypes, Enum, Enums, LogFrameRowTypes } from '../common/models/enums.model';
 import { LogFrame } from '../common/models/logframe.model';
@@ -15,6 +15,12 @@ import { LogFrameRowIndicatorService } from '../common/services/logframerowindic
 import { ComponentModalComponent } from '../admin/components/component.modal.component';
 import { Component } from '../common/models/component.model';
 import { LogFrameRowComponent } from '../common/models/logframerowcomponent.model';
+import { RiskAssumption } from '../common/models/monitoring.model';
+import { MonitoringService } from '../common/services/monitoring.service';
+import { Task } from '../common/models/task.model';
+import { TaskService } from '../common/services/task.service';
+import { BudgetLine } from '../common/models/budget.model';
+import { BudgetService } from '../common/services/budget.service';
 
 @NgComponent({
     selector: 'logframe-row',
@@ -31,12 +37,23 @@ export class LogFrameRowViewComponent implements OnInit {
     public isNew = true;
     public logFrameRowTypes: Enum[] = Enums.LogFrameRowTypes;
 
+    public availableRisks: RiskAssumption[] = [];
+    public availableTasks: Task[] = [];
+    public availableBudgetLines: BudgetLine[] = [];
+
+    public selectedRiskId: string = '';
+    public selectedTaskId: string = '';
+    public selectedBudgetLineId: string = '';
+
     constructor(
         public modal: NgbActiveModal,
         private logFrameRowService: LogFrameRowService,
         private toastr: ToastrService,
         private errorService: ErrorService,
-        private modalService: NgbModal
+        private modalService: NgbModal,
+        private monitoringService: MonitoringService,
+        private taskService: TaskService,
+        private budgetService: BudgetService
     ) {
     }
 
@@ -51,12 +68,35 @@ export class LogFrameRowViewComponent implements OnInit {
             this.logFrameRow.logFrameId = logFrame.logFrameId;
             this.logFrameRow.logFrameRowIndicators = [];
             this.logFrameRow.logFrameRowComponents = [];
+            this.logFrameRow.logFrameRowRiskAssumptions = [];
+            this.logFrameRow.logFrameRowTasks = [];
+            this.logFrameRow.logFrameRowBudgetLines = [];
+            this.logFrameRow.liveIndicatorMetrics = [];
         } else {
             this.isNew = false;
             // clone to avoid cancelled changes affecting source page
             this.logFrameRow = { ...logFrameRow };
-            this.logFrameRow.logFrameRowIndicators = [...logFrameRow.logFrameRowIndicators];
-            this.logFrameRow.logFrameRowComponents = [...logFrameRow.logFrameRowComponents];
+            this.logFrameRow.logFrameRowIndicators = [...(logFrameRow.logFrameRowIndicators || [])];
+            this.logFrameRow.logFrameRowComponents = [...(logFrameRow.logFrameRowComponents || [])];
+            this.logFrameRow.logFrameRowRiskAssumptions = [...(logFrameRow.logFrameRowRiskAssumptions || [])];
+            this.logFrameRow.logFrameRowTasks = [...(logFrameRow.logFrameRowTasks || [])];
+            this.logFrameRow.logFrameRowBudgetLines = [...(logFrameRow.logFrameRowBudgetLines || [])];
+            this.logFrameRow.liveIndicatorMetrics = [...(logFrameRow.liveIndicatorMetrics || [])];
+        }
+
+        if (logFrame && logFrame.projectId) {
+            this.monitoringService.getRisks(logFrame.projectId).subscribe({
+                next: risks => this.availableRisks = risks || [],
+                error: () => {}
+            });
+            this.taskService.search({ projectId: logFrame.projectId } as any).subscribe({
+                next: res => this.availableTasks = res?.tasks || [],
+                error: () => {}
+            });
+            this.budgetService.searchLines({ projectId: logFrame.projectId } as any).subscribe({
+                next: res => this.availableBudgetLines = res?.budgetLines || [],
+                error: () => {}
+            });
         }
     }
 
@@ -157,4 +197,73 @@ export class LogFrameRowViewComponent implements OnInit {
             this.logFrameRow.logFrameRowComponents.pop();
     }
 
+    addRisk(): void {
+        if (!this.selectedRiskId) return;
+        const risk = this.availableRisks.find(r => r.riskAssumptionId === this.selectedRiskId);
+        if (!risk) return;
+        if (!this.logFrameRow.logFrameRowRiskAssumptions.some(r => r.riskAssumptionId === risk.riskAssumptionId)) {
+            this.logFrameRow.logFrameRowRiskAssumptions.push({
+                logFrameRowId: this.logFrameRow.logFrameRowId,
+                riskAssumptionId: risk.riskAssumptionId,
+                title: risk.title,
+                description: risk.description,
+                likelihood: risk.likelihood,
+                impact: risk.impact,
+                status: risk.statusLabel || (risk.status !== undefined ? risk.status.toString() : 'Open')
+            });
+        }
+        this.selectedRiskId = '';
+    }
+
+    deleteRisk(risk: LogFrameRowRiskAssumption, event: MouseEvent): void {
+        event.stopPropagation();
+        const idx = this.logFrameRow.logFrameRowRiskAssumptions.findIndex(r => r.riskAssumptionId === risk.riskAssumptionId);
+        if (idx >= 0) this.logFrameRow.logFrameRowRiskAssumptions.splice(idx, 1);
+    }
+
+    addTask(): void {
+        if (!this.selectedTaskId) return;
+        const task = this.availableTasks.find(t => t.taskId === this.selectedTaskId);
+        if (!task) return;
+        if (!this.logFrameRow.logFrameRowTasks.some(t => t.taskId === task.taskId)) {
+            this.logFrameRow.logFrameRowTasks.push({
+                logFrameRowId: this.logFrameRow.logFrameRowId,
+                taskId: task.taskId,
+                name: task.name,
+                percentCompleted: task.percentCompleted || 0,
+                startDate: task.startDate,
+                endDate: task.endDate
+            });
+        }
+        this.selectedTaskId = '';
+    }
+
+    deleteTask(task: LogFrameRowTask, event: MouseEvent): void {
+        event.stopPropagation();
+        const idx = this.logFrameRow.logFrameRowTasks.findIndex(t => t.taskId === task.taskId);
+        if (idx >= 0) this.logFrameRow.logFrameRowTasks.splice(idx, 1);
+    }
+
+    addBudgetLine(): void {
+        if (!this.selectedBudgetLineId) return;
+        const line = this.availableBudgetLines.find(b => b.budgetLineId === this.selectedBudgetLineId);
+        if (!line) return;
+        if (!this.logFrameRow.logFrameRowBudgetLines.some(b => b.budgetLineId === line.budgetLineId)) {
+            this.logFrameRow.logFrameRowBudgetLines.push({
+                logFrameRowId: this.logFrameRow.logFrameRowId,
+                budgetLineId: line.budgetLineId,
+                description: line.description,
+                plannedAmount: line.plannedAmount || 0,
+                actualAmount: line.actualAmount || 0,
+                currency: line.currency || 'USD'
+            });
+        }
+        this.selectedBudgetLineId = '';
+    }
+
+    deleteBudgetLine(line: LogFrameRowBudgetLine, event: MouseEvent): void {
+        event.stopPropagation();
+        const idx = this.logFrameRow.logFrameRowBudgetLines.findIndex(b => b.budgetLineId === line.budgetLineId);
+        if (idx >= 0) this.logFrameRow.logFrameRowBudgetLines.splice(idx, 1);
+    }
 }

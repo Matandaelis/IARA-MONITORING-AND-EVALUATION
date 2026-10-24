@@ -7,6 +7,8 @@ export class IndicatorTarget {
     indicatorId: string;
     dateId: string;
     entityId?: string;
+    disaggregationOptionId?: string;
+    disaggregationOptionName?: string;
     targetValue: number;
     baselineValue?: number;
     notes?: string;

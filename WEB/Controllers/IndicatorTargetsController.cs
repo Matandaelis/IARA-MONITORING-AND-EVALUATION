@@ -27,6 +27,7 @@ namespace Monic.Web.Controllers
             var query = db.IndicatorTargets
                 .Include(t => t.Date)
                 .Include(t => t.Entity)
+                .Include(t => t.DisaggregationOption)
                 .Where(t => t.IndicatorId == indicatorId);
 
             if (entityId.HasValue)
@@ -61,7 +62,8 @@ namespace Monic.Web.Controllers
             var existing = await db.IndicatorTargets
                 .FirstOrDefaultAsync(t => t.IndicatorId == indicatorId &&
                                           t.DateId == dto.DateId &&
-                                          t.EntityId == dto.EntityId);
+                                          t.EntityId == dto.EntityId &&
+                                          t.DisaggregationOptionId == dto.DisaggregationOptionId);
 
             if (existing != null)
             {
@@ -86,9 +88,54 @@ namespace Monic.Web.Controllers
                 {
                     await db.Entry(newTarget).Reference(t => t.Entity).LoadAsync();
                 }
+                if (newTarget.DisaggregationOptionId.HasValue)
+                {
+                    await db.Entry(newTarget).Reference(t => t.DisaggregationOption).LoadAsync();
+                }
 
                 return CreatedAtAction(nameof(GetTargets), new { indicatorId }, ModelFactory.Create(newTarget));
             }
+        }
+
+        [HttpPost("batch")]
+        [AuthorizeRoles(Roles.Administrator, Roles.Manager)]
+        public async Task<IActionResult> BatchUpsertTargets([FromRoute] Guid indicatorId, [FromBody] List<IndicatorTargetDTO> dtos)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var indicator = await db.Indicators.FindAsync(indicatorId);
+            if (indicator == null) return NotFound("Indicator not found");
+
+            var results = new List<IndicatorTargetDTO>();
+
+            foreach (var dto in dtos)
+            {
+                var existing = await db.IndicatorTargets
+                    .FirstOrDefaultAsync(t => t.IndicatorId == indicatorId &&
+                                              t.DateId == dto.DateId &&
+                                              t.EntityId == dto.EntityId &&
+                                              t.DisaggregationOptionId == dto.DisaggregationOptionId);
+
+                if (existing != null)
+                {
+                    ModelFactory.Hydrate(existing, dto);
+                    results.Add(ModelFactory.Create(existing));
+                }
+                else
+                {
+                    var newTarget = new IndicatorTarget
+                    {
+                        IndicatorTargetId = Guid.NewGuid(),
+                        IndicatorId = indicatorId
+                    };
+                    ModelFactory.Hydrate(newTarget, dto);
+                    db.IndicatorTargets.Add(newTarget);
+                    results.Add(ModelFactory.Create(newTarget));
+                }
+            }
+
+            await db.SaveChangesAsync();
+            return Ok(results);
         }
 
         [HttpDelete("{targetId}")]

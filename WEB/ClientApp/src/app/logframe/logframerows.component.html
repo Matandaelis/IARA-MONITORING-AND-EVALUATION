@@ -1,48 +1,92 @@
 <div class="lfRows">
     <div class="lfRow" *ngFor="let row of rows" (click)="rowClicked(row)">
         <div class="description">
-            <p>{{row.description}}</p>
+            <p class="mb-1">{{row.description}}</p>
             <div class="d-flex flex-wrap align-items-center mb-1">
                 <span *ngFor="let lfrc of row.logFrameRowComponents" class="badge rounded-pill text-bg-secondary me-2 mb-1" [ngbTooltip]="lfrc.component.name" placement="bottom">{{lfrc.component.code}}</span>
                 <span *ngIf="getRowRollup(row)?.averageAchievement !== null && getRowRollup(row)?.averageAchievement !== undefined" class="badge rounded-pill border mb-1" [ngClass]="getStatusBadgeClass(getRowRollup(row)?.rowStatus)">
                     <i class="fas fa-chart-line me-1"></i>Avg: {{getRowRollup(row)?.averageAchievement | number:'1.0-1'}}%
                 </span>
             </div>
+            <!-- Linked Tasks & Budget Lines -->
+            <div *ngIf="(row.logFrameRowTasks && row.logFrameRowTasks.length > 0) || (row.logFrameRowBudgetLines && row.logFrameRowBudgetLines.length > 0)" class="mt-2 pt-1 border-top border-light-subtle">
+                <div *ngIf="row.logFrameRowTasks && row.logFrameRowTasks.length > 0" class="d-flex flex-wrap gap-1 mb-1">
+                    <span *ngFor="let t of row.logFrameRowTasks" class="badge bg-light text-dark border" [ngbTooltip]="t.name + ' (' + (t.percentCompleted || 0) + '% complete)'">
+                        <i class="fas fa-tasks text-primary me-1"></i>{{t.name}} <strong class="text-primary ms-1">{{t.percentCompleted || 0}}%</strong>
+                    </span>
+                </div>
+                <div *ngIf="row.logFrameRowBudgetLines && row.logFrameRowBudgetLines.length > 0" class="d-flex flex-wrap gap-1">
+                    <span *ngFor="let b of row.logFrameRowBudgetLines" class="badge bg-light text-dark border" [ngbTooltip]="b.description + ' (Actual: ' + (b.actualAmount | number:'1.0-0') + ' / Planned: ' + (b.plannedAmount | number:'1.0-0') + ' ' + b.currency + ')'">
+                        <i class="fas fa-coins text-warning me-1"></i>{{b.description}}: <strong>{{b.actualAmount | number:'1.0-0'}}</strong>/{{b.plannedAmount | number:'1.0-0'}} {{b.currency}}
+                    </span>
+                </div>
+            </div>
         </div>
         <div class="indicators">
-            <p *ngIf="row.indicators">{{row.indicators}}</p>
+            <p *ngIf="row.indicators" class="mb-1 text-muted small">{{row.indicators}}</p>
             <ng-container *ngFor="let lfri of row.logFrameRowIndicators">
-                <!-- If rollup info exists for this indicator, render progress chip -->
-                <div *ngIf="getIndicatorRollup(row, lfri.indicatorId) as indRollup; else fallbackBadge" class="mb-2 p-1 border rounded bg-white shadow-sm">
+                <!-- If live metric exists on row -->
+                <div *ngIf="getLiveMetric(row, lfri.indicatorId) as liveMetric; else checkRollup" class="mb-2 p-1 border rounded bg-white shadow-sm">
                     <div class="d-flex align-items-center justify-content-between">
-                        <span class="badge rounded-pill text-bg-secondary" [ngbTooltip]="lfri.indicator?.name || indRollup.name" placement="bottom">
-                            {{lfri.indicator?.code || indRollup.code}}
+                        <span class="badge rounded-pill text-bg-secondary" [ngbTooltip]="liveMetric.name" placement="bottom">
+                            {{liveMetric.code}}
                         </span>
-                        <span class="badge ms-1" [ngClass]="getStatusBadgeClass(indRollup.statusBadge)">
-                            {{indRollup.percentageAchievement !== null ? (indRollup.percentageAchievement | number:'1.0-1') + '%' : 'No Data'}}
-                            {{getStatusLabel(indRollup.statusBadge)}}
+                        <span class="badge ms-1" [ngClass]="getStatusBadgeClass(liveMetric.statusBadgeColor)">
+                            {{liveMetric.percentageAchievement !== null && liveMetric.percentageAchievement !== undefined ? (liveMetric.percentageAchievement | number:'1.0-1') + '%' : 'No Data'}}
                         </span>
                     </div>
-                    <div class="small text-muted mt-1" *ngIf="indRollup.target !== null || indRollup.actual !== null">
-                        <span *ngIf="indRollup.target !== null && indRollup.actual !== null">
-                            Actual: <strong>{{indRollup.actual}}</strong> / Target: <strong>{{indRollup.target}}</strong>
-                        </span>
-                        <span *ngIf="indRollup.target !== null && indRollup.actual === null">
-                            Target: <strong>{{indRollup.target}}</strong> <span class="text-muted">(Pending actual)</span>
-                        </span>
-                        <span *ngIf="indRollup.target === null && indRollup.actual !== null">
-                            Actual: <strong>{{indRollup.actual}}</strong> <span class="text-muted">(No target)</span>
-                        </span>
+                    <div class="small text-muted mt-1" *ngIf="liveMetric.targetValue !== null || liveMetric.currentValue !== null">
+                        Actual: <strong>{{liveMetric.currentValue !== null && liveMetric.currentValue !== undefined ? liveMetric.currentValue : '-'}}</strong>
+                        / Target: <strong>{{liveMetric.targetValue !== null && liveMetric.targetValue !== undefined ? liveMetric.targetValue : '-'}}</strong>
                     </div>
                 </div>
-                <!-- Fallback badge if no rollup or unlinked -->
+
+                <!-- Fallback to rollup map if live metric not directly attached -->
+                <ng-template #checkRollup>
+                    <div *ngIf="getIndicatorRollup(row, lfri.indicatorId) as indRollup; else fallbackBadge" class="mb-2 p-1 border rounded bg-white shadow-sm">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="badge rounded-pill text-bg-secondary" [ngbTooltip]="lfri.indicator?.name || indRollup.name" placement="bottom">
+                                {{lfri.indicator?.code || indRollup.code}}
+                            </span>
+                            <span class="badge ms-1" [ngClass]="getStatusBadgeClass(indRollup.statusBadge)">
+                                {{indRollup.percentageAchievement !== null ? (indRollup.percentageAchievement | number:'1.0-1') + '%' : 'No Data'}}
+                                {{getStatusLabel(indRollup.statusBadge)}}
+                            </span>
+                        </div>
+                        <div class="small text-muted mt-1" *ngIf="indRollup.target !== null || indRollup.actual !== null">
+                            <span *ngIf="indRollup.target !== null && indRollup.actual !== null">
+                                Actual: <strong>{{indRollup.actual}}</strong> / Target: <strong>{{indRollup.target}}</strong>
+                            </span>
+                            <span *ngIf="indRollup.target !== null && indRollup.actual === null">
+                                Target: <strong>{{indRollup.target}}</strong> <span class="text-muted">(Pending)</span>
+                            </span>
+                            <span *ngIf="indRollup.target === null && indRollup.actual !== null">
+                                Actual: <strong>{{indRollup.actual}}</strong> <span class="text-muted">(No target)</span>
+                            </span>
+                        </div>
+                    </div>
+                </ng-template>
+
+                <!-- Fallback badge if no rollup or metric -->
                 <ng-template #fallbackBadge>
                     <span class="badge rounded-pill text-bg-secondary me-2 mb-2" [ngbTooltip]="lfri.indicator?.name" placement="bottom">{{lfri.indicator?.code}}</span>
                 </ng-template>
             </ng-container>
         </div>
-        <div class="mov">{{row.meansOfVerification}}</div>
-        <div class="raa">{{row.risksAndAssumptions}}</div>
+        <div class="mov">
+            <div class="mov-content">{{row.meansOfVerification}}</div>
+        </div>
+        <div class="raa">
+            <p *ngIf="row.risksAndAssumptions" class="mb-2">{{row.risksAndAssumptions}}</p>
+            <div *ngIf="row.logFrameRowRiskAssumptions && row.logFrameRowRiskAssumptions.length > 0" class="d-flex flex-wrap gap-1 mt-1">
+                <span *ngFor="let r of row.logFrameRowRiskAssumptions"
+                      class="badge rounded-pill border"
+                      [ngClass]="r.status === 'Realized' || ((r.likelihood || 1) * (r.impact || 1) >= 15) ? 'bg-danger text-white' : (((r.likelihood || 1) * (r.impact || 1) >= 8) ? 'bg-warning text-dark' : 'bg-info text-dark')"
+                      [ngbTooltip]="(r.description || '') + ' [Status: ' + (r.status || 'Open') + ']'">
+                    <i class="fas fa-shield-alt me-1"></i>{{r.title}} (L{{r.likelihood || 1}}xI{{r.impact || 1}})
+                </span>
+            </div>
+        </div>
     </div>
     <div class="lfRow" *ngIf="rows.length === 0" (click)="rowClicked()">
         <div class="description"></div>

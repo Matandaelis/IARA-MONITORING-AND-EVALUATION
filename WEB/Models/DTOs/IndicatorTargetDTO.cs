@@ -16,6 +16,10 @@ namespace Monic.Web.Models
 
         public Guid? EntityId { get; set; }
 
+        public Guid? DisaggregationOptionId { get; set; }
+
+        public string DisaggregationOptionName { get; set; }
+
         public string PeriodName { get; set; }
 
         public string EntityName { get; set; }
@@ -73,6 +77,8 @@ namespace Monic.Web.Models
                 IndicatorId = target.IndicatorId,
                 DateId = target.DateId,
                 EntityId = target.EntityId,
+                DisaggregationOptionId = target.DisaggregationOptionId,
+                DisaggregationOptionName = target.DisaggregationOption?.Name,
                 PeriodName = target.Date?.Name,
                 EntityName = target.Entity?.Name,
                 TargetValue = target.TargetValue,
@@ -87,6 +93,7 @@ namespace Monic.Web.Models
             target.IndicatorId = dto.IndicatorId;
             target.DateId = dto.DateId;
             target.EntityId = dto.EntityId;
+            target.DisaggregationOptionId = dto.DisaggregationOptionId;
             target.TargetValue = dto.TargetValue;
             target.BaselineValue = dto.BaselineValue;
             target.Notes = dto.Notes;

@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output, ViewEncapsulation } from "@angular/core";
-import { LogFrameRow } from "../common/models/logframerow.model";
+import { LogFrameRow, LogFrameLiveIndicatorMetric } from "../common/models/logframerow.model";
 import { LogFrameRowRollup, LogFrameIndicatorRollup } from "../common/models/logframe.model";
 
 @Component({
@@ -31,21 +31,44 @@ export class LogFrameRowsComponent {
         return rowRollup.indicators.find(i => i.indicatorId?.toLowerCase() === indicatorId?.toLowerCase());
     }
 
+    public getLiveMetric(row: LogFrameRow, indicatorId: string): LogFrameLiveIndicatorMetric | undefined {
+        if (!row || !row.liveIndicatorMetrics) return undefined;
+        return row.liveIndicatorMetrics.find(m => m.indicatorId?.toLowerCase() === indicatorId?.toLowerCase());
+    }
+
     public getStatusBadgeClass(status?: string): string {
         switch (status?.toLowerCase()) {
-            case 'ontrack': return 'bg-success text-white';
-            case 'underperforming': return 'bg-danger text-white';
-            case 'exceeding': return 'bg-primary text-white';
-            default: return 'bg-secondary text-white';
+            case 'ontrack':
+            case 'success':
+                return 'bg-success text-white';
+            case 'underperforming':
+            case 'danger':
+                return 'bg-danger text-white';
+            case 'exceeding':
+            case 'primary':
+                return 'bg-primary text-white';
+            case 'warning':
+                return 'bg-warning text-dark';
+            default:
+                return 'bg-secondary text-white';
         }
     }
 
     public getStatusLabel(status?: string): string {
         switch (status?.toLowerCase()) {
-            case 'ontrack': return 'On Track';
-            case 'underperforming': return 'Under';
-            case 'exceeding': return 'Exceed';
-            default: return '';
+            case 'ontrack':
+            case 'success':
+                return 'On Track';
+            case 'underperforming':
+            case 'danger':
+                return 'Under';
+            case 'exceeding':
+            case 'primary':
+                return 'Exceed';
+            case 'warning':
+                return 'Attention';
+            default:
+                return '';
         }
     }
 }

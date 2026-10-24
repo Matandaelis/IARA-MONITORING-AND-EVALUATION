@@ -32,6 +32,9 @@ import { DisaggregationGroup } from '../../common/models/disaggregation.model';
 import { DisaggregationService } from '../../common/services/disaggregation.service';
 import { IndicatorTarget, IndicatorVariance } from '../../common/models/indicatortarget.model';
 import { IndicatorTargetService } from '../../common/services/indicatortarget.service';
+import { monitoringTypeOptions } from '../../common/models/monitoring.model';
+import { User } from '../../common/models/user.model';
+import { UserService } from '../../common/services/user.service';
 
 @Component({
     selector: 'indicator-edit',
@@ -46,6 +49,8 @@ export class IndicatorEditComponent extends ItemComponent implements OnInit {
     public isNew = true;
     public indicatorStatuses: Enum[] = Enums.IndicatorStatuses;
     public indicatorDirections: Enum[] = Enums.IndicatorDirections;
+    public monitoringTypes = monitoringTypeOptions;
+    public users: User[] = [];
     public disaggregationGroups: DisaggregationGroup[] = [];
     public targets: IndicatorTarget[] = [];
     public variance: IndicatorVariance;
@@ -54,6 +59,7 @@ export class IndicatorEditComponent extends ItemComponent implements OnInit {
     public selectedBreakdownPeriod: string = 'all';
     public newTarget: IndicatorTarget = new IndicatorTarget();
     public showAddTarget: boolean = false;
+    public disaggregationOptionTargets: { optionId: string; optionName: string; optionCode: string; targetValue?: number }[] = [];
     public dateTypes: Enum[] = Enums.DateTypes;
     public indicatorTypes: Enum[] = Enums.IndicatorTypes;
     public dataTypes: Enum[] = Enums.DataTypes;
@@ -110,12 +116,17 @@ export class IndicatorEditComponent extends ItemComponent implements OnInit {
         private indicatorDateService: IndicatorDateService,
         private appSettingsService: AppSettingsService,
         private disaggregationService: DisaggregationService,
-        private indicatorTargetService: IndicatorTargetService
+        private indicatorTargetService: IndicatorTargetService,
+        private userService: UserService
     ) {
         super(appService, errorService, cdref, documentService, modalService, fieldValueMapper);
     }
 
     ngOnInit(): void {
+        this.userService.search({} as any).subscribe({
+            next: res => this.users = res?.users || [],
+            error: () => {}
+        });
 
         this.disaggregationService.getGroups(true).subscribe({
             next: groups => {
@@ -677,21 +688,96 @@ export class IndicatorEditComponent extends ItemComponent implements OnInit {
         });
     }
 
+    toggleAddTarget(): void {
+        this.showAddTarget = !this.showAddTarget;
+        if (this.showAddTarget) {
+            this.initDisaggregationTargets();
+        }
+    }
+
+    initDisaggregationTargets(): void {
+        this.disaggregationOptionTargets = [];
+        if (!this.indicator.disaggregationGroupId) return;
+        const grp = this.disaggregationGroups.find(g => g.disaggregationGroupId === this.indicator.disaggregationGroupId);
+        if (grp && grp.options) {
+            this.disaggregationOptionTargets = grp.options.map(opt => ({
+                optionId: opt.disaggregationOptionId,
+                optionName: opt.name,
+                optionCode: opt.code,
+                targetValue: null as number
+            }));
+        }
+    }
+
+    get disaggregationOptionSum(): number {
+        return this.disaggregationOptionTargets.reduce((acc, curr) => acc + (Number(curr.targetValue) || 0), 0);
+    }
+
+    get isTargetParityBalanced(): boolean {
+        if (!this.disaggregationOptionTargets || this.disaggregationOptionTargets.length === 0) return true;
+        const hasAnyOption = this.disaggregationOptionTargets.some(o => o.targetValue !== null && o.targetValue !== undefined && o.targetValue !== ('' as any));
+        if (!hasAnyOption) return true;
+        return Math.abs((Number(this.newTarget.targetValue) || 0) - this.disaggregationOptionSum) < 0.0001;
+    }
+
     saveTarget(): void {
         if (!this.newTarget.dateId || this.newTarget.targetValue === undefined || this.newTarget.targetValue === null) {
             this.toastr.warning("Please select a date and enter a target value.", "Target Required");
             return;
         }
+
+        const hasOptionTargets = this.disaggregationOptionTargets.some(o => o.targetValue !== null && o.targetValue !== undefined && (o.targetValue as any) !== '');
+        if (hasOptionTargets && !this.isTargetParityBalanced) {
+            this.toastr.warning('Sum of option targets (' + this.disaggregationOptionSum + ') does not match total target (' + this.newTarget.targetValue + '). Please adjust values.', 'Target Parity Check');
+            return;
+        }
+
         this.newTarget.indicatorId = this.indicator.indicatorId;
-        this.indicatorTargetService.saveTarget(this.indicator.indicatorId, this.newTarget).subscribe({
-            next: () => {
-                this.toastr.success("Milestone target saved successfully.", "Target Saved");
-                this.newTarget = new IndicatorTarget();
-                this.showAddTarget = false;
-                this.loadTargets();
-            },
-            error: err => this.errorService.handleError(err, "Indicator Target", "Save")
-        });
+
+        if (hasOptionTargets) {
+            const batch: IndicatorTarget[] = [];
+            batch.push({
+                indicatorId: this.indicator.indicatorId,
+                dateId: this.newTarget.dateId,
+                targetValue: Number(this.newTarget.targetValue),
+                baselineValue: this.newTarget.baselineValue !== null && this.newTarget.baselineValue !== undefined ? Number(this.newTarget.baselineValue) : null,
+                notes: this.newTarget.notes
+            });
+            for (const opt of this.disaggregationOptionTargets) {
+                if (opt.targetValue !== null && opt.targetValue !== undefined && (opt.targetValue as any) !== '') {
+                    batch.push({
+                        indicatorId: this.indicator.indicatorId,
+                        dateId: this.newTarget.dateId,
+                        disaggregationOptionId: opt.optionId,
+                        disaggregationOptionName: opt.optionName,
+                        targetValue: Number(opt.targetValue),
+                        baselineValue: null,
+                        notes: this.newTarget.notes
+                    });
+                }
+            }
+            this.indicatorTargetService.batchSaveTargets(this.indicator.indicatorId, batch).subscribe({
+                next: () => {
+                    this.toastr.success("Milestone and disaggregated targets saved successfully.", "Targets Saved");
+                    this.newTarget = new IndicatorTarget();
+                    this.disaggregationOptionTargets = [];
+                    this.showAddTarget = false;
+                    this.loadTargets();
+                },
+                error: err => this.errorService.handleError(err, "Indicator Targets", "Save")
+            });
+        } else {
+            this.indicatorTargetService.saveTarget(this.indicator.indicatorId, this.newTarget).subscribe({
+                next: () => {
+                    this.toastr.success("Milestone target saved successfully.", "Target Saved");
+                    this.newTarget = new IndicatorTarget();
+                    this.disaggregationOptionTargets = [];
+                    this.showAddTarget = false;
+                    this.loadTargets();
+                },
+                error: err => this.errorService.handleError(err, "Indicator Target", "Save")
+            });
+        }
     }
 
     deleteTarget(target: IndicatorTarget): void {
