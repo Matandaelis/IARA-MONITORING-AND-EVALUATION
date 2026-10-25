@@ -1,4 +1,4 @@
-# 🌟 MONIC: Monitoring & Evaluation Made Easy!
+# 🌟 IARA: Monitoring & Evaluation Made Easy!
 
 <div align="center">
 
