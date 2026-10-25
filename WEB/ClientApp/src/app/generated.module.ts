@@ -5,6 +5,8 @@ import { RouterModule } from '@angular/router';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { SharedModule } from './shared.module';
+import { AdminSharedModule } from './admin-shared.module';
+import { QuillModule } from 'ngx-quill';
 import { AdminRoutes } from './generated.routes';
 import { AnswerListComponent } from './admin/answers/answer.list.component';
 import { AnswerEditComponent } from './admin/answers/answer.edit.component';
@@ -212,6 +214,8 @@ import { NgxEchartsModule } from 'ngx-echarts';
         NgbModule,
         DragDropModule,
         SharedModule,
+        AdminSharedModule,
+        QuillModule,
         NgxEchartsModule
     ]
 })

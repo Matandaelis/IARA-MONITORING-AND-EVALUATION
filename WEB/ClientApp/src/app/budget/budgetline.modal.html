@@ -19,6 +19,29 @@
         </div>
 
         <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Linked indicator (optional)</label>
+                <select class="form-select" name="indicatorId" [(ngModel)]="line.indicatorId">
+                    <option [ngValue]="null">— none —</option>
+                    <option *ngFor="let indicator of indicators" [ngValue]="indicator.indicatorId">
+                        {{ indicator.code ? indicator.code + ' - ' : '' }}{{ indicator.name }}
+                    </option>
+                </select>
+                <div class="form-text">Enables cost-per-output monitoring for this line.</div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Linked logframe result (optional)</label>
+                <select class="form-select" name="logFrameNodeId" [(ngModel)]="line.logFrameNodeId">
+                    <option [ngValue]="null">— none —</option>
+                    <option *ngFor="let node of logFrameNodes" [ngValue]="node.logFrameNodeId">
+                        {{ node.logFrameName }} · {{ node.code }} {{ node.title }}
+                    </option>
+                </select>
+                <div class="form-text">Enables budget-to-results analysis.</div>
+            </div>
+        </div>
+
+        <div class="row">
             <div class="col-6 mb-3">
                 <label class="form-label">Planned Amount *</label>
                 <input type="number" step="0.01" min="0" class="form-control" name="plannedAmount" [(ngModel)]="line.plannedAmount" required />

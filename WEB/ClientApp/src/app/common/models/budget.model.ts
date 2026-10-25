@@ -40,6 +40,8 @@ export class BudgetLine {
     currency: string;
     dateId: string;
     taskId: string;
+    logFrameNodeId: string;
+    indicatorId: string;
     periodStart: Date;
     periodEnd: Date;
     createdOnUtc: Date;

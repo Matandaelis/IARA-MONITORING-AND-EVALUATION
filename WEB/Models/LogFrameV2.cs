@@ -61,6 +61,9 @@ public class LogFrameLevel
     [Required] public bool IsIndicatorLevel { get; set; }
     [MaxLength(7)] public string Color { get; set; }
 
+    /// <summary>How this level aggregates child achievement into a level score.</summary>
+    [Required] public RollupMethod RollupMethod { get; set; } = RollupMethod.WeightedAverage;
+
     // e.g. ["description","meansOfVerification","risksAndAssumptions"]
     public string RequiredFieldsJson { get; set; } = "[]";
     [Required] public bool IsActive { get; set; } = true;

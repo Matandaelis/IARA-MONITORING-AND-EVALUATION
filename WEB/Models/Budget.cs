@@ -96,6 +96,12 @@ namespace Monic.Web.Models
         /// <summary>Optional activity (Task) this budget line belongs to, for activity-level budgeting.</summary>
         public Guid? TaskId { get; set; }
 
+        /// <summary>Optional logframe result this budget line is delivering — enables cost-per-output analysis.</summary>
+        public Guid? LogFrameNodeId { get; set; }
+
+        /// <summary>Optional indicator this budget line is delivering — enables cost-per-unit analysis.</summary>
+        public Guid? IndicatorId { get; set; }
+
         [Required]
         public bool IsDeleted { get; set; }
 
@@ -125,6 +131,12 @@ namespace Monic.Web.Models
 
         [ForeignKey("TaskId")]
         public virtual Task Task { get; set; }
+
+        [ForeignKey("LogFrameNodeId")]
+        public virtual LogFrameNode LogFrameNode { get; set; }
+
+        [ForeignKey("IndicatorId")]
+        public virtual Indicator Indicator { get; set; }
 
         [ForeignKey("CreatedById")]
         public virtual User CreatedBy { get; set; }

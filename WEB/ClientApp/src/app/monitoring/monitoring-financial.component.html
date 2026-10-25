@@ -1,0 +1,220 @@
+<app-page-title title="Financial Monitoring" />
+
+<div class="container-fluid">
+
+    <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
+        <div>
+            <label class="form-label mb-1 small text-muted">Project</label>
+            <select class="form-select" [(ngModel)]="selectedProjectId" (ngModelChange)="projectChanged()" name="financialProject">
+                <option *ngFor="let project of projects" [value]="project.projectId">{{ project.name }}</option>
+            </select>
+        </div>
+        <div>
+            <label class="form-label mb-1 small text-muted">Reporting period</label>
+            <select class="form-select" [(ngModel)]="selectedDateId" (ngModelChange)="periodChanged()" name="financialPeriod">
+                <option value="">Latest reported period</option>
+                <option *ngFor="let period of periods" [value]="period.dateId">{{ period.name }}</option>
+            </select>
+        </div>
+        <div class="ms-auto d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary" (click)="exportCsv()" [disabled]="financial.rows.length === 0"><i class="fas fa-file-csv me-1"></i>Export CSV</button>
+            <a class="btn btn-outline-primary" routerLink="/monitoring"><i class="fas fa-gauge-high me-1"></i>Dashboard</a>
+            <a class="btn btn-outline-primary" routerLink="/monitoring/matrix"><i class="fas fa-table-cells me-1"></i>Matrix</a>
+            <a class="btn btn-outline-primary" routerLink="/monitoring/registers"><i class="fas fa-clipboard-list me-1"></i>Registers</a>
+        </div>
+    </div>
+
+    <div *ngIf="projects.length === 0" class="alert alert-info">No projects are visible for your account.</div>
+
+    <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading…</span></div>
+    </div>
+
+    <ng-container *ngIf="!loading && selectedProjectId">
+
+        <div class="alert alert-warning" *ngIf="financial.missingRates.length > 0">
+            <i class="fas fa-triangle-exclamation me-2"></i>
+            No FX rate to {{ financial.baseCurrency }} for: <strong>{{ financial.missingRates.join(', ') }}</strong>. Those lines are excluded from converted totals.
+        </div>
+
+        <!-- Ledger totals -->
+        <div class="row g-3 mb-3">
+            <div class="col-6 col-lg-2">
+                <div class="card h-100 shadow-sm border-start border-4 border-primary"><div class="card-body py-3">
+                    <div class="small text-muted text-uppercase fw-semibold">Planned</div>
+                    <div class="fs-5 fw-bold">{{ displayNumber(financial.planned, 0) }}</div>
+                    <div class="small text-muted">{{ financial.baseCurrency }}</div>
+                </div></div>
+            </div>
+            <div class="col-6 col-lg-2">
+                <div class="card h-100 shadow-sm border-start border-4 border-info"><div class="card-body py-3">
+                    <div class="small text-muted text-uppercase fw-semibold">Committed</div>
+                    <div class="fs-5 fw-bold">{{ displayNumber(financial.committed, 0) }}</div>
+                    <div class="small text-muted">{{ displayNumber(financial.commitmentRate, 1) }}% of plan</div>
+                </div></div>
+            </div>
+            <div class="col-6 col-lg-2">
+                <div class="card h-100 shadow-sm border-start border-4 border-secondary"><div class="card-body py-3">
+                    <div class="small text-muted text-uppercase fw-semibold">Disbursed</div>
+                    <div class="fs-5 fw-bold">{{ displayNumber(financial.disbursed, 0) }}</div>
+                    <div class="small text-muted">{{ financial.baseCurrency }}</div>
+                </div></div>
+            </div>
+            <div class="col-6 col-lg-2">
+                <div class="card h-100 shadow-sm border-start border-4 border-success"><div class="card-body py-3">
+                    <div class="small text-muted text-uppercase fw-semibold">Expended</div>
+                    <div class="fs-5 fw-bold">{{ displayNumber(financial.actual, 0) }}</div>
+                    <div class="small text-muted">{{ displayNumber(financial.utilization, 1) }}% utilisation</div>
+                </div></div>
+            </div>
+            <div class="col-6 col-lg-2">
+                <div class="card h-100 shadow-sm border-start border-4 border-{{ financial.variance < 0 ? 'danger' : 'success' }}"><div class="card-body py-3">
+                    <div class="small text-muted text-uppercase fw-semibold">Variance</div>
+                    <div class="fs-5 fw-bold" [ngClass]="varianceClass(financial.variance)">{{ displayNumber(financial.variance, 0) }}</div>
+                    <div class="small text-muted">plan − expended</div>
+                </div></div>
+            </div>
+            <div class="col-6 col-lg-2">
+                <div class="card h-100 shadow-sm border-start border-4 border-{{ utilizationClass(financial.utilization) }}"><div class="card-body py-3">
+                    <div class="small text-muted text-uppercase fw-semibold">Budget health</div>
+                    <div class="fs-5 fw-bold">{{ utilizationHealth !== null ? displayNumber(utilizationHealth, 1) + '%' : '—' }}</div>
+                    <div class="small text-muted">100% = on plan</div>
+                </div></div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-xl-7">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold"><i class="fas fa-table me-2 text-primary"></i>Four-ledger summary by category</span>
+                        <span class="small text-muted">Planned · Committed · Disbursed · Actual</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Category</th>
+                                    <th class="text-end">Planned</th>
+                                    <th class="text-end">Committed</th>
+                                    <th class="text-end">Disbursed</th>
+                                    <th class="text-end">Actual</th>
+                                    <th class="text-end">Variance</th>
+                                    <th class="text-end">Utilisation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let row of financial.rows">
+                                    <td>
+                                        <div class="fw-semibold">{{ row.categoryName }}</div>
+                                        <div class="small text-muted">{{ row.lineCount }} budget line(s) · {{ row.currency }}</div>
+                                    </td>
+                                    <td class="text-end">{{ displayNumber(row.planned, 0) }}</td>
+                                    <td class="text-end">{{ displayNumber(row.committed, 0) }}</td>
+                                    <td class="text-end">{{ displayNumber(row.disbursed, 0) }}</td>
+                                    <td class="text-end">{{ displayNumber(row.actual, 0) }}</td>
+                                    <td class="text-end" [ngClass]="varianceClass(categoryVariance(row))">{{ displayNumber(categoryVariance(row), 0) }}</td>
+                                    <td class="text-end">
+                                        <div class="d-flex align-items-center justify-content-end gap-2">
+                                            <div class="progress" style="height: 6px; width: 56px;">
+                                                <div class="progress-bar bg-{{ utilizationClass(row.utilization) }}" [style.width.%]="percentOfPlan(row.actual, row.planned)"></div>
+                                            </div>
+                                            <span class="small">{{ displayNumber(row.utilization, 1) }}%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr *ngIf="financial.rows.length === 0">
+                                    <td colspan="7" class="text-center text-muted py-4">
+                                        <i class="fas fa-folder-open fa-2x d-block mb-2"></i>
+                                        No budget lines are linked to this project. Add them in Budget & Expenditures.
+                                    </td>
+                                </tr>
+                            </tbody>
+                            <tfoot class="table-light fw-semibold" *ngIf="financial.rows.length > 0">
+                                <tr>
+                                    <td>Total</td>
+                                    <td class="text-end">{{ displayNumber(financial.planned, 0) }}</td>
+                                    <td class="text-end">{{ displayNumber(financial.committed, 0) }}</td>
+                                    <td class="text-end">{{ displayNumber(financial.disbursed, 0) }}</td>
+                                    <td class="text-end">{{ displayNumber(financial.actual, 0) }}</td>
+                                    <td class="text-end" [ngClass]="varianceClass(financial.variance)">{{ displayNumber(financial.variance, 0) }}</td>
+                                    <td class="text-end">{{ displayNumber(financial.utilization, 1) }}%</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-5">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold"><i class="fas fa-chart-line me-2 text-success"></i>Burn / S-curve</span>
+                        <span class="small text-muted">{{ financial.baseCurrency }}</span>
+                    </div>
+                    <div class="card-body">
+                        <div *ngFor="let point of financial.burnSeries" class="mb-3">
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span class="fw-semibold">{{ point.label }}</span>
+                                <span [ngClass]="varianceClass(burnVariance(point))">{{ displayNumber(burnVariance(point), 0) }} variance</span>
+                            </div>
+                            <div class="progress mb-1" style="height: 8px;" [title]="'Planned ' + displayNumber(point.planned, 0)">
+                                <div class="progress-bar bg-secondary" [style.width.%]="burnWidth(point.planned)"></div>
+                            </div>
+                            <div class="progress" style="height: 8px;" [title]="'Cumulative expended ' + displayNumber(point.cumulativeExpended, 0)">
+                                <div class="progress-bar bg-success" [style.width.%]="burnWidth(point.cumulativeExpended)"></div>
+                            </div>
+                            <div class="d-flex justify-content-between small text-muted mt-1">
+                                <span>planned {{ displayNumber(point.planned, 0) }}</span>
+                                <span>cumulative {{ displayNumber(point.cumulativeExpended, 0) }}</span>
+                            </div>
+                        </div>
+                        <div *ngIf="financial.burnSeries.length === 0" class="text-center text-muted py-4">
+                            No dated budget lines are available for a burn series.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-semibold"><i class="fas fa-bullseye me-2 text-warning"></i>Cost per output</span>
+                <span class="small text-muted">Expended ÷ latest reported actual for indicators linked to budget lines</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Indicator</th>
+                            <th>Code</th>
+                            <th class="text-end">Expended</th>
+                            <th class="text-end">Latest output</th>
+                            <th class="text-end">Cost per output</th>
+                            <th class="text-end">Currency</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let item of financial.costPerOutput">
+                            <td class="fw-semibold">{{ item.name }}</td>
+                            <td class="small text-muted">{{ item.code }}</td>
+                            <td class="text-end">{{ displayNumber(item.expended, 0) }}</td>
+                            <td class="text-end">{{ displayNumber(item.outputValue, 2) }}</td>
+                            <td class="text-end fw-semibold">{{ item.costPerOutput !== null ? displayNumber(item.costPerOutput, 2) : '—' }}</td>
+                            <td class="text-end">{{ item.currency }}</td>
+                        </tr>
+                        <tr *ngIf="financial.costPerOutput.length === 0">
+                            <td colspan="6" class="text-center text-muted py-4">
+                                No budget lines are linked to indicators yet. Link a budget line to an indicator to compute cost per output.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer bg-white small text-muted">
+                Financial delivery contributes 25% of the composite score. A utilisation of 100% scores 100; both under-spend and over-spend reduce the score.
+            </div>
+        </div>
+
+    </ng-container>
+</div>

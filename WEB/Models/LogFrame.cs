@@ -13,7 +13,19 @@ namespace Monic.Web.Models
         [Required(AllowEmptyStrings = true), MaxLength(255)]
         public string Name { get; set; }
 
+        /// <summary>Project that owns this logical framework (null = shared/global framework).</summary>
+        public Guid? ProjectId { get; set; }
+
+        /// <summary>Theory of change that explains the causal logic behind this framework.</summary>
+        public Guid? TheoryOfChangeId { get; set; }
+
         public virtual ICollection<LogFrameRow> LogFrameRows { get; set; } = new List<LogFrameRow>();
+
+        [ForeignKey("ProjectId")]
+        public virtual Project Project { get; set; }
+
+        [ForeignKey("TheoryOfChangeId")]
+        public virtual TheoryOfChange TheoryOfChange { get; set; }
 
         public LogFrame()
         {

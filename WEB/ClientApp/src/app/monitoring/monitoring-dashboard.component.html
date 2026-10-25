@@ -1,0 +1,319 @@
+<app-page-title title="Monitoring & Evaluation" />
+
+<div class="container-fluid">
+
+    <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
+        <div>
+            <label class="form-label mb-1 small text-muted">Project</label>
+            <select class="form-select" [(ngModel)]="selectedProjectId" (ngModelChange)="projectChanged()" name="monitoringProject">
+                <option *ngFor="let project of projects" [value]="project.projectId">{{ project.name }}</option>
+            </select>
+        </div>
+        <div>
+            <label class="form-label mb-1 small text-muted">Reporting period</label>
+            <select class="form-select" [(ngModel)]="selectedDateId" (ngModelChange)="periodChanged()" name="monitoringPeriod">
+                <option value="">Latest reported period</option>
+                <option *ngFor="let period of periods" [value]="period.dateId">{{ period.name }}</option>
+            </select>
+        </div>
+        <div class="ms-auto d-flex gap-2">
+            <a class="btn btn-outline-primary" routerLink="/monitoring/matrix"><i class="fas fa-table-cells me-1"></i>Monitoring matrix</a>
+            <a class="btn btn-outline-primary" routerLink="/monitoring/financial"><i class="fas fa-coins me-1"></i>Financial monitoring</a>
+            <a class="btn btn-outline-primary" routerLink="/monitoring/registers"><i class="fas fa-clipboard-list me-1"></i>Registers</a>
+        </div>
+    </div>
+
+    <div *ngIf="projects.length === 0" class="alert alert-info">
+        No projects are visible for your account. Ask an administrator to grant access to a project.
+    </div>
+
+    <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading…</span></div>
+    </div>
+
+    <ng-container *ngIf="!loading && selectedProjectId">
+
+        <!-- Composite score and headline metrics -->
+        <div class="row g-3 mb-3">
+            <div class="col-xl-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="text-muted text-uppercase small fw-semibold">Composite performance</div>
+                                <div class="display-5 fw-bold text-{{ scoreClass(summary.compositeScore) }}">
+                                    {{ summary.compositeScore !== null ? displayNumber(summary.compositeScore, 1) : '—' }}<span class="fs-4">%</span>
+                                </div>
+                            </div>
+                            <span class="badge rounded-pill bg-{{ ragClass(summary.overallRag) }} px-3 py-2">{{ ragLabel(summary.overallRag) }}</span>
+                        </div>
+                        <div class="small text-muted mb-3">{{ summary.periodLabel }} · generated {{ summary.generatedOnUtc | date:'mediumDate' }}</div>
+
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between small"><span>Results achievement (40%)</span><strong>{{ summary.resultsScore !== null ? displayNumber(summary.resultsScore, 1) + '%' : '—' }}</strong></div>
+                            <div class="progress" style="height: 6px;"><div class="progress-bar bg-{{ scoreClass(summary.resultsScore) }}" [style.width.%]="progressWidth(summary.resultsScore)"></div></div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between small"><span>Financial delivery (25%)</span><strong>{{ summary.financialScore !== null ? displayNumber(summary.financialScore, 1) + '%' : '—' }}</strong></div>
+                            <div class="progress" style="height: 6px;"><div class="progress-bar bg-{{ scoreClass(summary.financialScore) }}" [style.width.%]="progressWidth(summary.financialScore)"></div></div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between small"><span>Workplan delivery (20%)</span><strong>{{ summary.workplanScore !== null ? displayNumber(summary.workplanScore, 1) + '%' : '—' }}</strong></div>
+                            <div class="progress" style="height: 6px;"><div class="progress-bar bg-{{ scoreClass(summary.workplanScore) }}" [style.width.%]="progressWidth(summary.workplanScore)"></div></div>
+                        </div>
+                        <div>
+                            <div class="d-flex justify-content-between small"><span>Data quality (15%)</span><strong>{{ summary.dataQualityScore !== null ? displayNumber(summary.dataQualityScore, 1) + '%' : '—' }}</strong></div>
+                            <div class="progress" style="height: 6px;"><div class="progress-bar bg-{{ scoreClass(summary.dataQualityScore) }}" [style.width.%]="progressWidth(summary.dataQualityScore)"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-8">
+                <div class="row g-3">
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card h-100 shadow-sm border-start border-4 border-primary">
+                            <div class="card-body">
+                                <div class="text-muted small text-uppercase fw-semibold">Overall achievement</div>
+                                <div class="fs-3 fw-bold">{{ summary.overallAchievement !== null ? displayNumber(summary.overallAchievement, 1) + '%' : '—' }}</div>
+                                <div class="small text-muted">{{ summary.assessedIndicators }} of {{ summary.totalIndicators }} indicators assessed</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card h-100 shadow-sm border-start border-4 border-info">
+                            <div class="card-body">
+                                <div class="text-muted small text-uppercase fw-semibold">Reporting coverage</div>
+                                <div class="fs-3 fw-bold">{{ summary.coverage !== null ? displayNumber(summary.coverage, 1) + '%' : '—' }}</div>
+                                <div class="progress mt-2" style="height: 6px;"><div class="progress-bar bg-info" [style.width.%]="progressWidth(summary.coverage)"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card h-100 shadow-sm border-start border-4 border-warning">
+                            <div class="card-body">
+                                <div class="text-muted small text-uppercase fw-semibold">Approval rate</div>
+                                <div class="fs-3 fw-bold">{{ summary.approvalRate !== null ? displayNumber(summary.approvalRate, 1) + '%' : '—' }}</div>
+                                <div class="small text-muted">Timeliness {{ summary.timeliness !== null ? displayNumber(summary.timeliness, 1) + '%' : '—' }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card h-100 shadow-sm border-start border-4 border-success">
+                            <div class="card-body">
+                                <div class="text-muted small text-uppercase fw-semibold">Budget utilisation</div>
+                                <div class="fs-3 fw-bold">{{ displayNumber(financial.utilization, 1) }}%</div>
+                                <div class="small text-muted">{{ displayNumber(financial.actual, 0) }} / {{ displayNumber(financial.planned, 0) }} {{ financial.baseCurrency }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RAG distribution -->
+                    <div class="col-12">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="fw-semibold">Indicator traffic lights</div>
+                                    <span class="small text-muted">Green ≥ 90% · Amber ≥ 70% · thresholds configurable per indicator</span>
+                                </div>
+                                <div class="d-flex rounded overflow-hidden" style="height: 26px;">
+                                    <div class="bg-success text-white small d-flex align-items-center justify-content-center" [style.width.%]="barWidth(summary.green, summary.totalIndicators)">{{ summary.green }}</div>
+                                    <div class="bg-warning text-dark small d-flex align-items-center justify-content-center" [style.width.%]="barWidth(summary.amber, summary.totalIndicators)">{{ summary.amber }}</div>
+                                    <div class="bg-danger text-white small d-flex align-items-center justify-content-center" [style.width.%]="barWidth(summary.red, summary.totalIndicators)">{{ summary.red }}</div>
+                                    <div class="bg-secondary text-white small d-flex align-items-center justify-content-center" [style.width.%]="barWidth(summary.noData, summary.totalIndicators)">{{ summary.noData }}</div>
+                                </div>
+                                <div class="d-flex gap-4 small mt-2">
+                                    <span><i class="fas fa-circle text-success me-1"></i>On track {{ summary.green }}</span>
+                                    <span><i class="fas fa-circle text-warning me-1"></i>At risk {{ summary.amber }}</span>
+                                    <span><i class="fas fa-circle text-danger me-1"></i>Off track {{ summary.red }}</span>
+                                    <span><i class="fas fa-circle text-secondary me-1"></i>No data {{ summary.noData }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ten monitoring domains -->
+        <div class="row g-3 mb-3">
+            <div class="col-xl-7">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold"><i class="fas fa-layer-group me-2 text-primary"></i>Monitoring domains</span>
+                        <span class="small text-muted">10 domains · RBM aligned</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Domain</th>
+                                    <th class="text-end">Indicators</th>
+                                    <th class="text-end">Avg achievement</th>
+                                    <th class="text-center" style="width: 130px;">Green / Amber / Red</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let domain of summary.byType">
+                                    <td>
+                                        <span class="fw-semibold">{{ domain.label }}</span>
+                                        <div class="small text-muted">{{ domain.noData }} without data</div>
+                                    </td>
+                                    <td class="text-end">{{ domain.total }}</td>
+                                    <td class="text-end">
+                                        <span *ngIf="domain.averageAchievement !== null" class="badge bg-{{ scoreClass(domain.averageAchievement) }}">{{ displayNumber(domain.averageAchievement, 1) }}%</span>
+                                        <span *ngIf="domain.averageAchievement === null" class="text-muted">—</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success me-1">{{ domain.green }}</span>
+                                        <span class="badge bg-warning text-dark me-1">{{ domain.amber }}</span>
+                                        <span class="badge bg-danger">{{ domain.red }}</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-5">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold"><i class="fas fa-triangle-exclamation me-2 text-danger"></i>Needs attention</span>
+                        <a class="small" routerLink="/monitoring/matrix">View matrix</a>
+                    </div>
+                    <div class="list-group list-group-flush" *ngIf="summary.underperforming.length > 0">
+                        <div class="list-group-item" *ngFor="let indicator of summary.underperforming">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="me-2">
+                                    <div class="fw-semibold">{{ indicator.name }}</div>
+                                    <div class="small text-muted">
+                                        {{ indicator.code }} · {{ indicator.monitoringTypeLabel }}
+                                        <span *ngIf="indicator.latestPeriod"> · {{ indicator.latestPeriod }}</span>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-{{ ragClass(indicator.rag) }}">{{ ragLabel(indicator.rag) }}</span>
+                                    <div class="small mt-1">
+                                        {{ indicator.percentageAchievement !== null ? displayNumber(indicator.percentageAchievement, 1) + '%' : 'No data' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body text-center text-muted" *ngIf="summary.underperforming.length === 0">
+                        <i class="fas fa-circle-check fa-2x text-success mb-2"></i>
+                        <div>No indicators are currently off track.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial snapshot and results tree -->
+        <div class="row g-3">
+            <div class="col-xl-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-white"><span class="fw-semibold"><i class="fas fa-coins me-2 text-success"></i>Financial snapshot</span></div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-1"><span class="text-muted">Planned</span><strong>{{ displayNumber(financial.planned, 0) }} {{ financial.baseCurrency }}</strong></div>
+                        <div class="d-flex justify-content-between mb-1"><span class="text-muted">Committed</span><strong>{{ displayNumber(financial.committed, 0) }} {{ financial.baseCurrency }}</strong></div>
+                        <div class="d-flex justify-content-between mb-1"><span class="text-muted">Disbursed</span><strong>{{ displayNumber(financial.disbursed, 0) }} {{ financial.baseCurrency }}</strong></div>
+                        <div class="d-flex justify-content-between mb-3"><span class="text-muted">Expended</span><strong>{{ displayNumber(financial.actual, 0) }} {{ financial.baseCurrency }}</strong></div>
+                        <div class="d-flex justify-content-between small mb-1"><span>Utilisation</span><span>{{ displayNumber(financial.utilization, 1) }}%</span></div>
+                        <div class="progress mb-2" style="height: 8px;"><div class="progress-bar bg-{{ scoreClass(financial.utilization) }}" [style.width.%]="progressWidth(financial.utilization)"></div></div>
+                        <div class="d-flex justify-content-between small"><span>Variance</span><span class="{{ financial.variance < 0 ? 'text-danger' : 'text-success' }}">{{ displayNumber(financial.variance, 0) }} {{ financial.baseCurrency }}</span></div>
+                        <a class="btn btn-sm btn-outline-success w-100 mt-3" routerLink="/monitoring/financial">Open financial monitoring</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-8">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-white d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                        <span class="fw-semibold"><i class="fas fa-sitemap me-2 text-primary"></i>Results roll-up</span>
+                        <select class="form-select form-select-sm w-auto" [(ngModel)]="selectedLogFrameId" (ngModelChange)="logFrameChanged()" name="resultsLogFrame">
+                            <option *ngFor="let logFrame of logFrames" [value]="logFrame.logFrameId">{{ logFrame.name }}</option>
+                        </select>
+                    </div>
+
+                    <div *ngIf="resultsLoading" class="card-body text-center py-4">
+                        <div class="spinner-border spinner-border-sm text-primary"></div>
+                    </div>
+
+                    <div *ngIf="!resultsLoading && results" class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <div class="small text-muted">{{ results.periodLabel }} · {{ results.nodes.length }} top-level results</div>
+                            <div class="small">Overall <strong>{{ results.overallAchievement !== null ? displayNumber(results.overallAchievement, 1) + '%' : '—' }}</strong>
+                                <span class="badge bg-{{ ragClass(results.overallRag) }} ms-1">{{ ragLabel(results.overallRag) }}</span>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Result</th>
+                                        <th class="text-end">Achievement</th>
+                                        <th class="text-end">Coverage</th>
+                                        <th class="text-center">Indicators</th>
+                                        <th class="text-center">Risks</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <ng-container *ngFor="let node of flatResults">
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-start" [style.padding-left.px]="node.depth * 20">
+                                                    <button type="button" class="btn btn-link btn-sm p-0 me-2 text-decoration-none" *ngIf="node.children.length > 0" (click)="toggle(node)">
+                                                        <i class="fas" [ngClass]="node.expanded ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                                                    </button>
+                                                    <span class="badge bg-light text-dark me-2" *ngIf="node.code">{{ node.code }}</span>
+                                                    <div>
+                                                        <div class="fw-semibold">{{ node.title }}</div>
+                                                        <div class="small text-muted">{{ node.levelName }}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="text-end">
+                                                <span *ngIf="node.weightedAchievement !== null">{{ displayNumber(node.weightedAchievement, 1) }}%</span>
+                                                <span *ngIf="node.weightedAchievement === null" class="text-muted">—</span>
+                                                <span class="badge bg-{{ ragClass(node.rag) }} ms-1">{{ ragLabel(node.rag) }}</span>
+                                            </td>
+                                            <td class="text-end">{{ node.coverage !== null ? displayNumber(node.coverage, 1) + '%' : '—' }}</td>
+                                            <td class="text-center">{{ node.indicatorCount }}</td>
+                                            <td class="text-center">
+                                                <span class="badge bg-{{ node.openRisks > 0 ? 'danger' : 'light' }} {{ node.openRisks > 0 ? '' : 'text-dark' }}">{{ node.openRisks }}</span>
+                                            </td>
+                                        </tr>
+                                        <tr *ngFor="let indicator of (node.expanded ? node.indicators : [])" class="table-light">
+                                            <td [style.padding-left.px]="60 + node.depth * 20">
+                                                <i class="fas fa-angle-right text-muted me-2"></i>{{ indicator.name }}
+                                                <span class="small text-muted ms-1">{{ indicator.code }}</span>
+                                            </td>
+                                            <td class="text-end">{{ indicator.percentageAchievement !== null ? displayNumber(indicator.percentageAchievement, 1) + '%' : '—' }}
+                                                <span class="badge bg-{{ ragClass(indicator.rag) }} ms-1">{{ ragLabel(indicator.rag) }}</span>
+                                            </td>
+                                            <td class="text-end">{{ indicator.coverage !== null ? displayNumber(indicator.coverage, 1) + '%' : '—' }}</td>
+                                            <td class="text-center small text-muted">target {{ indicator.target !== null ? displayNumber(indicator.target, 1) : '—' }}</td>
+                                            <td class="text-center small text-muted">actual {{ indicator.actual !== null ? displayNumber(indicator.actual, 1) : '—' }}</td>
+                                        </tr>
+                                    </ng-container>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div *ngIf="flatResults.length === 0" class="text-muted text-center py-3">
+                            This logframe has no results nodes yet.
+                        </div>
+                    </div>
+
+                    <div *ngIf="!resultsLoading && !results" class="card-body text-muted text-center py-4">
+                        <i class="fas fa-sitemap fa-2x mb-2"></i>
+                        <div>No logframe is linked to this project. Link one in Logical Frameworks to see the results roll-up.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </ng-container>
+</div>

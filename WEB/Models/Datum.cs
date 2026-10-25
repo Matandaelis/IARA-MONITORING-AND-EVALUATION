@@ -25,6 +25,13 @@ namespace Monic.Web.Models
         [Required]
         public bool Aggregated { get; set; }
 
+        /// <summary>Where this value came from: manual entry, questionnaire, import or calculation.</summary>
+        [Required]
+        public DataSourceType SourceType { get; set; } = DataSourceType.Manual;
+
+        /// <summary>Optional provenance id (e.g. FormIndicatorLedger id or import job id).</summary>
+        public Guid? SourceId { get; set; }
+
         [DatabaseGenerated(DatabaseGeneratedOption.Computed), Required]
         public bool Submitted { get; private set; }
 

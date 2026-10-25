@@ -103,6 +103,16 @@ namespace Monic.Web.Models
 
         public IndicatorDirection Direction { get; set; } = IndicatorDirection.HigherIsBetter;
 
+        public MonitoringType MonitoringType { get; set; } = MonitoringType.Results;
+
+        public Guid? ResponsibleUserId { get; set; }
+
+        public UserDTO ResponsibleUser { get; set; }
+
+        public decimal? GreenThreshold { get; set; }
+
+        public decimal? AmberThreshold { get; set; }
+
         public DisaggregationGroupDTO DisaggregationGroup { get; set; }
 
         public virtual List<ComponentIndicatorDTO> ComponentIndicators { get; set; } = new List<ComponentIndicatorDTO>();
@@ -163,6 +173,10 @@ namespace Monic.Web.Models
             indicatorDTO.SortOrder = indicator.SortOrder;
             indicatorDTO.DisaggregationGroupId = indicator.DisaggregationGroupId;
             indicatorDTO.Direction = indicator.Direction;
+            indicatorDTO.MonitoringType = indicator.MonitoringType;
+            indicatorDTO.ResponsibleUserId = indicator.ResponsibleUserId;
+            indicatorDTO.GreenThreshold = indicator.GreenThreshold;
+            indicatorDTO.AmberThreshold = indicator.AmberThreshold;
 
             if (includeParents)
             {
@@ -170,6 +184,7 @@ namespace Monic.Web.Models
                 indicatorDTO.GroupingIndicator = Create(indicator.GroupingIndicator);
                 indicatorDTO.OptionList = Create(indicator.OptionList);
                 indicatorDTO.Subcategory = Create(indicator.Subcategory);
+                indicatorDTO.ResponsibleUser = Create(indicator.ResponsibleUser);
                 if (indicator.DisaggregationGroup != null)
                 {
                     indicatorDTO.DisaggregationGroup = Create(indicator.DisaggregationGroup, true);
@@ -243,6 +258,10 @@ namespace Monic.Web.Models
             indicator.GroupingIndicatorId = indicatorDTO.GroupingIndicatorId;
             indicator.SortOrder = indicatorDTO.SortOrder;
             indicator.DisaggregationGroupId = indicatorDTO.DisaggregationGroupId;
+            indicator.MonitoringType = indicatorDTO.MonitoringType;
+            indicator.ResponsibleUserId = indicatorDTO.ResponsibleUserId;
+            indicator.GreenThreshold = indicatorDTO.GreenThreshold;
+            indicator.AmberThreshold = indicatorDTO.AmberThreshold;
             if (indicatorDTO.Direction == IndicatorDirection.LowerIsBetter)
             {
                 indicator.LowerIsBetter = true;

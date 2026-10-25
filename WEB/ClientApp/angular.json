@@ -27,6 +27,18 @@
                             "src/polyfills.ts"
                         ],
                         "tsConfig": "tsconfig.json",
+                        "stylePreprocessorOptions": {
+                            "sass": {
+                                // Bootstrap 5 still ships @import/global color helpers.
+                                // These are upstream deprecations, not application code.
+                                "silenceDeprecations": [
+                                    "import",
+                                    "global-builtin",
+                                    "color-functions",
+                                    "mixed-decls"
+                                ]
+                            }
+                        },
                         "assets": [
                             "src/favicon.ico",
                             "src/assets"

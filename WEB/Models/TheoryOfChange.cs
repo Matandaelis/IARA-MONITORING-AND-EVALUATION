@@ -13,7 +13,13 @@ namespace Monic.Web.Models
         [Required(AllowEmptyStrings = true), MaxLength(250)]
         public string Name { get; set; }
 
+        /// <summary>Project that owns this theory of change (null = organisation-wide).</summary>
+        public Guid? ProjectId { get; set; }
+
         public virtual ICollection<TheoryOfChangeComponent> TheoryOfChangeComponents { get; set; } = new List<TheoryOfChangeComponent>();
+
+        [ForeignKey("ProjectId")]
+        public virtual Project Project { get; set; }
 
         public virtual ICollection<Relationship> Relationships { get; set; } = new List<Relationship>();
 

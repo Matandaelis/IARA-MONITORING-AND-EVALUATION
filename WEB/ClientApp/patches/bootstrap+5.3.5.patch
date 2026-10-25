@@ -1,0 +1,13 @@
+diff --git a/node_modules/bootstrap/scss/forms/_floating-labels.scss b/node_modules/bootstrap/scss/forms/_floating-labels.scss
+index 38df115..6e113fb 100644
+--- a/node_modules/bootstrap/scss/forms/_floating-labels.scss
++++ b/node_modules/bootstrap/scss/forms/_floating-labels.scss
+@@ -90,7 +90,7 @@
+     }
+   }
+ 
+-  > :disabled ~ label,
++  > [disabled] ~ label,
+   > .form-control:disabled ~ label { // Required for `.form-control`s because of specificity
+     color: $form-floating-label-disabled-color;
+   }

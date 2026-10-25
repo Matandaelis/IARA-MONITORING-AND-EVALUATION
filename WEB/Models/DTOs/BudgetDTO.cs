@@ -54,6 +54,12 @@ namespace Monic.Web.Models
 
         public Guid? TaskId { get; set; }
 
+        /// <summary>Optional logframe result this line delivers, for budget-to-results analysis.</summary>
+        public Guid? LogFrameNodeId { get; set; }
+
+        /// <summary>Optional indicator this line delivers, for cost-per-output analysis.</summary>
+        public Guid? IndicatorId { get; set; }
+
         public DateTime? PeriodStart { get; set; }
 
         public DateTime? PeriodEnd { get; set; }
@@ -200,6 +206,8 @@ namespace Monic.Web.Models
                 Currency = budgetLine.Currency,
                 DateId = budgetLine.DateId,
                 TaskId = budgetLine.TaskId,
+                LogFrameNodeId = budgetLine.LogFrameNodeId,
+                IndicatorId = budgetLine.IndicatorId,
                 PeriodStart = budgetLine.PeriodStart,
                 PeriodEnd = budgetLine.PeriodEnd,
                 CreatedOnUtc = budgetLine.CreatedOnUtc,
@@ -229,6 +237,8 @@ namespace Monic.Web.Models
             budgetLine.Currency = string.IsNullOrWhiteSpace(budgetLineDTO.Currency) ? "USD" : budgetLineDTO.Currency;
             budgetLine.DateId = budgetLineDTO.DateId;
             budgetLine.TaskId = budgetLineDTO.TaskId;
+            budgetLine.LogFrameNodeId = budgetLineDTO.LogFrameNodeId;
+            budgetLine.IndicatorId = budgetLineDTO.IndicatorId;
             budgetLine.PeriodStart = budgetLineDTO.PeriodStart;
             budgetLine.PeriodEnd = budgetLineDTO.PeriodEnd;
         }

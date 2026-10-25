@@ -1,0 +1,132 @@
+<app-page-title title="Corrective Action Plans" />
+
+<div class="container-fluid">
+
+    <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
+        <div>
+            <label class="form-label mb-1 small text-muted">Project</label>
+            <select class="form-select" [(ngModel)]="selectedProjectId" (ngModelChange)="projectChanged()" name="capProject">
+                <option *ngFor="let project of projects" [value]="project.projectId">{{ project.name }}</option>
+            </select>
+        </div>
+        <div class="ms-auto d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary" (click)="triggerWatcher()" [disabled]="triggering || !selectedProjectId">
+                <i class="fas fa-bell me-1"></i>{{ triggering ? 'Checking…' : 'Run deviation watcher' }}
+            </button>
+            <small class="text-muted">{{ deviationThreshold }}% threshold · {{ slaBusinessDays }} business-day SLA</small>
+        </div>
+    </div>
+
+    <div *ngIf="projects.length === 0" class="alert alert-info">No projects are visible for your account.</div>
+
+    <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading…</span></div>
+    </div>
+
+    <ng-container *ngIf="!loading && selectedProjectId">
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="small text-muted">
+                Corrective actions for off-track indicators. Deviation beyond <strong>{{ deviationThreshold }}%</strong>
+                from target triggers a CAP; field intervention is due within <strong>{{ slaBusinessDays }} business days</strong>.
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" (click)="startCap()" [appHasRole]="['Manager', 'Oversight']">
+                <i class="fas fa-plus me-1"></i>Add corrective action
+            </button>
+        </div>
+
+        <form class="card shadow-sm mb-3 border-primary" *ngIf="showCapForm" (ngSubmit)="addCap()">
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <label class="form-label small">Description / corrective intervention</label>
+                        <textarea class="form-control" rows="3" [(ngModel)]="newCap.description" name="capDescription" required></textarea>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Owner</label>
+                        <select class="form-select" [(ngModel)]="newCap.ownerUserId" name="capOwner">
+                            <option [value]="null">Unassigned</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Due date</label>
+                        <input type="date" class="form-control" [(ngModel)]="newCap.dueDate" name="capDueDate" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">Status</label>
+                        <select class="form-select" [(ngModel)]="newCap.status" name="capStatus">
+                            <option *ngFor="let option of actionStatusOptions" [ngValue]="option.value">{{ option.label }}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" (click)="cancelCap()">Cancel</button>
+                </div>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle">
+                <thead class="table-light">
+                <tr>
+                    <th>Indicator</th>
+                    <th>Deviation</th>
+                    <th>Description</th>
+                    <th>Owner</th>
+                    <th>Due date</th>
+                    <th>Status</th>
+                    <th>Triggered</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr *ngFor="let cap of caps">
+                    <td>
+                        <span class="badge bg-{{ cap.isCap ? 'info' : 'secondary' }}">{{ cap.isCap ? 'Auto' : 'Manual' }}</span>
+                        <span class="ms-2">{{ cap.indicatorCode || cap.indicatorName || '—' }}</span>
+                    </td>
+                    <td>
+                        <span [class]="deviationClass(cap.deviationPercent)">
+                            {{ cap.deviationPercent !== null ? (cap.deviationPercent > 0 ? '+' : '') + cap.deviationPercent.toFixed(1) + '%' : '—' }}
+                        </span>
+                    </td>
+                    <td>
+                        <div *ngIf="editingCap?.monitoringActionId === cap.monitoringActionId">
+                            <input class="form-control form-control-sm" [(ngModel)]="cap.description" name="capDesc-{{cap.monitoringActionId}}" />
+                        </div>
+                        <div *ngIf="editingCap?.monitoringActionId !== cap.monitoringActionId">{{ cap.description }}</div>
+                    </td>
+                    <td>{{ cap.ownerUserName || '—' }}</td>
+                    <td>{{ cap.dueDate || '—' }}</td>
+                    <td>
+                        <div *ngIf="editingCap?.monitoringActionId === cap.monitoringActionId">
+                            <select class="form-select form-select-sm" [(ngModel)]="cap.status" name="capStatus-{{cap.monitoringActionId}}">
+                                <option *ngFor="let option of actionStatusOptions" [ngValue]="option.value">{{ option.label }}</option>
+                            </select>
+                        </div>
+                        <div *ngIf="editingCap?.monitoringActionId !== cap.monitoringActionId">
+                            <span class="badge bg-{{ capStatusClass(cap.status) }}">{{ cap.status === 0 ? 'Open' : cap.status === 1 ? 'In progress' : cap.status === 2 ? 'Completed' : cap.status === 3 ? 'Overdue' : 'Cancelled' }}</span>
+                        </div>
+                    </td>
+                    <td>{{ cap.triggeredOnUtc || cap.createdOnUtc }}</td>
+                    <td class="text-end">
+                        <div *ngIf="editingCap?.monitoringActionId !== cap.monitoringActionId">
+                            <button type="button" class="btn btn-sm btn-outline-primary me-1" (click)="startEdit(cap)" [appHasRole]="['Manager', 'Oversight']"><i class="fas fa-pen"></i></button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" (click)="deleteCap(cap)" [appHasRole]="['Manager', 'Oversight']"><i class="fas fa-trash"></i></button>
+                        </div>
+                        <div *ngIf="editingCap?.monitoringActionId === cap.monitoringActionId">
+                            <button type="button" class="btn btn-sm btn-outline-primary me-1" (click)="saveEdit(cap)"><i class="fas fa-save"></i></button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="cancelEdit()"><i class="fas fa-times"></i></button>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div *ngIf="caps.length === 0" class="alert alert-info">No corrective actions for this project. Run the deviation watcher to generate CAPs for off-track indicators.</div>
+
+    </ng-container>
+
+</div>

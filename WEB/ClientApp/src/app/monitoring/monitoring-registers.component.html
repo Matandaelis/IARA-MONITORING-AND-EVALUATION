@@ -1,0 +1,480 @@
+<app-page-title title="Monitoring Registers" />
+
+<div class="container-fluid">
+
+    <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
+        <div>
+            <label class="form-label mb-1 small text-muted">Project</label>
+            <select class="form-select" [(ngModel)]="selectedProjectId" (ngModelChange)="projectChanged()" name="registerProject">
+                <option *ngFor="let project of projects" [value]="project.projectId">{{ project.name }}</option>
+            </select>
+        </div>
+        <div class="ms-auto d-flex gap-2">
+            <a class="btn btn-outline-primary" routerLink="/monitoring"><i class="fas fa-gauge-high me-1"></i>Dashboard</a>
+            <a class="btn btn-outline-primary" routerLink="/monitoring/matrix"><i class="fas fa-table-cells me-1"></i>Matrix</a>
+            <a class="btn btn-outline-primary" routerLink="/monitoring/financial"><i class="fas fa-coins me-1"></i>Financial</a>
+        </div>
+    </div>
+
+    <div *ngIf="projects.length === 0" class="alert alert-info">No projects are visible for your account.</div>
+
+    <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading…</span></div>
+    </div>
+
+    <ng-container *ngIf="!loading && selectedProjectId">
+
+        <ul class="nav nav-tabs mb-3">
+            <li class="nav-item">
+                <button type="button" class="nav-link" [ngClass]="{ active: activeTab === 'risks' }" (click)="setTab('risks')">
+                    <i class="fas fa-triangle-exclamation me-1"></i>Risks & assumptions <span class="badge bg-secondary ms-1">{{ risks.length }}</span>
+                </button>
+            </li>
+            <li class="nav-item">
+                <button type="button" class="nav-link" [ngClass]="{ active: activeTab === 'events' }" (click)="setTab('events')">
+                    <i class="fas fa-person-walking-arrow-right me-1"></i>Monitoring events <span class="badge bg-secondary ms-1">{{ events.length }}</span>
+                </button>
+            </li>
+            <li class="nav-item">
+                <button type="button" class="nav-link" [ngClass]="{ active: activeTab === 'checks' }" (click)="setTab('checks')">
+                    <i class="fas fa-clipboard-check me-1"></i>Compliance & admin <span class="badge bg-secondary ms-1">{{ checks.length }}</span>
+                </button>
+            </li>
+            <li class="nav-item">
+                <button type="button" class="nav-link" [ngClass]="{ active: activeTab === 'lessons' }" (click)="setTab('lessons')">
+                    <i class="fas fa-lightbulb me-1"></i>Lessons learned <span class="badge bg-secondary ms-1">{{ lessons.length }}</span>
+                </button>
+            </li>
+        </ul>
+
+        <!-- ── RISKS & ASSUMPTIONS ─────────────────────────────────────── -->
+        <div *ngIf="activeTab === 'risks'">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="small text-muted">Structured risks and assumptions, linked to the results tree and re-assessed over time.</div>
+                <button type="button" class="btn btn-primary btn-sm" (click)="startRisk()" [appHasRole]="['Manager', 'Oversight']"><i class="fas fa-plus me-1"></i>Add risk / assumption</button>
+            </div>
+
+            <form class="card shadow-sm mb-3 border-primary" *ngIf="showRiskForm" (ngSubmit)="addRisk()">
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-2">
+                            <label class="form-label small">Type</label>
+                            <select class="form-select" [(ngModel)]="newRisk.type" name="riskType">
+                                <option *ngFor="let option of riskTypeOptions" [ngValue]="option.value">{{ option.label }}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small">Title</label>
+                            <input class="form-control" [(ngModel)]="newRisk.title" name="riskTitle" placeholder="What could affect delivery?" />
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label small">Likelihood</label>
+                            <input type="number" min="1" max="5" class="form-control" [(ngModel)]="newRisk.likelihood" name="riskLikelihood" />
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label small">Impact</label>
+                            <input type="number" min="1" max="5" class="form-control" [(ngModel)]="newRisk.impact" name="riskImpact" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">Status</label>
+                            <select class="form-select" [(ngModel)]="newRisk.status" name="riskStatus">
+                                <option *ngFor="let option of riskStatusOptions" [ngValue]="option.value">{{ option.label }}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small">Description</label>
+                            <textarea class="form-control" rows="2" [(ngModel)]="newRisk.description" name="riskDescription"></textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Mitigation / response</label>
+                            <textarea class="form-control" rows="2" [(ngModel)]="newRisk.mitigation" name="riskMitigation"></textarea>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small">Review date</label>
+                            <input type="date" class="form-control" [(ngModel)]="newRisk.reviewDate" name="riskReviewDate" />
+                        </div>
+                    </div>
+                    <div class="mt-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm" [disabled]="saving">Save</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="cancelRisk()">Cancel</button>
+                    </div>
+                </div>
+            </form>
+
+            <form class="card shadow-sm mb-3 border-warning" *ngIf="showRiskUpdateForm && riskForUpdate" (ngSubmit)="addRiskUpdate()">
+                <div class="card-body">
+                    <div class="fw-semibold mb-2"><i class="fas fa-arrows-rotate me-1"></i>Re-assess: {{ riskForUpdate.title }}</div>
+                    <div class="row g-2">
+                        <div class="col-md-2">
+                            <label class="form-label small">Likelihood</label>
+                            <input type="number" min="1" max="5" class="form-control" [(ngModel)]="newRiskUpdate.likelihood" name="updateLikelihood" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small">Impact</label>
+                            <input type="number" min="1" max="5" class="form-control" [(ngModel)]="newRiskUpdate.impact" name="updateImpact" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small">Status</label>
+                            <select class="form-select" [(ngModel)]="newRiskUpdate.status" name="updateStatus">
+                                <option *ngFor="let option of riskStatusOptions" [ngValue]="option.value">{{ option.label }}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small">Comment / evidence</label>
+                            <input class="form-control" [(ngModel)]="newRiskUpdate.comment" name="updateComment" />
+                        </div>
+                    </div>
+                    <div class="mt-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-warning btn-sm" [disabled]="saving">Record assessment</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="cancelRiskUpdate()">Cancel</button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="card shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Type</th>
+                                <th>Risk / assumption</th>
+                                <th class="text-center">L × I</th>
+                                <th>Status</th>
+                                <th>Owner</th>
+                                <th class="text-end">Review</th>
+                                <th class="text-center">Updates</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let risk of risks">
+                                <td><span class="badge bg-{{ risk.type === 1 ? 'info text-dark' : 'dark' }}">{{ risk.typeLabel }}</span></td>
+                                <td>
+                                    <div class="fw-semibold">{{ risk.title }}</div>
+                                    <div class="small text-muted" *ngIf="risk.description">{{ risk.description }}</div>
+                                    <div class="small text-muted" *ngIf="risk.logFrameNodeTitle"><i class="fas fa-sitemap me-1"></i>{{ risk.logFrameNodeTitle }}</div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-{{ riskScoreClass(risk.riskScore) }}">{{ risk.likelihood }} × {{ risk.impact }} = {{ risk.riskScore }}</span>
+                                </td>
+                                <td style="min-width: 150px;">
+                                    <select class="form-select form-select-sm" [(ngModel)]="risk.status" (ngModelChange)="riskStatusChanged(risk)" [ngModelOptions]="{standalone: true}">
+                                        <option *ngFor="let option of riskStatusOptions" [ngValue]="option.value">{{ option.label }}</option>
+                                    </select>
+                                </td>
+                                <td class="small">{{ risk.ownerUserName || '—' }}</td>
+                                <td class="text-end small">{{ risk.reviewDate ? (risk.reviewDate | date:'dd MMM yyyy') : '—' }}</td>
+                                <td class="text-center">{{ risk.updates.length }}</td>
+                                <td class="text-end text-nowrap">
+                                    <button type="button" class="btn btn-sm btn-outline-warning me-1" title="Re-assess" (click)="startRiskUpdate(risk)" [appHasRole]="['Manager', 'Oversight']"><i class="fas fa-arrows-rotate"></i></button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" title="Delete" (click)="deleteRisk(risk)" [appHasRole]="['Manager', 'Oversight']"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr *ngIf="risks.length === 0">
+                                <td colspan="8" class="text-center text-muted py-4">No risks or assumptions recorded yet.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── MONITORING EVENTS ───────────────────────────────────────── -->
+        <div *ngIf="activeTab === 'events'">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="small text-muted">Field visits, supervision, data-quality audits, reviews and their follow-up actions.</div>
+                <button type="button" class="btn btn-primary btn-sm" (click)="startEvent()" [appHasRole]="['Manager', 'Oversight', 'DataEntry']"><i class="fas fa-plus me-1"></i>Record monitoring event</button>
+            </div>
+
+            <form class="card shadow-sm mb-3 border-primary" *ngIf="showEventForm" (ngSubmit)="addEvent()">
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <label class="form-label small">Event type</label>
+                            <select class="form-select" [(ngModel)]="newEvent.type" name="eventType">
+                                <option *ngFor="let option of eventTypeOptions" [ngValue]="option.value">{{ option.label }}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small">Title</label>
+                            <input class="form-control" [(ngModel)]="newEvent.title" name="eventTitle" placeholder="What was monitored?" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small">Date</label>
+                            <input type="date" class="form-control" [(ngModel)]="newEvent.eventDate" name="eventDate" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small">Status</label>
+                            <select class="form-select" [(ngModel)]="newEvent.status" name="eventStatus">
+                                <option *ngFor="let option of eventStatusOptions" [ngValue]="option.value">{{ option.label }}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Participants</label>
+                            <input class="form-control" [(ngModel)]="newEvent.participants" name="eventParticipants" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Findings</label>
+                            <textarea class="form-control" rows="2" [(ngModel)]="newEvent.findings" name="eventFindings"></textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Recommendations</label>
+                            <textarea class="form-control" rows="2" [(ngModel)]="newEvent.recommendations" name="eventRecommendations"></textarea>
+                        </div>
+                    </div>
+                    <div class="mt-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm" [disabled]="saving">Save event</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="cancelEvent()">Cancel</button>
+                    </div>
+                </div>
+            </form>
+
+            <form class="card shadow-sm mb-3 border-info" *ngIf="showActionForm && eventForAction" (ngSubmit)="addAction()">
+                <div class="card-body">
+                    <div class="fw-semibold mb-2"><i class="fas fa-list-check me-1"></i>Follow-up action for: {{ eventForAction.title }}</div>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label small">Action</label>
+                            <input class="form-control" [(ngModel)]="newAction.description" name="actionDescription" placeholder="What needs to happen?" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">Due date</label>
+                            <input type="date" class="form-control" [(ngModel)]="newAction.dueDate" name="actionDueDate" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">Status</label>
+                            <select class="form-select" [(ngModel)]="newAction.status" name="actionStatus">
+                                <option *ngFor="let option of actionStatusOptions" [ngValue]="option.value">{{ option.label }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-info btn-sm text-dark" [disabled]="saving">Save action</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="cancelAction()">Cancel</button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="card shadow-sm" *ngFor="let monitoringEvent of events">
+                <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <span class="badge bg-primary me-2">{{ monitoringEvent.typeLabel }}</span>
+                        <span class="fw-semibold">{{ monitoringEvent.title }}</span>
+                        <span class="small text-muted ms-2">{{ monitoringEvent.eventDate | date:'dd MMM yyyy' }}</span>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center">
+                        <select class="form-select form-select-sm" style="width: auto;" [(ngModel)]="monitoringEvent.status" (ngModelChange)="eventStatusChanged(monitoringEvent)" [ngModelOptions]="{standalone: true}">
+                            <option *ngFor="let option of eventStatusOptions" [ngValue]="option.value">{{ option.label }}</option>
+                        </select>
+                        <button type="button" class="btn btn-sm btn-outline-info text-dark" (click)="startAction(monitoringEvent)" [appHasRole]="['Manager', 'Oversight', 'DataEntry']"><i class="fas fa-plus me-1"></i>Action</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" (click)="deleteEvent(monitoringEvent)" [appHasRole]="['Manager', 'Oversight']"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6" *ngIf="monitoringEvent.findings">
+                            <div class="small text-muted text-uppercase fw-semibold">Findings</div>
+                            <div>{{ monitoringEvent.findings }}</div>
+                        </div>
+                        <div class="col-md-6" *ngIf="monitoringEvent.recommendations">
+                            <div class="small text-muted text-uppercase fw-semibold">Recommendations</div>
+                            <div>{{ monitoringEvent.recommendations }}</div>
+                        </div>
+                        <div class="col-md-6" *ngIf="monitoringEvent.participants">
+                            <div class="small text-muted text-uppercase fw-semibold">Participants</div>
+                            <div class="small">{{ monitoringEvent.participants }}</div>
+                        </div>
+                        <div class="col-md-6" *ngIf="monitoringEvent.periodDateName">
+                            <div class="small text-muted text-uppercase fw-semibold">Reporting period</div>
+                            <div class="small">{{ monitoringEvent.periodDateName }}</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3" *ngIf="monitoringEvent.actions.length > 0">
+                        <div class="small text-muted text-uppercase fw-semibold mb-2">Follow-up actions</div>
+                        <div class="border rounded p-2 mb-2" *ngFor="let action of monitoringEvent.actions">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                <div>
+                                    <div>{{ action.description }}</div>
+                                    <div class="small text-muted">
+                                        <span *ngIf="action.dueDate">Due {{ action.dueDate | date:'dd MMM yyyy' }}</span>
+                                        <span *ngIf="action.ownerUserName"> · {{ action.ownerUserName }}</span>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2 align-items-center">
+                                    <select class="form-select form-select-sm" style="width: auto;" [(ngModel)]="action.status" (ngModelChange)="actionStatusChanged(action)" [ngModelOptions]="{standalone: true}">
+                                        <option *ngFor="let option of actionStatusOptions" [ngValue]="option.value">{{ option.label }}</option>
+                                    </select>
+                                    <span class="badge bg-{{ actionStatusClass(action.status) }}">{{ action.status === 2 ? 'Done' : (action.status === 3 ? 'Overdue' : 'Open') }}</span>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" (click)="deleteAction(action)" [appHasRole]="['Manager', 'Oversight']"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm" *ngIf="events.length === 0">
+                <div class="card-body text-center text-muted py-4">No monitoring events recorded yet.</div>
+            </div>
+        </div>
+
+        <!-- ── COMPLIANCE & ADMINISTRATIVE CHECKS ─────────────────────── -->
+        <div *ngIf="activeTab === 'checks'">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="small text-muted">Donor compliance requirements and administrative / logistics readiness checks.</div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-primary btn-sm" (click)="startCheck(0)" [appHasRole]="['Manager', 'Oversight', 'DataEntry']"><i class="fas fa-plus me-1"></i>Compliance check</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" (click)="startCheck(1)" [appHasRole]="['Manager', 'Oversight', 'DataEntry']"><i class="fas fa-plus me-1"></i>Admin / logistics check</button>
+                </div>
+            </div>
+
+            <form class="card shadow-sm mb-3 border-primary" *ngIf="showCheckForm" (ngSubmit)="addCheck()">
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <label class="form-label small">Check type</label>
+                            <select class="form-select" [(ngModel)]="newCheck.type" name="checkType">
+                                <option *ngFor="let option of checkTypeOptions" [ngValue]="option.value">{{ option.label }}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small">Title / requirement</label>
+                            <input class="form-control" [(ngModel)]="newCheck.title" name="checkTitle" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Requirement source</label>
+                            <input class="form-control" [(ngModel)]="newCheck.requirementSource" name="checkSource" placeholder="Donor agreement, policy, law…" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">Due date</label>
+                            <input type="date" class="form-control" [(ngModel)]="newCheck.dueDate" name="checkDueDate" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">Status</label>
+                            <select class="form-select" [(ngModel)]="newCheck.status" name="checkStatus">
+                                <option *ngFor="let option of checkStatusOptions" [ngValue]="option.value">{{ option.label }}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small">Description</label>
+                            <input class="form-control" [(ngModel)]="newCheck.description" name="checkDescription" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small">Notes / evidence</label>
+                            <input class="form-control" [(ngModel)]="newCheck.notes" name="checkNotes" />
+                        </div>
+                    </div>
+                    <div class="mt-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm" [disabled]="saving">Save check</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="cancelCheck()">Cancel</button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="card shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Type</th>
+                                <th>Requirement</th>
+                                <th>Source</th>
+                                <th class="text-end">Due</th>
+                                <th>Status</th>
+                                <th>Notes</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let check of checks">
+                                <td><span class="badge bg-{{ check.type === 1 ? 'secondary' : 'primary' }}">{{ check.typeLabel }}</span></td>
+                                <td>
+                                    <div class="fw-semibold">{{ check.title }}</div>
+                                    <div class="small text-muted" *ngIf="check.description">{{ check.description }}</div>
+                                </td>
+                                <td class="small">{{ check.requirementSource || '—' }}</td>
+                                <td class="text-end small">{{ check.dueDate ? (check.dueDate | date:'dd MMM yyyy') : '—' }}</td>
+                                <td style="min-width: 150px;">
+                                    <select class="form-select form-select-sm" [(ngModel)]="check.status" (ngModelChange)="checkStatusChanged(check)" [ngModelOptions]="{standalone: true}">
+                                        <option *ngFor="let option of checkStatusOptions" [ngValue]="option.value">{{ option.label }}</option>
+                                    </select>
+                                </td>
+                                <td class="small">{{ check.notes || '—' }}</td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-sm btn-outline-danger" (click)="deleteCheck(check)" [appHasRole]="['Manager', 'Oversight']"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr *ngIf="checks.length === 0">
+                                <td colspan="7" class="text-center text-muted py-4">No compliance or administrative checks recorded yet.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── LESSONS LEARNED ────────────────────────────────────────── -->
+        <div *ngIf="activeTab === 'lessons'">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="small text-muted">Adaptive management: capture what worked, what did not, and what should change.</div>
+                <button type="button" class="btn btn-primary btn-sm" (click)="startLesson()" [appHasRole]="['Manager', 'Oversight', 'DataEntry']"><i class="fas fa-plus me-1"></i>Record lesson</button>
+            </div>
+
+            <form class="card shadow-sm mb-3 border-primary" *ngIf="showLessonForm" (ngSubmit)="addLesson()">
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <label class="form-label small">Monitoring domain</label>
+                            <select class="form-select" [(ngModel)]="newLesson.monitoringType" name="lessonType">
+                                <option *ngFor="let option of monitoringTypeOptions" [ngValue]="option.value">{{ option.label }}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-9">
+                            <label class="form-label small">Title</label>
+                            <input class="form-control" [(ngModel)]="newLesson.title" name="lessonTitle" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small">What happened?</label>
+                            <textarea class="form-control" rows="2" [(ngModel)]="newLesson.description" name="lessonDescription"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small">Recommendation / adaptation</label>
+                            <textarea class="form-control" rows="2" [(ngModel)]="newLesson.recommendation" name="lessonRecommendation"></textarea>
+                        </div>
+                    </div>
+                    <div class="mt-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm" [disabled]="saving">Save lesson</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="cancelLesson()">Cancel</button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="row g-3">
+                <div class="col-md-6" *ngFor="let lesson of lessons">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <span class="badge bg-light text-dark mb-2">{{ lesson.monitoringTypeLabel }}</span>
+                                    <div class="fw-semibold">{{ lesson.title }}</div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger" (click)="deleteLesson(lesson)" [appHasRole]="['Manager', 'Oversight']"><i class="fas fa-trash"></i></button>
+                            </div>
+                            <div class="mt-2" *ngIf="lesson.description">{{ lesson.description }}</div>
+                            <div class="alert alert-light border mt-2 mb-0" *ngIf="lesson.recommendation">
+                                <div class="small text-muted text-uppercase fw-semibold mb-1">Recommendation</div>
+                                {{ lesson.recommendation }}
+                            </div>
+                            <div class="small text-muted mt-2">Recorded {{ lesson.recordedOnUtc | date:'dd MMM yyyy' }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12" *ngIf="lessons.length === 0">
+                    <div class="card shadow-sm"><div class="card-body text-center text-muted py-4">No lessons recorded yet.</div></div>
+                </div>
+            </div>
+        </div>
+
+    </ng-container>
+</div>

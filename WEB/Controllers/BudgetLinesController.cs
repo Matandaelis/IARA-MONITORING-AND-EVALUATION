@@ -168,6 +168,15 @@ namespace Monic.Web.Controllers
             if (!await db.BudgetCategories.AnyAsync(o => o.BudgetCategoryId == budgetLineDTO.BudgetCategoryId))
                 return BadRequest("Budget category not found");
 
+            if (budgetLineDTO.LogFrameNodeId.HasValue &&
+                !await db.LogFrameNodes.AnyAsync(o => o.LogFrameNodeId == budgetLineDTO.LogFrameNodeId.Value &&
+                    (o.LogFrame.ProjectId == budgetLineDTO.ProjectId || o.LogFrame.ProjectId == null)))
+                return BadRequest("Logframe node not found for this project");
+
+            if (budgetLineDTO.IndicatorId.HasValue &&
+                !await db.Indicators.AnyAsync(o => o.IndicatorId == budgetLineDTO.IndicatorId.Value))
+                return BadRequest("Indicator not found");
+
             var isNew = budgetLineDTO.BudgetLineId == Guid.Empty;
 
             BudgetLine budgetLine;
