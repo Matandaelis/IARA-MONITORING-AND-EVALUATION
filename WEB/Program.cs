@@ -430,7 +430,25 @@ app.UseAuthorization();
 app.MapHealthChecks("/health");
 app.MapGet("/healthz", () => Results.Ok(new { status = "Healthy" }));
 
-app.MapGet("/openapi/v1.json", () => Results.File("C:\\Users\\Administrator\\Downloads\\MONICv2\\MONICv.001\\docs\\postman\\openapi.json", "application/json"));
+app.MapGet("/openapi/v1.json", (IWebHostEnvironment env) =>
+{
+    var candidates = new[]
+    {
+        Path.Combine(env.ContentRootPath, "docs", "postman", "openapi.json"),
+        Path.Combine(env.ContentRootPath, "..", "docs", "postman", "openapi.json"),
+        Path.Combine(env.WebRootPath ?? "", "openapi.json"),
+        Path.Combine(AppContext.BaseDirectory, "docs", "postman", "openapi.json"),
+        Path.Combine(AppContext.BaseDirectory, "wwwroot", "openapi.json")
+    };
+
+    var matched = candidates.FirstOrDefault(File.Exists);
+    if (matched != null)
+    {
+        return Results.File(matched, "application/json");
+    }
+
+    return Results.NotFound(new { message = "OpenAPI specification document not found" });
+});
 
 
 

@@ -10,7 +10,7 @@ using Monic.Web.Models;
 
 namespace Monic.Web.Controllers;
 
-[ApiController, Route("api/v1/logframes")]
+[ApiController, Route("api/v1/logframes"), Route("api/logframes")]
 public sealed class LogFramesV2Controller : BaseApiController
 {
     private readonly LogFrameTreeService _treeService;

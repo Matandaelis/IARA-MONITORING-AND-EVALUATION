@@ -1,4 +1,5 @@
 import { Component as NgComponent, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { Indicator } from '../common/models/indicator.model';
 import { IndicatorTarget } from '../common/models/indicatortarget.model';
 import { IndicatorService } from '../common/services/indicator.service';
@@ -23,10 +24,15 @@ export class PirsCardComponent implements OnInit {
 
     constructor(
         private indicatorService: IndicatorService,
-        private targetService: IndicatorTargetService
+        private targetService: IndicatorTargetService,
+        private route: ActivatedRoute
     ) {}
 
     ngOnInit(): void {
+        const routeId = this.route?.snapshot?.paramMap?.get('id');
+        if (routeId && !this.indicatorId) {
+            this.indicatorId = routeId;
+        }
         if (this.indicatorId && !this.indicator) {
             this.loadIndicator(this.indicatorId);
         }
