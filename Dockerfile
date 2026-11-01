@@ -16,7 +16,7 @@ COPY WEB/ClientApp/patches ./patches
 RUN npm ci --no-audit --no-fund
 
 COPY WEB/ClientApp/ ./
-RUN npm run build -- --output-path /spa/dist
+RUN npm run build
 
 # =======================================================
 # Stage 2: Build & publish the ASP.NET Core 10 backend
