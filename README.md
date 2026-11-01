@@ -18,198 +18,442 @@
 
 ## Overview
 
-IARA is a modern monitoring and evaluation platform designed for organizations that need to turn strategy into measurable results.
+IARA is an enterprise-grade Monitoring, Evaluation, and Accountability platform designed for organizations that need to manage program performance with discipline, transparency, and operational control.
 
-It brings together:
+It is built to support programs in the public sector, nonprofits, international development, donor-funded institutions, and mission-driven organizations that must connect strategy, implementation, evidence, budgets, and public accountability.
 
-- logical framework management
-- indicator tracking and calculation
-- surveys and field data collection
-- governance and approvals
-- budget alignment
-- risk management
-- donor reporting
-- team collaboration
+The platform combines:
 
-In short, IARA helps programs move from scattered spreadsheets and fragmented tools to a single operational system for accountability.
+- results-based management
+- theory of change and logframe design
+- indicator definition and calculation
+- field surveys and digital data collection
+- budget and expenditure alignment
+- governance and review workflows
+- risk and corrective action tracking
+- donor-ready reporting and exports
+- collaboration across management teams and stakeholders
+
+IARA helps move organizations from fragmented recordkeeping to a single operational system for program delivery and accountability.
 
 ---
 
-## Why this platform exists
+## Why IARA exists
 
-Most organizations do not struggle because they lack data.
-They struggle because their data is fragmented, difficult to trust, and disconnected from decision-making.
+Most organizations do not lack data. They lack a reliable way to connect data to decisions.
 
-Common problems IARA solves:
+The common operational failure pattern is:
 
-- indicators are tracked in multiple spreadsheets
-- field data is collected in separate tools and never reconciles with program reporting
-- no clear link between activities, budgets, and expected outcomes
-- data quality is weak and approvals are informal
-- donor reporting takes too long and is hard to defend
-- teams cannot easily see which objectives are on track and which are at risk
+- program plans are defined in one system
+- activities are tracked in spreadsheets
+- field surveys live in another tool
+- budgets are stored separately
+- donor reporting is assembled manually at the end of a reporting cycle
+- no one is sure which numbers are authoritative
 
-IARA creates a unified operating model for performance management.
+IARA addresses this by creating a structured and auditable link between:
+
+- plans and objectives
+- activities and outputs
+- indicators and targets
+- actual implementation and measured results
+- budgets and program execution
+- reviews and approvals
+- reported outcomes and donor commitments
+
+The result is a platform that is both operationally useful and institutionally credible.
 
 ---
 
 ## Business value
 
-IARA gives organizations a way to:
+IARA delivers value across multiple layers of an organization:
 
-- connect activity to results
-- validate whether implementation is delivering intended outcomes
-- monitor performance by time, location, partner, and target group
-- strengthen data quality through review and approval cycles
-- align budgets to program objectives
-- produce consistent, auditable donor-ready reports
-- improve accountability across internal teams and external stakeholders
+### Strategic value
+- helps leadership monitor whether strategy is being implemented as intended
+- keeps results, risks, and performance visible at a glance
+- strengthens evidence-based planning and management decisions
 
-This is not only a reporting tool. It is a governance and performance management system.
+### Operational value
+- unifies program management, field data, and financial tracking
+- reduces manual work in reporting and analysis
+- improves efficiency in indicator monitoring and review cycles
+- supports faster issue detection and course correction
+
+### Governance value
+- creates transparent review and approval workflows
+- preserves an audit trail for data changes and decisions
+- supports accountability across managers, departments, and partners
+- improves compliance with internal and donor control requirements
+
+### Reporting value
+- enables consistent reporting to program leadership and donors
+- reduces duplication across Excel, PDF, and ad hoc reporting workflows
+- supports export-ready outputs aligned with recognized reporting frameworks
 
 ---
 
 ## Core business logic
 
-IARA is built around a simple operating model:
+IARA is built around a simple but powerful operational model:
 
 `Input -> Activity -> Output -> Outcome -> Impact`
 
-Every program is represented through a structured result chain.
+This structure allows every initiative to be traced from the resources used to the results it produces.
 
-The platform supports:
+### Business concepts in the platform
 
-- theory of change design
-- logframe management
-- indicator definition and calculation
-- baseline and target tracking
-- actual value collection and comparison
-- variance analysis
-- disaggregation by geography, gender, age, facility, and other dimensions
-- approval workflows
-- risk and corrective action tracking
+- Program or project: the operational unit being implemented
+- Theory of change: the causal logic explaining how change happens
+- Logframe: the structured representation of objectives, indicators, and targets
+- Indicator: the measurable signal used to track performance
+- Baseline: starting point before implementation or intervention
+- Target: expected value to be achieved within a given period
+- Actual: real implementation value generated from field or system data
+- Disaggregation: breakdown by gender, age group, location, facility, partner, etc.
+- Variance: difference between actual and target
+- Review: validation of data and decisions by authorized roles
+- Corrective action: response to underperformance or quality problems
+- Budget alignment: the relationship between spending and planned results
 
-Each result is connected to the people responsible, the timeline, the data source, and the reporting requirements.
+Every major entity in the platform is designed to support decision-making rather than raw record storage alone.
 
 ---
 
-## Platform capabilities
+## The platform as an operating system for results
 
-### 1. Results-Based Management
+IARA is designed to help organizations answer four critical questions:
 
-IARA helps organizations plan and manage results systematically.
+1. Are we doing what we planned to do?
+2. Are we producing the expected outputs?
+3. Are those outputs leading to measurable outcomes?
+4. Are we reporting this accurately and credibly?
 
-Features include:
+The system supports those questions through structured program logic, data quality controls, and management workflows.
 
-- logical framework hierarchy
-- outcome and output mapping
-- target scheduling by month, quarter, or year
-- cumulative tracking against expected progress
-- multi-level indicator rollups
+---
 
-### 2. Indicator and formula engine
+## Functional architecture
 
-Indicators can be manually entered or calculated automatically.
+### 1. Results-based management and logframe logic
 
-Examples include:
+IARA supports the design of results frameworks from project planning through implementation and reporting.
 
-- total beneficiaries reached
-- percentage of targets achieved
-- weighted operational performance score
-- composite program indicators derived from multiple data sources
+Capabilities include:
 
-The calculation engine supports formula logic that is transparent and auditable.
+- objective hierarchy management
+- target setting across time periods
+- indicator linkage to outcomes and outputs
+- cumulative and periodic measurement
+- roll-up views by project, partner, district, or organization unit
+- multi-level logic for management reporting
+
+This allows program teams to understand not only what is happening, but why it matters.
+
+### 2. Indicator calculation engine
+
+The platform includes a formula engine for derived indicators and calculated results.
+
+Instead of only storing direct measurements, the system can compute indicators from underlying values and rules.
+
+Examples of derived logic include:
+
+- total beneficiaries reached by disaggregation
+- percentage target achievement
+- weighted performance score
+- output ratios and productivity measures
+- aggregate values across multiple project units
+
+The logic is implemented using a structured token-based formula model that allows formula transparency and traceability.
 
 ### 3. Survey and field data collection
 
-The platform supports structured field data capture through:
+IARA is built for real-world field operations and program evidence.
 
-- digital questionnaires
-- survey logic and skip rules
-- attachment capture
-- public community feedback forms
-- KoboToolbox / ODK compatibility
+It supports:
 
-This allows field evidence to feed directly into program performance tracking.
+- dynamic questionnaires
+- conditional logic and skip rules
+- multiple question types and validation rules
+- public community feedback links
+- mobile-friendly or offline-friendly data collection patterns
+- integration points with KoboToolbox and ODK-style workflows
+- attachments such as photos, files, or GPS-related evidence
 
-### 4. Data quality and governance
+This ensures field evidence does not live in isolated systems but feeds into core program measurement.
 
-The platform includes approval-based governance to improve trust in the reported numbers.
+### 4. Data quality assurance and validation
 
-Workflow stages include:
+Data quality is essential in any monitoring system. IARA includes built-in logic to evaluate whether reported values are credible.
 
-- submit
-- verify
-- approve
-- reject
-- corrective action
+Examples:
 
-This helps reduce error, weak quality control, and questionable reporting.
+- check for missing or incomplete fields
+- validate aggregated totals against disaggregated sums
+- flag outliers or suspicious changes
+- compare actual values with planned targets
+- identify variance beyond acceptable thresholds
 
-### 5. Budget and financial alignment
+This helps teams act before poor-quality data distorts reporting or operational decisions.
 
-IARA links financial information to operational results.
+### 5. Approval and governance workflow
 
-This allows teams to track:
+The platform formalizes review and approval processes so data is not simply entered and accepted without controls.
 
-- planned vs actual spend
-- budget allocation by activity or objective
-- financial performance relative to delivery
-- donor-financed commitments and execution gaps
+Typical lifecycle:
 
-### 6. Risk and corrective action tracking
+`Submit -> Verify -> Approve or Reject`
 
-IARA supports structured risk management by enabling:
+Supported logic includes:
+
+- authorization based on role and responsibility
+- protected review actions for designated users
+- rejection with evidence or rationale
+- traceable history of approvals and changes
+- corrective actions when a submission fails review
+
+This is especially important in organizations where reporting quality affects donor confidence, compliance, and management decisions.
+
+### 6. Budget and financial alignment
+
+IARA links implementation activity with budget realities.
+
+This enables:
+
+- budget planning by objective or activity
+- multiple-currency management
+- tracking of planned vs disbursed amounts
+- alignment of expenditure to indicators or outputs
+- financial performance analysis against delivery status
+
+This creates a direct connection between spend and results, which is critical for accountability and evidence-based resource allocation.
+
+### 7. Risk and corrective action management
+
+Program execution rarely proceeds perfectly. IARA supports structured risk management so problems do not remain invisible.
+
+Capabilities include:
 
 - risk register tracking
-- issue capture
-- variance alerts
-- corrective action plans
-- accountability for follow-up
+- issue logging
+- variance-driven alerts
+- corrective action plan assignment
+- accountability tracking for follow-up
+- status tracking until closure
 
-### 7. Donor and stakeholder reporting
+This closes the loop between monitoring, intervention, and operational correction.
 
-The platform supports export-ready reporting for internal management and external funders.
+### 8. Donor reporting and compliance
 
-Examples include:
+IARA is designed for real-world reporting environments, including donors with strict standards.
 
-- performance summary reports
-- indicator dashboards
-- donor-specific output tables
-- IATI-compatible exports
-- Excel and PDF reporting outputs
+It supports:
 
----
+- indicator summary reporting
+- output and outcome tracking
+- project-level performance dashboards
+- donor-specific template outputs
+- IATI-compatible and structured export patterns
+- Excel and PDF generation for operational communication
 
-## End-to-end operating workflow
-
-A typical project lifecycle in IARA looks like this:
-
-1. Define the program strategy and results framework
-2. Set objectives, outcomes, outputs, and indicators
-3. Assign targets, baselines, and reporting periods
-4. Collect data from team operations or field systems
-5. Validate data quality and compare actuals to targets
-6. Review and approve data through formal governance steps
-7. Trigger corrective actions where required
-8. Publish consolidated performance and donor reporting
-
-This creates a continuous loop between planning, execution, control, and accountability.
+This reduces the pain of report assembly and improves consistency across reporting cycles.
 
 ---
 
-## Technology architecture
+## End-to-end program lifecycle
 
-IARA is built with a modern, service-oriented architecture:
+A typical project in IARA follows this lifecycle:
 
-- Backend: ASP.NET Core 10
-- Frontend: Angular 19
-- Database: Microsoft SQL Server 2022/2025
-- Real-time collaboration: SignalR
-- Identity and security: OpenIddict OAuth 2.0 / OIDC
-- Containerization: Docker and Docker Compose
+### 1. Strategic design
+- define project goals and theory of change
+- set outcome and output logic
+- identify key indicators and reporting periods
 
-This combination provides a scalable foundation for both internal program management and public-facing operational reporting.
+### 2. Planning
+- define baselines and targets
+- assign responsibilities to users or teams
+- map budget and activity priorities
+
+### 3. Implementation tracking
+- capture activities and field data
+- compare progress to targets
+- track disaggregated performance
+
+### 4. Quality assurance
+- validate completeness and consistency
+- detect anomalies or performance risk
+- review data before final approval
+
+### 5. Governance and decision-making
+- submit values for review
+- verify results with assigned stakeholders
+- approve or reject records
+- initiate corrective actions when required
+
+### 6. Reporting and communication
+- summarize performance for management teams
+- produce donor and stakeholder reports
+- publish structured results for accountability
+
+This full lifecycle makes the platform operational rather than merely analytical.
+
+---
+
+## Roles and responsibilities
+
+IARA supports multi-role operational environments.
+
+Typical roles include:
+
+- Administrator: system configuration and oversight
+- Manager: planning and operational review
+- Oversight: governance and performance assurance
+- Data Entry: capturing raw program and field data
+
+These roles support controlled escalation and accountability. Data is not treated as a single admin-only record; it follows who is responsible for it and how it is validated.
+
+---
+
+## Security and trust model
+
+IARA is designed for sensitive operational data and institutional trust.
+
+Key principles include:
+
+- role-based security and authorization
+- secure identity and token-based access
+- protection of sensitive configuration and secrets
+- auditability of user actions and data changes
+- controlled workflow approval across key operations
+- persistence of data protection keys and signing material for production environments
+
+This makes the system suitable for organizations that must demonstrate accountability and maintain internal governance discipline.
+
+---
+
+## Technical architecture
+
+The platform uses a modern and scalable architecture:
+
+### Backend
+- ASP.NET Core 10 Web API
+- C# and .NET 10 runtime
+- OpenIddict for OAuth 2.0 / OpenID Connect
+- Entity Framework Core for database modeling and migrations
+- business logic and services for calculations, governance, and reporting
+
+### Frontend
+- Angular 19 single-page application
+- modern component-driven UI
+- dashboards, tables, forms, and workflow interfaces
+- charting and visual analytics for performance monitoring
+
+### Data layer
+- Microsoft SQL Server 2022 / 2025
+- relational schema with structured reporting entities
+- transactional integrity for approvals, data quality, and project records
+
+### Infrastructure
+- Docker multi-stage builds
+- Docker Compose orchestration
+- environment-based configuration
+- health checks for production site reliability
+- support for Coolify, Render, VPS, and cloud deployment patterns
+
+---
+
+## Deployment readiness
+
+IARA is designed for agile deployment across multiple environments including:
+
+- local Docker environments
+- cloud-hosted Docker services
+- private servers and VPS
+- Coolify deployments
+- Render and container-based production hosting
+- AWS and other containerized infrastructure
+
+The repo includes:
+
+- `Dockerfile`
+- `docker-compose.yml`
+- `entrypoint.sh`
+- `.env.example`
+- `coolify.env.example`
+- deployment documentation for production setups
+
+This makes it straightforward to run the platform in both development and production environments.
+
+---
+
+## Coolify deployment model
+
+The platform is explicitly structured for deployment behind a modern reverse proxy and HTTPS termination layer.
+
+Recommended production setup:
+
+1. Create a Docker Compose app in Coolify
+2. Connect the GitHub repository
+3. Use `docker-compose.yml` as the compose file
+4. Set environment variables from `coolify.env.example`
+5. Configure the app domain with HTTPS enabled
+6. Keep DB passwords and secrets in Coolify secrets or environment variables
+7. Use `/health` for service checks and health verification
+
+This is well suited to self-hosted environments where operational simplicity and reliability matter.
+
+---
+
+## Key differentiators
+
+IARA stands out because it does not treat monitoring as a reporting add-on. It treats monitoring as a business operating system.
+
+It combines:
+
+- program logic
+- data integrity
+- governance controls
+- financial alignment
+- donor reporting
+- operational tracking
+
+This gives organizations one coherent foundation for implementation oversight and accountability.
+
+---
+
+## Target users
+
+IARA is designed for:
+
+- monitoring and evaluation teams
+- program managers
+- development organizations
+- public sector planners
+- grant management teams
+- implementing partners
+- donor-funded project offices
+- governance and compliance teams
+
+---
+
+## Quick start
+
+### Prerequisites
+- Docker
+- Docker Compose
+
+### Start locally
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+```
+
+Then open:
+
+```text
+http://localhost:8080
+```
 
 ---
 
@@ -236,86 +480,9 @@ This combination provides a scalable foundation for both internal program manage
 ├── coolify.env.example
 ├── README.md
 ├── LICENSE.txt
-└── MONIC.sln
+├── MONIC.sln
+└── AGENTS.md
 ```
-
----
-
-## Quick start with Docker
-
-### Prerequisites
-
-- Docker
-- Docker Compose
-
-### Step 1: Copy the environment file
-
-```bash
-cp .env.example .env
-```
-
-### Step 2: Start the stack
-
-```bash
-docker compose up -d --build
-```
-
-### Step 3: Open the app
-
-```text
-http://localhost:8080
-```
-
-This starts the application and the SQL Server database required for the platform.
-
----
-
-## Coolify deployment
-
-This repository is structured to work well with Coolify using Docker Compose.
-
-Recommended deployment pattern:
-
-1. Create a new Docker Compose service in Coolify
-2. Connect the GitHub repo
-3. Set the branch to `master`
-4. Use `docker-compose.yml`
-5. Add environment variables from `coolify.env.example`
-6. Set public HTTPS domain and enable reverse proxy/SSL
-7. Keep the database internal and protected
-
-Minimal production variables:
-
-```env
-ConnectionStrings__DefaultConnection=Server=monic-db,1433;Database=MONIC;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=true;Encrypt=false;
-ASPNETCORE_ENVIRONMENT=Production
-ASPNETCORE_URLS=http://+:80
-ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
-Settings__RootUrl=https://your-domain.example.com/
-Settings__SiteName=MONIC
-Settings__AccessTokenExpiryMinutes=10
-Settings__RefreshTokenExpiryMinutes=10880
-Settings__EmailSettings__SendEmails=false
-Logging__LogLevel__Default=Information
-Logging__LogLevel__Microsoft=Warning
-```
-
-The service exposes a health endpoint at `/health` for deployment checks.
-
----
-
-## Why teams choose IARA
-
-Organizations select IARA when they need:
-
-- a single system for results management and reporting
-- stronger accountability in program operations
-- cleaner data governance and review workflows
-- better visibility into progress, risks, and gaps
-- donor-ready outputs without duplicating work
-- a scalable digital foundation for program monitoring
-
-It is designed for organizations that want to move from fragmented reporting to evidence-driven management.
 
 ---
 
@@ -331,68 +498,6 @@ See [LICENSE.txt](LICENSE.txt) for the full license text.
   <b>IARA: Impact & Accountability Reporting Architecture</b><br/>
   Engineered for precision, transparency, and accountability in global development.
 </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
