@@ -9,12 +9,6 @@ using Monic.Web.Models;
 
 namespace Monic.Web.Code
 {
-    /// <summary>
-    /// Layer 2 Runtime Automation Engine:
-    /// Processes questionnaire responses, evaluates active FormIndicatorMappings, computes
-    /// immutable IndicatorContribution ledger rows, and rolls them up into live Datum and
-    /// DisaggregationDatum records with recalculation triggering.
-    /// </summary>
     public static class FormIndicatorContributionEngine
     {
         public static async Task<List<IndicatorContribution>> ProcessResponseContributionsAsync(
@@ -27,9 +21,12 @@ namespace Monic.Web.Code
                 .Include(r => r.Answers)
                     .ThenInclude(a => a.AnswerOptions)
                 .Include(r => r.Questionnaire)
+                .Include(r => r.Answers)
+                    .ThenInclude(a => a.Question)
                 .FirstOrDefaultAsync(r => r.ResponseId == responseId);
 
-            if (response == null) return new List<IndicatorContribution>();
+            if (response == null)
+                return new List<IndicatorContribution>();
 
             var mappings = await db.FormIndicatorMappings
                 .Include(m => m.QuestionLinks)
@@ -38,141 +35,121 @@ namespace Monic.Web.Code
                 .Where(m => m.QuestionnaireId == response.QuestionnaireId && m.IsActive)
                 .ToListAsync();
 
-            if (mappings.Count == 0) return new List<IndicatorContribution>();
-
-            var contributionsProduced = new List<IndicatorContribution>();
-            var touchedIndicatorDateEntities = new HashSet<(Guid IndicatorId, Guid EntityId, Guid DateId)>();
+            var produced = new List<IndicatorContribution>();
+            var touched = new HashSet<(Guid IndicatorId, Guid EntityId, Guid DateId)>();
 
             foreach (var mapping in mappings)
             {
-                // Check if mapping requires submitted status
                 if (mapping.CountOnlySubmitted && !response.SubmittedOnUtc.HasValue)
-                {
                     continue;
-                }
 
-                // Check filter if provided
-                if (!string.IsNullOrWhiteSpace(mapping.FilterJson) && !EvaluateFilter(mapping.FilterJson, response))
-                {
+                if (!string.IsNullOrWhiteSpace(mapping.FilterJson) &&
+                    !EvaluateFilter(mapping.FilterJson, response))
                     continue;
-                }
 
-                var entityId = response.EntityId;
-                var dateId = response.DateId;
-
-                // Identify if disaggregation links exist
-                var disaggLinks = mapping.QuestionLinks
+                var disaggregationLinks = mapping.QuestionLinks
                     .Where(ql => ql.Role == QuestionIndicatorRole.Disaggregation)
                     .ToList();
 
-                var valueLink = mapping.QuestionLinks.FirstOrDefault(ql => ql.Role == QuestionIndicatorRole.Value);
-                var numLink = mapping.QuestionLinks.FirstOrDefault(ql => ql.Role == QuestionIndicatorRole.Numerator);
-                var denLink = mapping.QuestionLinks.FirstOrDefault(ql => ql.Role == QuestionIndicatorRole.Denominator);
-
-                if (disaggLinks.Count > 0)
+                if (disaggregationLinks.Count > 0)
                 {
-                    // Compute per disaggregation option
-                    foreach (var dLink in disaggLinks)
+                    foreach (var link in disaggregationLinks)
                     {
-                        var optId = dLink.DisaggregationOptionId;
-                        if (!optId.HasValue) continue;
+                        if (!link.DisaggregationOptionId.HasValue)
+                            continue;
 
-                        var ans = response.Answers.FirstOrDefault(a => a.QuestionId == dLink.QuestionId);
-                        decimal val = 0m;
-                        if (ans != null)
-                        {
-                            val = ExtractNumericValue(ans, dLink.ValueMapJson);
-                        }
-
-                        var contrib = await RecordContributionAsync(
-                            db, mapping, responseId, entityId, dateId, optId, val, null, null);
-                        contributionsProduced.Add(contrib);
+                        var answer = response.Answers.FirstOrDefault(a => a.QuestionId == link.QuestionId);
+                        var value = ExtractNumericValue(answer, link.ValueMapJson);
+                        produced.Add(await RecordContributionAsync(db, mapping, responseId,
+                            response.EntityId, response.DateId, link.DisaggregationOptionId,
+                            value, null, null));
                     }
 
-                    // Compute total contribution row (null DisaggregationOptionId)
-                    decimal totalVal = contributionsProduced
-                        .Where(c => c.FormIndicatorMappingId == mapping.FormIndicatorMappingId && c.ResponseId == responseId)
+                    var total = produced
+                        .Where(c => c.ResponseId == responseId && c.FormIndicatorMappingId == mapping.FormIndicatorMappingId)
                         .Sum(c => c.Value);
 
-                    var totalContrib = await RecordContributionAsync(
-                        db, mapping, responseId, entityId, dateId, null, totalVal, null, null);
-                    contributionsProduced.Add(totalContrib);
+                    produced.Add(await RecordContributionAsync(db, mapping, responseId,
+                        response.EntityId, response.DateId, null, total, null, null));
                 }
                 else
                 {
-                    // Single (total) contribution
-                    decimal val = 0m;
+                    var valueLink = mapping.QuestionLinks.FirstOrDefault(ql => ql.Role == QuestionIndicatorRole.Value);
+                    var numeratorLink = mapping.QuestionLinks.FirstOrDefault(ql => ql.Role == QuestionIndicatorRole.Numerator);
+                    var denominatorLink = mapping.QuestionLinks.FirstOrDefault(ql => ql.Role == QuestionIndicatorRole.Denominator);
+
+                    decimal value = 0m;
                     decimal? numerator = null;
                     decimal? denominator = null;
 
-                    if (numLink != null && denLink != null)
+                    if (numeratorLink != null && denominatorLink != null)
                     {
-                        var nAns = response.Answers.FirstOrDefault(a => a.QuestionId == numLink.QuestionId);
-                        var dAns = response.Answers.FirstOrDefault(a => a.QuestionId == denLink.QuestionId);
-
-                        numerator = nAns != null ? ExtractNumericValue(nAns, numLink.ValueMapJson) : 0m;
-                        denominator = dAns != null ? ExtractNumericValue(dAns, denLink.ValueMapJson) : 0m;
+                        var numeratorAnswer = response.Answers.FirstOrDefault(a => a.QuestionId == numeratorLink.QuestionId);
+                        var denominatorAnswer = response.Answers.FirstOrDefault(a => a.QuestionId == denominatorLink.QuestionId);
+                        numerator = numeratorAnswer == null ? 0m : ExtractNumericValue(numeratorAnswer, numeratorLink.ValueMapJson);
+                        denominator = denominatorAnswer == null ? 0m : ExtractNumericValue(denominatorAnswer, denominatorLink.ValueMapJson);
 
                         if (denominator.Value > 0m)
                         {
-                            val = numerator.Value / denominator.Value;
-                            if (mapping.Indicator != null && (mapping.Indicator.Units == "%" || mapping.Indicator.Units?.ToLower() == "percentage"))
-                            {
-                                val *= 100m;
-                            }
+                            value = numerator.Value / denominator.Value;
+                            if (mapping.Indicator != null &&
+                                (mapping.Indicator.Units == "%" ||
+                                 string.Equals(mapping.Indicator.Units, "percentage", StringComparison.OrdinalIgnoreCase)))
+                                value *= 100m;
+                        }
+                        else
+                        {
+                            value = 0m;
                         }
                     }
                     else if (valueLink != null)
                     {
-                        var ans = response.Answers.FirstOrDefault(a => a.QuestionId == valueLink.QuestionId);
-                        if (ans != null)
-                        {
-                            val = ExtractNumericValue(ans, valueLink.ValueMapJson);
-                        }
+                        var answer = response.Answers.FirstOrDefault(a => a.QuestionId == valueLink.QuestionId);
+                        value = ExtractNumericValue(answer, valueLink.ValueMapJson);
                     }
                     else if (mapping.Aggregation == MappingAggregation.Count)
                     {
-                        val = 1m;
+                        value = 1m;
                     }
 
-                    var contrib = await RecordContributionAsync(
-                        db, mapping, responseId, entityId, dateId, null, val, numerator, denominator);
-                    contributionsProduced.Add(contrib);
+                    produced.Add(await RecordContributionAsync(db, mapping, responseId,
+                        response.EntityId, response.DateId, null, value, numerator, denominator));
                 }
 
-                touchedIndicatorDateEntities.Add((mapping.IndicatorId, entityId, dateId));
+                touched.Add((mapping.IndicatorId, response.EntityId, response.DateId));
             }
 
             await db.SaveChangesAsync();
 
-            // Roll up contributions into Datum & DisaggregationDatum for each touched indicator/entity/date
-            var rollups = new List<Datum>();
-            foreach (var key in touchedIndicatorDateEntities)
+            foreach (var key in touched)
             {
-                var datum = await RollupContributionsToDatumAsync(db, key.IndicatorId, key.EntityId, key.DateId, userId);
-                if (datum != null)
-                {
-                    rollups.Add(datum);
-                }
+                await RollupContributionsToDatumAsync(db, key.IndicatorId, key.EntityId, key.DateId, userId);
             }
 
             await db.SaveChangesAsync();
 
-            // Run calculation pipeline if available
-            if (rollups.Count > 0 && appSettings != null)
+            if (touched.Count > 0 && appSettings != null)
             {
                 try
                 {
-                    var calc = new Calculation(db, appSettings, userId ?? Guid.Empty);
-                    await calc.SaveAsync(rollups, calculateOnly: true);
+                    var datums = await db.Data
+                        .Where(d => touched.Contains(new ValueTuple<Guid, Guid, Guid>(d.IndicatorId, d.EntityId, d.DateId)))
+                        .ToListAsync();
+
+                    var calculation = new Calculation(db, appSettings, userId ?? Guid.Empty);
+                    await calculation.SaveAsync(datums);
                 }
-                catch
+                catch (InvalidOperationException)
                 {
-                    // Calculation pipeline failure should not revert contribution ledger
+                    throw;
+                }
+                catch (Exception)
+                {
+                    throw new InvalidOperationException("The contribution ledger was saved, but downstream indicator recalculation failed.");
                 }
             }
 
-            return contributionsProduced;
+            return produced;
         }
 
         private static async Task<IndicatorContribution> RecordContributionAsync(
@@ -181,15 +158,15 @@ namespace Monic.Web.Code
             Guid responseId,
             Guid entityId,
             Guid dateId,
-            Guid? disaggOptionId,
+            Guid? disaggregationOptionId,
             decimal value,
             decimal? numerator,
             decimal? denominator)
         {
-            var existing = await db.IndicatorContributions
-                .FirstOrDefaultAsync(c => c.ResponseId == responseId
-                                       && c.FormIndicatorMappingId == mapping.FormIndicatorMappingId
-                                       && c.DisaggregationOptionId == disaggOptionId);
+            var existing = await db.IndicatorContributions.FirstOrDefaultAsync(c =>
+                c.ResponseId == responseId &&
+                c.FormIndicatorMappingId == mapping.FormIndicatorMappingId &&
+                c.DisaggregationOptionId == disaggregationOptionId);
 
             if (existing != null)
             {
@@ -202,7 +179,7 @@ namespace Monic.Web.Code
                 return existing;
             }
 
-            var contrib = new IndicatorContribution
+            var contribution = new IndicatorContribution
             {
                 IndicatorContributionId = Guid.NewGuid(),
                 FormIndicatorMappingId = mapping.FormIndicatorMappingId,
@@ -210,15 +187,15 @@ namespace Monic.Web.Code
                 IndicatorId = mapping.IndicatorId,
                 EntityId = entityId,
                 DateId = dateId,
-                DisaggregationOptionId = disaggOptionId,
+                DisaggregationOptionId = disaggregationOptionId,
                 Value = value,
                 Numerator = numerator,
                 Denominator = denominator,
                 ComputedAtUtc = DateTime.UtcNow
             };
 
-            db.IndicatorContributions.Add(contrib);
-            return contrib;
+            db.IndicatorContributions.Add(contribution);
+            return contribution;
         }
 
         private static async Task<Datum> RollupContributionsToDatumAsync(
@@ -228,69 +205,47 @@ namespace Monic.Web.Code
             Guid dateId,
             Guid? userId)
         {
-            var allContributions = await db.IndicatorContributions
+            var all = await db.IndicatorContributions
                 .Include(c => c.Mapping)
                 .Where(c => c.IndicatorId == indicatorId && c.EntityId == entityId && c.DateId == dateId)
                 .ToListAsync();
 
-            if (allContributions.Count == 0) return null;
+            if (all.Count == 0)
+                return null;
 
-            var mapping = allContributions.FirstOrDefault()?.Mapping;
-            var agg = mapping?.Aggregation ?? MappingAggregation.Sum;
+            var aggregation = all.FirstOrDefault()?.Mapping?.Aggregation ?? MappingAggregation.Sum;
+            var totals = all.Where(c => c.DisaggregationOptionId == null).ToList();
+            if (totals.Count == 0)
+                totals = all;
 
-            // Rollup for total (null DisaggregationOptionId)
-            var totalContribs = allContributions.Where(c => c.DisaggregationOptionId == null).ToList();
-            if (totalContribs.Count == 0)
+            decimal aggregateValue;
+            if (totals.Any(c => c.Numerator.HasValue && c.Denominator.HasValue))
             {
-                totalContribs = allContributions;
-            }
+                var numerator = totals.Sum(c => c.Numerator ?? 0m);
+                var denominator = totals.Sum(c => c.Denominator ?? 0m);
+                aggregateValue = denominator > 0m ? numerator / denominator : 0m;
 
-            decimal aggregateValue = 0m;
-            decimal? aggregateNumerator = null;
-            decimal? aggregateDenominator = null;
-
-            if (totalContribs.Any(c => c.Numerator.HasValue && c.Denominator.HasValue))
-            {
-                aggregateNumerator = totalContribs.Sum(c => c.Numerator ?? 0m);
-                aggregateDenominator = totalContribs.Sum(c => c.Denominator ?? 0m);
-                if (aggregateDenominator.Value > 0m)
-                {
-                    aggregateValue = aggregateNumerator.Value / aggregateDenominator.Value;
-                    var ind = await db.Indicators.FirstOrDefaultAsync(i => i.IndicatorId == indicatorId);
-                    if (ind != null && (ind.Units == "%" || ind.Units?.ToLower() == "percentage"))
-                    {
-                        aggregateValue *= 100m;
-                    }
-                }
+                var indicator = await db.Indicators.FirstOrDefaultAsync(i => i.IndicatorId == indicatorId);
+                if (indicator != null &&
+                    (indicator.Units == "%" || string.Equals(indicator.Units, "percentage", StringComparison.OrdinalIgnoreCase)))
+                    aggregateValue *= 100m;
             }
             else
             {
-                switch (agg)
+                aggregateValue = aggregation switch
                 {
-                    case MappingAggregation.Count:
-                        aggregateValue = totalContribs.Count;
-                        break;
-                    case MappingAggregation.Average:
-                        aggregateValue = totalContribs.Average(c => c.Value);
-                        break;
-                    case MappingAggregation.Min:
-                        aggregateValue = totalContribs.Min(c => c.Value);
-                        break;
-                    case MappingAggregation.Max:
-                        aggregateValue = totalContribs.Max(c => c.Value);
-                        break;
-                    case MappingAggregation.Sum:
-                    default:
-                        aggregateValue = totalContribs.Sum(c => c.Value);
-                        break;
-                }
+                    MappingAggregation.Count => totals.Count,
+                    MappingAggregation.Average => totals.Average(c => c.Value),
+                    MappingAggregation.Min => totals.Min(c => c.Value),
+                    MappingAggregation.Max => totals.Max(c => c.Value),
+                    _ => totals.Sum(c => c.Value)
+                };
             }
 
             var datum = await db.Data.FirstOrDefaultAsync(d =>
                 d.IndicatorId == indicatorId && d.EntityId == entityId && d.DateId == dateId);
 
             var defaultUserId = userId ?? await db.Users.Select(u => u.Id).FirstOrDefaultAsync();
-
             if (datum == null)
             {
                 datum = new Datum
@@ -312,64 +267,53 @@ namespace Monic.Web.Code
                 datum.SourceType = DataSourceType.Questionnaire;
                 datum.LastSavedDateUtc = DateTime.UtcNow;
                 if (defaultUserId != Guid.Empty)
-                {
                     datum.LastSavedById = defaultUserId;
-                }
             }
 
-            // Also roll up disaggregated contributions into DisaggregationData
-            var disaggContribs = allContributions
-                .Where(c => c.DisaggregationOptionId != null)
+            var disaggregated = all
+                .Where(c => c.DisaggregationOptionId.HasValue)
                 .GroupBy(c => c.DisaggregationOptionId.Value);
 
-            foreach (var group in disaggContribs)
+            foreach (var group in disaggregated)
             {
-                var optId = group.Key;
-                decimal optValue = 0m;
-                switch (agg)
+                var value = aggregation switch
                 {
-                    case MappingAggregation.Count:
-                        optValue = group.Count();
-                        break;
-                    case MappingAggregation.Average:
-                        optValue = group.Average(c => c.Value);
-                        break;
-                    case MappingAggregation.Sum:
-                    default:
-                        optValue = group.Sum(c => c.Value);
-                        break;
-                }
+                    MappingAggregation.Count => (decimal)group.Count(),
+                    MappingAggregation.Average => group.Average(c => c.Value),
+                    _ => group.Sum(c => c.Value)
+                };
 
-                var disaggDatum = await db.DisaggregationData.FirstOrDefaultAsync(dd =>
-                    dd.IndicatorId == indicatorId && dd.EntityId == entityId && dd.DateId == dateId && dd.DisaggregationOptionId == optId);
+                var existing = await db.DisaggregationData.FirstOrDefaultAsync(d =>
+                    d.IndicatorId == indicatorId && d.EntityId == entityId && d.DateId == dateId &&
+                    d.DisaggregationOptionId == group.Key);
 
-                if (disaggDatum == null)
+                if (existing == null)
                 {
-                    disaggDatum = new DisaggregationDatum
+                    db.DisaggregationData.Add(new DisaggregationDatum
                     {
                         DisaggregationDatumId = Guid.NewGuid(),
                         IndicatorId = indicatorId,
                         EntityId = entityId,
                         DateId = dateId,
-                        DisaggregationOptionId = optId,
-                        Value = optValue
-                    };
-                    db.DisaggregationData.Add(disaggDatum);
+                        DisaggregationOptionId = group.Key,
+                        Value = value
+                    });
                 }
                 else
                 {
-                    disaggDatum.Value = optValue;
+                    existing.Value = value;
                 }
             }
 
             return datum;
         }
 
-        private static decimal ExtractNumericValue(Answer ans, string valueMapJson)
+        private static decimal ExtractNumericValue(Answer answer, string valueMapJson)
         {
-            if (ans == null) return 0m;
-
-            if (ans.ValueNumber.HasValue) return ans.ValueNumber.Value;
+            if (answer == null)
+                return 0m;
+            if (answer.ValueNumber.HasValue)
+                return answer.ValueNumber.Value;
 
             if (!string.IsNullOrWhiteSpace(valueMapJson))
             {
@@ -378,37 +322,27 @@ namespace Monic.Web.Code
                     var map = JsonSerializer.Deserialize<Dictionary<string, decimal>>(valueMapJson);
                     if (map != null)
                     {
-                        if (!string.IsNullOrWhiteSpace(ans.Value) && map.TryGetValue(ans.Value.Trim(), out var mappedVal))
+                        if (!string.IsNullOrWhiteSpace(answer.Value) && map.TryGetValue(answer.Value.Trim(), out var mapped))
+                            return mapped;
+                        foreach (var option in answer.AnswerOptions)
                         {
-                            return mappedVal;
-                        }
-
-                        // Check AnswerOptions
-                        foreach (var opt in ans.AnswerOptions)
-                        {
-                            if (map.TryGetValue(opt.QuestionOptionId.ToString(), out var optMappedVal))
-                            {
-                                return optMappedVal;
-                            }
+                            if (map.TryGetValue(option.QuestionOptionId.ToString(), out var optionMapped))
+                                return optionMapped;
                         }
                     }
                 }
-                catch
+                catch (JsonException)
                 {
-                    // Fall back to numeric parse
+                    throw new InvalidOperationException("A mapping value map is malformed JSON.");
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(ans.Value) &&
-                decimal.TryParse(ans.Value, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed))
-            {
+            if (!string.IsNullOrWhiteSpace(answer.Value) &&
+                decimal.TryParse(answer.Value, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed))
                 return parsed;
-            }
 
-            if (ans.ValueBoolean.HasValue)
-            {
-                return ans.ValueBoolean.Value ? 1m : 0m;
-            }
+            if (answer.ValueBoolean.HasValue)
+                return answer.ValueBoolean.Value ? 1m : 0m;
 
             return 0m;
         }
@@ -419,24 +353,26 @@ namespace Monic.Web.Code
             {
                 using var doc = JsonDocument.Parse(filterJson);
                 var root = doc.RootElement;
-                if (root.TryGetProperty("questionCode", out var qCodeProp) &&
-                    root.TryGetProperty("equals", out var equalsProp))
+                if (root.TryGetProperty("questionCode", out var codeProperty) &&
+                    root.TryGetProperty("equals", out var equalsProperty))
                 {
-                    var code = qCodeProp.GetString();
-                    var expected = equalsProp.GetString();
-                    var matchAnswer = response.Answers.FirstOrDefault(a => a.Question != null && a.Question.Code == code);
-                    if (matchAnswer != null)
-                    {
-                        return string.Equals(matchAnswer.Value?.Trim(), expected?.Trim(), StringComparison.OrdinalIgnoreCase);
-                    }
-                }
-            }
-            catch
-            {
-                // On malformed filter json, allow contribution
-            }
+                    var code = codeProperty.GetString();
+                    var expected = equalsProperty.GetString();
+                    var answer = response.Answers.FirstOrDefault(a =>
+                        a.Question != null && string.Equals(a.Question.Code, code, StringComparison.Ordinal));
 
-            return true;
+                    if (answer == null)
+                        return false;
+
+                    return string.Equals(answer.Value?.Trim(), expected?.Trim(), StringComparison.OrdinalIgnoreCase);
+                }
+
+                throw new InvalidOperationException("Unsupported or malformed mapping filter.");
+            }
+            catch (JsonException ex)
+            {
+                throw new InvalidOperationException("A mapping filter is malformed JSON.", ex);
+            }
         }
     }
 }
